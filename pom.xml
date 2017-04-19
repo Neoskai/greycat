@@ -102,6 +102,7 @@
         <module>plugins/rocksdb</module>
         <module>plugins/websocket</module>
         <module>plugins/ml</module>
+        <module>plugins/aerospike</module>
         <!--
         <module>plugins/memory</module>
         -->
