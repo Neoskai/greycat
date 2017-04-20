@@ -13,23 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package greycat.utility;
 
-public class Tuple<A, B> {
+package com.datathings;
 
-    private A _left;
-    private B _right;
+import greycat.Graph;
+import greycat.plugin.Plugin;
 
-    public Tuple(A p_left, B p_right) {
-        this._left = p_left;
-        this._right = p_right;
+public class NSQPlugin implements Plugin{
+    @Override
+    public void start(Graph graph) {
+        graph.addGlobalTaskHook(new NSQHook("localhost", 4150));
     }
 
-    public A left() {
-        return _left;
-    }
+    @Override
+    public void stop() {
 
-    public B right() {
-        return _right;
     }
 }

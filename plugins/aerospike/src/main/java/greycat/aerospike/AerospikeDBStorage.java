@@ -112,8 +112,12 @@ public class AerospikeDBStorage implements Storage {
 
                 if (valueView != null) {
                     Key key = new Key(_namespace, "greycat", keyView.data());
-                    System.out.println("Initiating new Key: " + keyView.data());
                     Bin data = new Bin("data", valueView.data());
+
+                    //System.out.printf("Initiating new Key: " + keyView.data());
+                    //System.out.println(" with data " + data.value);
+                    //System.out.println("Key is " + Base64.decodeToLongWithBounds(keyView, 0, keyView.length()));
+
                     _client.put(null, key, data);
                 }
 
@@ -161,7 +165,6 @@ public class AerospikeDBStorage implements Storage {
 
                 if (valueView != null) {
                     Key key = new Key(_namespace, "greycat", keyView.data());
-                    System.out.println("Initiating new Key: " + keyView.data());
                     Bin data = new Bin("data", valueView.data());
                     _client.put(null, key, data);
                 }

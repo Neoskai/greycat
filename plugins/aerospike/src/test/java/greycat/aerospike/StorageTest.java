@@ -29,6 +29,10 @@ public class StorageTest {
 
     final int valuesToInsert= 1000;
 
+    /*
+     * Requires local version of Aerospike running on port 3000, with namespace test available
+     * Can be edited to use an other Aerospike cfg
+     */
     @Test
     public void test(){
         Graph graph = new GraphBuilder().withStorage(new AerospikeDBStorage("localhost",3000, "test")).withScheduler(new NoopScheduler()).withMemorySize(2000000).build();
@@ -84,11 +88,15 @@ public class StorageTest {
             }
         });
 
+        // Clean the whole database after running test
         //clean();
     }
 
     static int count = 0;
 
+    /**
+     * Totally cleans the database
+     */
     private static void clean(){
         try {
             final AerospikeClient client = new AerospikeClient("localhost", 3000);
