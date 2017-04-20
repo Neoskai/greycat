@@ -16,36 +16,99 @@
 
 package greycat.aerospike;
 
-import com.aerospike.client.AerospikeClient;
-import com.aerospike.client.Bin;
-import com.aerospike.client.Key;
-import com.aerospike.client.Record;
+import com.aerospike.client.*;
 
+import com.aerospike.client.policy.ScanPolicy;
+import com.aerospike.client.policy.WritePolicy;
+import greycat.*;
+import greycat.plugin.Job;
+import greycat.scheduler.NoopScheduler;
 import org.junit.Test;
-
-import java.io.IOException;
-
 
 public class StorageTest {
 
-    /*@Test
-    public void test() throws IOException{
-        AerospikeClient client = new AerospikeClient("localhost", 3000);
+    final int valuesToInsert= 1000;
 
-        // First = Namespace (test) / Second = Set (demo) / Third = Key (putgetkey)
-        Key key = new Key("test", "demo", "putgetkey");
-        Bin bin1 = new Bin("name", "Loic");
-        Bin bin2 = new Bin("location", "Here");
+    @Test
+    public void test(){
+        Graph graph = new GraphBuilder().withStorage(new AerospikeDBStorage("localhost",3000, "test")).withScheduler(new NoopScheduler()).withMemorySize(2000000).build();
 
-        // Write a record
-        // First = Policy (null) / Second = key / rest = datas associated to this key
-        client.put(null, key, bin1, bin2);
+        graph.connect(new Callback<Boolean>() {
+            @Override
+            public void on(Boolean result) {
+                System.out.println("Connected to graph");
 
-        // Read a record
-        Record record = client.get(null, key);
+                final Node initialNode = graph.newNode(0,0);
+                final DeferCounter counter = graph.newCounter(valuesToInsert);
 
-        System.out.println("Record found: " + record);
+                final long initialStamp = 1000;
 
-        client.close();
-    }*/
+                for(long i = 0 ; i < valuesToInsert; i++){
+
+                    if(i%(valuesToInsert/10) == 0) {
+                        graph.save(new Callback<Boolean>() {
+                            @Override
+                            public void on(Boolean result) {
+                                // NOTHING
+                            }
+                        });
+                    }
+
+                    final double value= i * 0.3;
+                    final long time = initialStamp + i;
+
+                    graph.lookup(0, time, initialNode.id(), new Callback<Node>() {
+                        @Override
+                        public void on(Node timedNode) {
+                            timedNode.set("value", Type.DOUBLE, value);
+                            counter.count();
+                            timedNode.free();
+                        }
+                    });
+                }
+
+                initialNode.free();
+
+                counter.then(new Job() {
+                    @Override
+                    public void run() {
+                        graph.disconnect(new Callback<Boolean>() {
+                            @Override
+                            public void on(Boolean result) {
+                                System.out.println("Disconnected from graph");
+                            }
+                        });
+                    }
+                });
+
+            }
+        });
+
+        //clean();
+    }
+
+    static int count = 0;
+
+    private static void clean(){
+        try {
+            final AerospikeClient client = new AerospikeClient("localhost", 3000);
+
+            ScanPolicy scanPolicy = new ScanPolicy();
+            client.scanAll(scanPolicy, "test", "greycat", new ScanCallback() {
+
+                public void scanCallback(Key key, Record record) throws AerospikeException {
+
+                    client.delete(new WritePolicy(), key);
+                    count++;
+
+                    if (count % 25000 == 0){
+                        System.out.println("Deleted: " + count);
+                    }
+                }
+            }, new String[] {});
+            System.out.println("Deleted " + count + " from greycat");
+        } catch (AerospikeException e) {
+            e.printStackTrace();
+        }
+    }
 }

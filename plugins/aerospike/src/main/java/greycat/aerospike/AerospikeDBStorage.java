@@ -17,6 +17,7 @@
 package greycat.aerospike;
 
 import com.aerospike.client.*;
+import com.aerospike.client.policy.WritePolicy;
 import greycat.Callback;
 import greycat.Constants;
 import greycat.Graph;
@@ -32,11 +33,13 @@ import java.util.List;
 public class AerospikeDBStorage implements Storage {
 
     private static final String _connectedError = "PLEASE CONNECT YOUR DATABASE FIRST";
+    private static final byte[] _prefixKey = "prefix".getBytes();
 
 
     private AerospikeClient _client;
     private String _address;
     private Integer _port;
+    private String _namespace;
 
     private Graph _graph;
     private boolean _isConnected = false;
@@ -44,15 +47,14 @@ public class AerospikeDBStorage implements Storage {
     private final List<Callback<Buffer>> updates = new ArrayList<Callback<Buffer>>();
 
 
-    public AerospikeDBStorage(String address, Integer port){
+    public AerospikeDBStorage(String address, Integer port, String namespace){
         _address = address;
         _port = port;
+        _namespace = namespace;
     }
 
     @Override
     public void get(Buffer keys, Callback<Buffer> callback) {
-        //@ TODO  Test in live
-
         if (!_isConnected) {
             throw new RuntimeException(_connectedError);
         }
@@ -69,11 +71,15 @@ public class AerospikeDBStorage implements Storage {
                     isFirst = false;
                 }
 
-                Key key = new Key("greycat", "aerospike", view.data());
+                Key key = new Key(_namespace, "greycat", view.data());
                 Record dataRecorded = _client.get(null, key, "data");
 
-
-                byte [] res = (byte []) dataRecorded.getValue("data");
+                byte [] res;
+                try{
+                    res = (byte []) dataRecorded.getValue("data");
+                } catch (NullPointerException e){
+                    res = null;
+                }
 
                 if (res != null) {
                     result.writeAll(res);
@@ -89,7 +95,6 @@ public class AerospikeDBStorage implements Storage {
 
     @Override
     public void put(Buffer stream, Callback<Boolean> callback) {
-        // @TODO Test in live
         if (!_isConnected) {
             throw new RuntimeException(_connectedError);
         }
@@ -106,7 +111,8 @@ public class AerospikeDBStorage implements Storage {
                 Buffer valueView = it.next();
 
                 if (valueView != null) {
-                    Key key = new Key("greycat", "aerospike", keyView.data());
+                    Key key = new Key(_namespace, "greycat", keyView.data());
+                    System.out.println("Initiating new Key: " + keyView.data());
                     Bin data = new Bin("data", valueView.data());
                     _client.put(null, key, data);
                 }
@@ -123,7 +129,6 @@ public class AerospikeDBStorage implements Storage {
                 }
             }
 
-            // @TODO Business Stuff
             for (int i = 0; i < updates.size(); i++) {
                 final Callback<Buffer> explicit = updates.get(i);
                 explicit.on(result);
@@ -142,12 +147,72 @@ public class AerospikeDBStorage implements Storage {
 
     @Override
     public void putSilent(Buffer stream, Callback<Buffer> callback) {
-        // @TODO
+        if (!_isConnected) {
+            throw new RuntimeException(_connectedError);
+        }
+        try{
+            Buffer result = _graph.newBuffer();
+            BufferIterator it = stream.iterator();
+            boolean isFirst = true;
+
+            while (it.hasNext()) {
+                Buffer keyView = it.next();
+                Buffer valueView = it.next();
+
+                if (valueView != null) {
+                    Key key = new Key(_namespace, "greycat", keyView.data());
+                    System.out.println("Initiating new Key: " + keyView.data());
+                    Bin data = new Bin("data", valueView.data());
+                    _client.put(null, key, data);
+                }
+
+                if (isFirst) {
+                    isFirst = false;
+                } else {
+                    result.write(Constants.KEY_SEP);
+                }
+                result.writeAll(keyView.data());
+                result.write(Constants.KEY_SEP);
+                Base64.encodeLongToBuffer(HashHelper.hashBuffer(valueView, 0, valueView.length()), result);
+
+            }
+
+            for (int i = 0; i < updates.size(); i++) {
+                final Callback<Buffer> explicit = updates.get(i);
+                explicit.on(result);
+            }
+
+            callback.on(result);
+
+        } catch (Exception e){
+            e.printStackTrace();
+            if (callback != null) {
+                callback.on(null);
+            }
+        }
     }
 
     @Override
     public void remove(Buffer keys, Callback<Boolean> callback) {
-        // @TODO
+        if (!_isConnected) {
+            throw new RuntimeException(_connectedError);
+        }
+        try {
+            BufferIterator it = keys.iterator();
+            while (it.hasNext()) {
+                Buffer view = it.next();
+                Key rmKey = new Key(_namespace, "greycat", view.data());
+                _client.delete(new WritePolicy(), rmKey);
+            }
+            if (callback != null) {
+                callback.on(null);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (callback != null) {
+                callback.on(false);
+            }
+        }
     }
 
     @Override
@@ -178,12 +243,38 @@ public class AerospikeDBStorage implements Storage {
 
     @Override
     public void lock(Callback<Buffer> callback) {
-        // @TODO
+        Key key = new Key(_namespace, "greycat", _prefixKey);
+        Record dataRecorded = _client.get(null, key, "data");
+
+        byte[] current;
+        try {
+            current = (byte[]) dataRecorded.getValue("data");
+        } catch (NullPointerException e){
+            current = null;
+        }
+
+        if (current == null) {
+            current = new String("0").getBytes();
+        }
+
+        Short currentPrefix = Short.parseShort(new String(current));
+        Bin data = new Bin("data", ((currentPrefix + 1) + "").getBytes());
+
+        _client.put(null, key, data);
+        if (callback != null) {
+            Buffer newBuf = _graph.newBuffer();
+            Base64.encodeIntToBuffer(currentPrefix, newBuf);
+            callback.on(newBuf);
+        }
+
     }
 
     @Override
     public void unlock(Buffer previousLock, Callback<Boolean> callback) {
-        // @TODO
+        if (!_isConnected) {
+            throw new RuntimeException(_connectedError);
+        }
+        callback.on(true);
     }
 
     @Override
