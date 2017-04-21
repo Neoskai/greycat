@@ -49,7 +49,7 @@ public class ActionTimepointsTest {
                             @Override
                             public void on(TaskResult result) {
                                 Assert.assertEquals(3,result.size());
-                                Assert.assertArrayEquals(new Object[]{3L,1L,0L},result.asArray());
+                                Assert.assertArrayEquals(new Object[]{0L,1L,3L},result.asArray());
                             }
                         });
             }

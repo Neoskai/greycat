@@ -1025,6 +1025,7 @@ class HeapENode implements ENode, HeapContainer {
     private static final byte LOAD_WAITING_TYPE = 1;
     private static final byte LOAD_WAITING_KEY = 2;
     private static final byte LOAD_WAITING_VALUE = 3;
+    
 
     @SuppressWarnings("Duplicates")
     public final long load(final Buffer buffer, final long currentCursor, final Graph graph) {
@@ -1076,7 +1077,7 @@ class HeapENode implements ENode, HeapContainer {
                                 internal_set(read_key, read_type, larray, true, initial);
                                 if (cursor < payloadSize) {
                                     current = buffer.read(cursor);
-                                    if (current == Constants.CHUNK_SEP && cursor < payloadSize) {
+                                    if (current == Constants.CHUNK_ESEP && cursor < payloadSize) {
                                         state = LOAD_WAITING_TYPE;
                                         cursor++;
                                         previous = cursor;
@@ -1090,7 +1091,7 @@ class HeapENode implements ENode, HeapContainer {
                                 internal_set(read_key, read_type, darray, true, initial);
                                 if (cursor < payloadSize) {
                                     current = buffer.read(cursor);
-                                    if (current == Constants.CHUNK_SEP && cursor < payloadSize) {
+                                    if (current == Constants.CHUNK_ESEP && cursor < payloadSize) {
                                         state = LOAD_WAITING_TYPE;
                                         cursor++;
                                         previous = cursor;
@@ -1104,7 +1105,7 @@ class HeapENode implements ENode, HeapContainer {
                                 internal_set(read_key, read_type, iarray, true, initial);
                                 if (cursor < payloadSize) {
                                     current = buffer.read(cursor);
-                                    if (current == Constants.CHUNK_SEP && cursor < payloadSize) {
+                                    if (current == Constants.CHUNK_ESEP && cursor < payloadSize) {
                                         state = LOAD_WAITING_TYPE;
                                         cursor++;
                                         previous = cursor;
@@ -1118,7 +1119,7 @@ class HeapENode implements ENode, HeapContainer {
                                 internal_set(read_key, read_type, sarray, true, initial);
                                 if (cursor < payloadSize) {
                                     current = buffer.read(cursor);
-                                    if (current == Constants.CHUNK_SEP && cursor < payloadSize) {
+                                    if (current == Constants.CHUNK_ESEP && cursor < payloadSize) {
                                         state = LOAD_WAITING_TYPE;
                                         cursor++;
                                         previous = cursor;
