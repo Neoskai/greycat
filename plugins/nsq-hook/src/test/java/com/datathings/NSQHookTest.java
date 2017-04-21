@@ -17,6 +17,9 @@
 package com.datathings;
 
 import greycat.*;
+import greycat.struct.Buffer;
+import greycat.struct.BufferIterator;
+import greycat.utility.BufferView;
 import greycat.utility.Tuple;
 import greycat.utility.VerbosePlugin;
 import org.junit.Assert;
@@ -78,7 +81,20 @@ public class NSQHookTest {
 
                         @Override
                         public void beforeAction(Action action, TaskContext context) {
-                            _sender.sendMessage("Act:"+action.name()+":"+context.resultAsStrings());
+                            //_sender.sendMessage("Act:"+action.name()+":"+context.resultAsStrings());
+
+                            Buffer buffer = context.graph().newBuffer();
+                            action.serialize(buffer);
+                            BufferIterator it = buffer.iterator();
+
+                            String message = "";
+
+                            while (it.hasNext()) {
+                                String elem = new String(it.next().data());
+                                message += elem;
+                            }
+
+                            _sender.sendMessage(message);
                         }
 
                         @Override
