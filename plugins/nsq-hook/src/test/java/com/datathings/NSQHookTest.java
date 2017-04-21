@@ -23,8 +23,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import static greycat.Tasks.newTask;
-import static greycat.internal.task.CoreActions.inject;
-import static greycat.internal.task.CoreActions.setAsVar;
+import static greycat.internal.task.CoreActions.*;
 
 
 public class NSQHookTest {
@@ -79,7 +78,7 @@ public class NSQHookTest {
 
                         @Override
                         public void beforeAction(Action action, TaskContext context) {
-                            _sender.sendMessage(action.name()+":"+context.resultAsStrings());
+                            _sender.sendMessage("Act:"+action.name()+":"+context.resultAsStrings());
                         }
 
                         @Override
@@ -90,7 +89,8 @@ public class NSQHookTest {
 
                         @Override
                         public void beforeTask(TaskContext parentContext, TaskContext context) {
-                            //System.out.println("Before task hook");
+                            _sender.sendMessage("Task:"+context.template("name")+":"+context.resultAsStrings());
+
                         }
 
                         @Override
@@ -103,8 +103,21 @@ public class NSQHookTest {
                             System.out.println("Hook end");
                         }
                     })
-                    .then(inject(new int[]{1, 2, 3}))
-                    .forEach(newTask().then(setAsVar("{{result}}")))
+                    .then(createNode())
+                    .then(setAttribute("name", Type.STRING, "House"))
+                    .then(setAttribute("temp", Type.DOUBLE, "21.1"))
+                    .then(createNode())
+                    .then(setAttribute("name", Type.STRING, "Room"))
+                    .then(setAttribute("temp", Type.STRING, "23.2"))
+                    //.then(readVar("House"))
+                    //.then(addVarToRelation("rooms", "Room"))
+                    .then(travelInTime("10"))
+                    .then(setAttribute("temp", Type.DOUBLE, "15.3"))
+                    //.then(travelInWorld("1"))
+                    .then(travelInTime("20"))
+                    .then(setAttribute("temp", Type.DOUBLE, "-2.5"))
+                    .then(travelInTime("100"))
+                    .then(setAttribute("temp", Type.DOUBLE, "-18.5"))
                     .execute(g, null);
 
         });
