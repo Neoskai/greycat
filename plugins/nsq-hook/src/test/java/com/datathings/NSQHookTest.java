@@ -85,22 +85,14 @@ public class NSQHookTest {
 
                             Buffer buffer = context.graph().newBuffer();
                             action.serialize(buffer);
-                            BufferIterator it = buffer.iterator();
+                            byte[] command = buffer.data();
 
-                            String message = "";
-
-                            while (it.hasNext()) {
-                                String elem = new String(it.next().data());
-                                message += elem;
-                            }
-
-                            _sender.sendMessage(message);
+                            _sender.sendMessage(command);
                         }
 
                         @Override
                         public void afterAction(Action action, TaskContext context) {
-                            //System.out.println("After action hook");
-                            //_sender.sendMessage(action.name());
+
                         }
 
                         @Override

@@ -15,7 +15,7 @@ public class Consumer
         NSQConsumer consumer = new NSQConsumer(lookup, "Greycat", "MyChannel", (message) -> {
 
             try {
-                System.out.println("Received msg: " +  new String(message.getMessage(), "UTF-8"));
+                System.out.println("Received msg: " +  new String(message.getMessage(), "ASCII"));
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
