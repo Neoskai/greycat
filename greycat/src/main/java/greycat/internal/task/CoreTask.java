@@ -571,7 +571,7 @@ public class CoreTask implements Task {
                             break;
                         case Type.TASK_ARRAY:
                             if (varargs_index == 0) {
-                                final Task[] parsedSubParamTask = new Task[resultSize - i];
+                                final Task[] parsedSubParamTask = new Task[params.length - i];
                                 parsedSubParamTask[varargs_index] = getOrCreate(contextTasks, params[i]);
                                 varargs_index = 1;
                                 parsedParams[i] = parsedSubParamTask;

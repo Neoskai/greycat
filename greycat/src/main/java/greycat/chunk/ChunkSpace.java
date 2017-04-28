@@ -101,25 +101,37 @@ public interface ChunkSpace {
      */
     Graph graph();
 
-    /**
+    /*
      * Saves the ChunkSpace
      *
      * @param callback the method to be called when save is completed. Parameter indicates status of the save.
      */
-    void save(Callback<Boolean> callback);
-
-    /**
+    //void save(Callback<Boolean> callback);
+    /*
      * Saves the ChunkSpace without notifying storage directly
      *
      * @param callback the method to be called when save is completed. Parameter indicates status of the save.
      */
-    void saveSilent(Callback<Buffer> callback);
+    //void saveSilent(Callback<Buffer> callback);
+
+    //void savePartial(Callback<Boolean> callback);
+
+    /**
+     * Saves the ChunkSpace
+     *
+     * @param silent   specifies if notification has to be broad-casted or not
+     * @param partial  specifies if the batch size configuration should be used
+     * @param callback the method to be called when save is completed. Parameter indicates status of the save.
+     */
+    void save(boolean silent, boolean partial, Callback<Buffer> callback);
 
     void clear();
 
     void freeAll();
 
     long available();
+
+    long dirties();
 
     /**
      * Create a temporary EGraph object, not related to the main Graph and without the purpose to be serialized. This object has to be free at end.

@@ -32,6 +32,7 @@ public class GraphBuilder {
     private Scheduler _scheduler = null;
     private Plugin[] _plugins = null;
     private long _memorySize = -1;
+    private long _batchSize = -1;
     private boolean _readOnly = false;
     private boolean _deepPriority = true;
 
@@ -59,6 +60,11 @@ public class GraphBuilder {
     public GraphBuilder withReadOnlyStorage(Storage storage) {
         this._storage = storage;
         _readOnly = true;
+        return this;
+    }
+
+    public GraphBuilder withSaveBatchSize(long numberOfchunks) {
+        this._batchSize = numberOfchunks;
         return this;
     }
 
@@ -126,7 +132,7 @@ public class GraphBuilder {
         if (_memorySize == -1) {
             _memorySize = 100000;
         }
-        return new CoreGraph(_storage, _memorySize, _scheduler, _plugins, _deepPriority);
+        return new CoreGraph(_storage, _memorySize, _batchSize, _scheduler, _plugins, _deepPriority);
     }
 
 }

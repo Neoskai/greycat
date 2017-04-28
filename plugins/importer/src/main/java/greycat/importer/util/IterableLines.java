@@ -67,6 +67,16 @@ public class IterableLines extends BaseTaskResult<String> {
             }
 
             @Override
+            public final synchronized boolean hasNext() {
+                try {
+                    return final_buffer.ready();
+                } catch (Throwable e) {
+                    //e.printStackTrace();
+                    return false;
+                }
+            }
+
+            @Override
             public synchronized Tuple nextWithIndex() {
                 final int c_i = _i;
                 _i++;

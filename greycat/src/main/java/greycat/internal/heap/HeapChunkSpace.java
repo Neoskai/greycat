@@ -37,6 +37,7 @@ public class HeapChunkSpace implements ChunkSpace {
     private static final int HASH_LOAD_FACTOR = 4;
 
     private final int _maxEntries;
+    private final int _batchSize;
     private final int _hashEntries;
 
     private final Stack _lru;
@@ -75,7 +76,8 @@ public class HeapChunkSpace implements ChunkSpace {
         return this._chunkIds.get((int) index);
     }
 
-    public HeapChunkSpace(final int initialCapacity, final Graph p_graph, final boolean deepWorldPriority) {
+    public HeapChunkSpace(final int initialCapacity, final int batchSize, final Graph p_graph, final boolean deepWorldPriority) {
+        _batchSize = batchSize;
         _deep_priority = deepWorldPriority;
         _graph = p_graph;
         _maxEntries = initialCapacity;
@@ -390,6 +392,57 @@ public class HeapChunkSpace implements ChunkSpace {
     }
 
     @Override
+    public final synchronized void save(final boolean silent, final boolean partial, final Callback<Buffer> callback) {
+        final Buffer stream = this._graph.newBuffer();
+        boolean isFirst = true;
+        int counter = 0;
+        while (_dirtiesStack.size() != 0 && (!partial || _batchSize == -1 || counter <= _batchSize)) {
+            int tail = (int) _dirtiesStack.dequeueTail();
+            counter++;
+            Chunk loopChunk = _chunkValues.get(tail);
+            //Save chunk Key
+            if (isFirst) {
+                isFirst = false;
+            } else {
+                stream.write(Constants.BUFFER_SEP);
+            }
+            KeyHelper.keyToBuffer(stream, _chunkTypes.get(tail), _chunkWorlds.get(tail), _chunkTimes.get(tail), _chunkIds.get(tail));
+            //Save chunk payload
+            stream.write(Constants.BUFFER_SEP);
+            try {
+                loopChunk.save(stream);
+                unmark(tail);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        if (silent) {
+            this.graph().storage().putSilent(stream, new Callback<Buffer>() {
+                @Override
+                public void on(final Buffer result) {
+                    //free all value
+                    stream.free();
+                    if (callback != null) {
+                        callback.on(result);
+                    }
+                }
+            });
+        } else {
+            this.graph().storage().put(stream, new Callback<Boolean>() {
+                @Override
+                public void on(final Boolean result) {
+                    //free all value
+                    stream.free();
+                    if (callback != null) {
+                        callback.on(null);
+                    }
+                }
+            });
+        }
+    }
+
+/*
+    @Override
     public final synchronized void save(final Callback<Boolean> callback) {
         final Buffer stream = this._graph.newBuffer();
         boolean isFirst = true;
@@ -460,6 +513,7 @@ public class HeapChunkSpace implements ChunkSpace {
             }
         });
     }
+*/
 
     @Override
     public final void clear() {
@@ -474,6 +528,11 @@ public class HeapChunkSpace implements ChunkSpace {
     @Override
     public final long available() {
         return _lru.size();
+    }
+
+    @Override
+    public final long dirties() {
+        return _dirtiesStack.size();
     }
 
     @Override

@@ -21,7 +21,7 @@ import greycat.chunk.ChunkSpace;
 
 public interface MemoryFactory {
 
-    ChunkSpace newSpace(long memorySize, Graph graph, boolean deepPriority);
+    ChunkSpace newSpace(long memorySize, long batchSize, Graph graph, boolean deepPriority);
 
     Buffer newBuffer();
 

@@ -26,14 +26,20 @@ class BaseTaskResultIterator<A> implements TaskResultIterator<A> {
     private final int _size;
     private final AtomicInteger _current;
 
-    BaseTaskResultIterator(Object[] p_backend) {
+    BaseTaskResultIterator(Object[] p_backend, int p_size) {
         _current = new AtomicInteger(0);
         if (p_backend != null) {
             this._backend = p_backend;
+            _size = p_size;
         } else {
             _backend = new Object[0];
+            _size = 0;
         }
-        _size = _backend.length;
+    }
+
+    @Override
+    public final boolean hasNext() {
+        return _current.intValue() < _size;
     }
 
     @Override

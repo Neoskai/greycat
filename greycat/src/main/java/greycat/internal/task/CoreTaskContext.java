@@ -137,6 +137,9 @@ class CoreTaskContext implements TaskContext {
 
     @Override
     public final TaskResult variable(final String name) {
+        if (name == null) {
+            return null;
+        }
         TaskResult resolved = this._globalVariables.get(name);
         if (resolved == null) {
             resolved = internal_deep_resolve(name);
@@ -811,7 +814,7 @@ class CoreTaskContext implements TaskContext {
             final BufferView view = new BufferView(buffer, previous, cursor - 1);
             subResult.load(view, _graph);
             final String finalName = name;
-            subResult.loadRefs(_graph, done->{
+            subResult.loadRefs(_graph, done -> {
                 if (finalName.equals("")) {
                     if (_result != null) {
                         _result.free();
@@ -830,7 +833,7 @@ class CoreTaskContext implements TaskContext {
                 final BaseTaskResult subResult = new BaseTaskResult(null, false);
                 final BufferView view = new BufferView(buffer, previous, cursor - 1);
                 subResult.load(view, _graph);
-                subResult.loadRefs(_graph, done->{
+                subResult.loadRefs(_graph, done -> {
                     if (_result != null) {
                         _result.free();
                     }
@@ -859,7 +862,7 @@ class CoreTaskContext implements TaskContext {
 
     @Override
     public final void reportProgress(final int step, final int total, final String comment) {
-        if(this._progressHook != null) {
+        if (this._progressHook != null) {
             this._progressHook.on(new CoreProgressReport()
                     .setType(TaskProgressType.ACTION_PROGRESS)
                     .setIndex(step)
@@ -893,7 +896,7 @@ class CoreTaskContext implements TaskContext {
                         .setType(TaskProgressType.START_ACTION)
                         .setIndex(((CoreTaskContext) context).cursor)
                         .setTotal(((CoreTaskContext) context)._origin.insertCursor)
-                        .setComment( "Start " + action.name()));
+                        .setComment("Start " + action.name()));
             }
 
             @Override
@@ -902,7 +905,7 @@ class CoreTaskContext implements TaskContext {
                         .setType(TaskProgressType.END_ACTION)
                         .setIndex(((CoreTaskContext) context).cursor)
                         .setTotal(((CoreTaskContext) context)._origin.insertCursor)
-                        .setComment( "End " + action.name()));
+                        .setComment("End " + action.name()));
             }
 
             @Override
@@ -911,7 +914,7 @@ class CoreTaskContext implements TaskContext {
                         .setType(TaskProgressType.START_SUB_TASK)
                         .setIndex(((CoreTaskContext) context).cursor)
                         .setTotal(((CoreTaskContext) context)._origin.insertCursor)
-                        .setComment( "Start sub-task"));
+                        .setComment("Start sub-task"));
             }
 
             @Override
@@ -920,7 +923,7 @@ class CoreTaskContext implements TaskContext {
                         .setType(TaskProgressType.END_SUB_TASK)
                         .setIndex(((CoreTaskContext) context).cursor)
                         .setTotal(((CoreTaskContext) context)._origin.insertCursor)
-                        .setComment( "End sub-task"));
+                        .setComment("End sub-task"));
             }
 
             @Override
@@ -929,7 +932,7 @@ class CoreTaskContext implements TaskContext {
                         .setType(TaskProgressType.END_TASK)
                         .setIndex(((CoreTaskContext) finalContext).cursor)
                         .setTotal(((CoreTaskContext) finalContext)._origin.insertCursor)
-                        .setComment( "Execution end"));
+                        .setComment("Execution end"));
             }
         };
         if (this._hooks != null) {

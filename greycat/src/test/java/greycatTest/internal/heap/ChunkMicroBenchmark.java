@@ -24,7 +24,7 @@ public class ChunkMicroBenchmark {
     public static void main(String[] args) {
         int nb = 10000000;
         long init = System.currentTimeMillis();
-        HeapChunkSpace space = new HeapChunkSpace(nb, null, false);
+        HeapChunkSpace space = new HeapChunkSpace(nb, -1, null, false);
         for (int i = 0; i < nb; i++) {
             space.createAndMark(ChunkType.STATE_CHUNK, 0, 0, i);
 

@@ -179,7 +179,7 @@ public class BaseTaskResult<A> implements TaskResult<A> {
 
     @Override
     public TaskResultIterator iterator() {
-        return new BaseTaskResultIterator(_backend);
+        return new BaseTaskResultIterator(_backend, _size);
     }
 
     @Override

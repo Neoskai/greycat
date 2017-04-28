@@ -55,7 +55,7 @@ public class CoreGraph implements Graph {
     private MemoryFactory _memoryFactory;
     private TaskHook[] _taskHooks;
 
-    public CoreGraph(final Storage p_storage, final long memorySize, final Scheduler p_scheduler, final Plugin[] p_plugins, final boolean deepPriority) {
+    public CoreGraph(final Storage p_storage, final long memorySize, final long batchSize, final Scheduler p_scheduler, final Plugin[] p_plugins, final boolean deepPriority) {
         //initiate the two registry
         _actionRegistry = new CoreActionRegistry();
         _nodeRegistry = new CoreNodeRegistry();
@@ -75,7 +75,7 @@ public class CoreGraph implements Graph {
         //Second round, initialize all mandatory elements
         _taskHooks = temp_hooks;
         _storage = p_storage;
-        _space = _memoryFactory.newSpace(memorySize, selfPointer, deepPriority);
+        _space = _memoryFactory.newSpace(memorySize, batchSize, selfPointer, deepPriority);
         _resolver = new MWResolver(_storage, _space, selfPointer);
         _scheduler = p_scheduler;
         //Third round, initialize all taskActions and nodeTypes
@@ -268,12 +268,40 @@ public class CoreGraph implements Graph {
 
     @Override
     public final void save(Callback<Boolean> callback) {
-        _space.save(callback);
+        if(callback == null){
+            _space.save(false, false, null);
+        } else {
+            _space.save(false, false, new Callback<Buffer>() {
+                @Override
+                public void on(Buffer result) {
+                    callback.on(true);
+                }
+            });
+        }
+    }
+
+    @Override
+    public void savePartial(Callback<Boolean> callback) {
+        if(callback == null){
+            _space.save(false, true, null);
+        } else {
+            _space.save(false, true, new Callback<Buffer>() {
+                @Override
+                public void on(Buffer result) {
+                    callback.on(true);
+                }
+            });
+        }
     }
 
     @Override
     public final void saveSilent(Callback<Buffer> callback) {
-        _space.saveSilent(callback);
+        _space.save(true, false, callback);
+    }
+
+    @Override
+    public final void savePartialSilent(Callback<Buffer> callback) {
+        _space.save(true, true, callback);
     }
 
     @Override

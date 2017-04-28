@@ -134,12 +134,22 @@ public class QueryTest implements Resolver, Graph {
     }
 
     @Override
+    public void savePartial(Callback<Boolean> callback) {
+
+    }
+
+    @Override
     public void save(Callback<Boolean> callback) {
 
     }
 
     @Override
     public void saveSilent(Callback<Buffer> callback) {
+
+    }
+
+    @Override
+    public void savePartialSilent(Callback<Buffer> callback) {
 
     }
 

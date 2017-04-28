@@ -124,7 +124,7 @@ public class GaussianENode {
 
         int total = backend.getWithDefault(Gaussian.TOTAL, 0);
         if (total != 0) {
-            double[] sum = (double[]) backend.get(Gaussian.SUM);
+            double[] sum = ((DoubleArray)backend.get(Gaussian.SUM)).extract();
             avg = new double[sum.length];
             for (int i = 0; i < sum.length; i++) {
                 avg[i] = sum[i] / total;
@@ -174,7 +174,18 @@ public class GaussianENode {
             initAvg();
             int dim = avg.length;
 
-            double[] err = backend.getWithDefault(Gaussian.PRECISIONS, new double[avg.length]);
+            DoubleArray gp= (DoubleArray) backend.get(Gaussian.PRECISIONS);
+
+
+            double[] err;
+            if(gp!=null){
+                err=gp.extract();
+            }
+            else {
+                err=new double[avg.length];
+            }
+
+
             for (int i = 0; i < err.length; i++) {
                 err[i] = err[i] * err[i];
             }
@@ -235,7 +246,7 @@ public class GaussianENode {
     public double[] getSum() {
         int total = backend.getWithDefault(Gaussian.TOTAL, 0);
         if (total != 0) {
-            return (double[]) backend.get(Gaussian.SUM);
+            return ((DoubleArray) backend.get(Gaussian.SUM)).extract();
         } else {
             return null;
         }
@@ -247,7 +258,7 @@ public class GaussianENode {
             return null;
         }
         if (total == 1) {
-            double[] sum = (double[]) backend.get(Gaussian.SUM);
+            double[] sum = ((DoubleArray) backend.get(Gaussian.SUM)).extract();
 
             int features = sum.length;
             double[] sumsquares = new double[features * (features + 1) / 2];
@@ -260,7 +271,7 @@ public class GaussianENode {
             }
             return sumsquares;
         } else {
-            return (double[]) backend.get(Gaussian.SUMSQ);
+            return ((DoubleArray) backend.get(Gaussian.SUMSQ)).extract();
         }
     }
 
@@ -271,9 +282,9 @@ public class GaussianENode {
             return null;
         }
         if (total == 1) {
-            return (double[]) backend.get(Gaussian.SUM);
+            return ((DoubleArray) backend.get(Gaussian.SUM)).extract();
         } else {
-            return (double[]) backend.get(Gaussian.MIN);
+            return ((DoubleArray) backend.get(Gaussian.MIN)).extract();
         }
     }
 
@@ -283,9 +294,9 @@ public class GaussianENode {
             return null;
         }
         if (total == 1) {
-            return (double[]) backend.get(Gaussian.SUM);
+            return ((DoubleArray) backend.get(Gaussian.SUM)).extract();
         } else {
-            return (double[]) backend.get(Gaussian.MAX);
+            return ((DoubleArray) backend.get(Gaussian.MAX)).extract();
         }
     }
 
@@ -297,7 +308,7 @@ public class GaussianENode {
     public int getDimensions() {
         int total = backend.getWithDefault(Gaussian.TOTAL, 0);
         if (total != 0) {
-            return ((double[]) backend.get(Gaussian.SUM)).length;
+            return ((DoubleArray) backend.get(Gaussian.SUM)).size();
         } else {
             return 0;
         }

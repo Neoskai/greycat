@@ -23,12 +23,12 @@ import greycat.struct.Buffer;
 public class HeapMemoryFactory implements MemoryFactory {
 
     @Override
-    public ChunkSpace newSpace(long memorySize, Graph graph, boolean deepWorld) {
-        return new HeapChunkSpace((int) memorySize, graph, deepWorld);
+    public final ChunkSpace newSpace(final long memorySize, final long batchSize, final Graph graph, final boolean deepWorld) {
+        return new HeapChunkSpace((int) memorySize, (int) batchSize, graph, deepWorld);
     }
 
     @Override
-    public Buffer newBuffer() {
+    public final Buffer newBuffer() {
         return new HeapBuffer();
     }
 }

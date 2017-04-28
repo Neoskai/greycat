@@ -34,7 +34,7 @@ public class MockStorage implements Storage {
 
     private Graph _graph;
     private short prefix = 0;
-    private final Map<String, byte[]> backend = new HashMap<String, byte[]>();
+    public final Map<String, byte[]> backend = new HashMap<String, byte[]>();
     private final List<Callback<Buffer>> updates = new ArrayList<Callback<Buffer>>();
 
     /**

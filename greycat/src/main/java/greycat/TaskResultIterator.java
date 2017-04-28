@@ -19,6 +19,8 @@ import greycat.utility.Tuple;
 
 public interface TaskResultIterator<A> {
 
+    boolean hasNext();
+
     A next();
 
     Tuple<Integer,A> nextWithIndex();

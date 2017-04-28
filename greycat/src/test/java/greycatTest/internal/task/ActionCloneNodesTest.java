@@ -31,21 +31,25 @@ public class ActionCloneNodesTest extends AbstractActionTest {
     @Test
     public void testWithOneNode() {
 
+        long[] initialSpace = new long[1];
         newTask()
                 .globalIndex("nodes")
                 .setAsVar("baseNodes")
                 .thenDo(ctx -> {
-                    ctx.setVariable("initialSpace", ctx.graph().space().available());
+                    initialSpace[0] = ctx.graph().space().available();
                     ctx.continueTask();
                 })
                 .cloneNodes()
+                .save()
                 .thenDo(ctx -> {
+                    //Check all cloned
+                    TaskResult<Node> initialNodes = ctx.variable("baseNodes");
+                    TaskResult<Node> clones = ctx.resultAsNodes();
+                    Assert.assertEquals(initialNodes.size(), clones.size());
+
                     //Assert no leak
                     Assert.assertEquals((long)ctx.variable("initialSpace").get(0), ctx.graph().space().available());
-                    //Check all cloned
-                     TaskResult<Node> initialNodes = ctx.variable("baseNodes");
-                     TaskResult<Node> clones = ctx.resultAsNodes();
-                    Assert.assertEquals(initialNodes.size(), clones.size());
+
 
                     //check != ids
                      for(int i = 0; i < initialNodes.size(); i++){

@@ -41,7 +41,7 @@ public abstract class AbstractEGraphTest {
     public void simpleUsageTest() {
         Graph g = GraphBuilder.newBuilder().withScheduler(new NoopScheduler()).build();
         g.connect(null);
-        ChunkSpace space = factory.newSpace(100, g, false);
+        ChunkSpace space = factory.newSpace(100,-1, g, false);
         StateChunk chunk = (StateChunk) space.createAndMark(ChunkType.STATE_CHUNK, 0, 0, 0);
         //test embedded graph attribute
         EGraph egraph = (EGraph) chunk.getOrCreateAt(0, Type.EGRAPH);
@@ -75,7 +75,7 @@ public abstract class AbstractEGraphTest {
     public void setCostTest() {
         Graph g = GraphBuilder.newBuilder().withScheduler(new NoopScheduler()).build();
         g.connect(null);
-        ChunkSpace space = factory.newSpace(100, g, false);
+        ChunkSpace space = factory.newSpace(100,-1, g, false);
         StateChunk chunk = (StateChunk) space.createAndMark(ChunkType.STATE_CHUNK, 0, 0, 0);
         EGraph egraph = (EGraph) chunk.getOrCreateAt(0, Type.EGRAPH);
         ENode eNode = egraph.newNode();
@@ -197,7 +197,7 @@ public abstract class AbstractEGraphTest {
         Graph g = GraphBuilder.newBuilder().withScheduler(new NoopScheduler()).build();
         g.connect(null);
 
-        ChunkSpace space = factory.newSpace(100, g, false);
+        ChunkSpace space = factory.newSpace(100, -1, g, false);
 
         EGraph eGraph = space.newVolatileGraph();
         ENode eNode = eGraph.newNode();

@@ -10,7 +10,7 @@ For any questions please contact us via our Gitter:
 
 # Changelog
 
-- Version 7 (planned for 20/04/2017)
+- Version 7 (planned for 28/04/2017)
     - fix bug in global dictionary
     - add option in builder to desactivate global dictionary and introspection ability
     - fix potential NPE into dephased struct proxy for EGraph
@@ -18,6 +18,8 @@ For any questions please contact us via our Gitter:
     - API change: add name into Action interface
     - API change: add common arrays interface ArrayStruct
     - add clear method to all arrays chunk
+    - add savePartial method
+    - add batchSaveSize option to build
 - Version 6 (11/04/2017)
     - Introducing Hash to check Remote Cache Consistency
     - New API for React Remote Graph usage

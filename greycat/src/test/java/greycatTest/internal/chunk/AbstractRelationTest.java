@@ -35,7 +35,7 @@ public abstract class AbstractRelationTest {
     @Test
     public void genericTest() {
 
-        ChunkSpace space = factory.newSpace(100, null, false);
+        ChunkSpace space = factory.newSpace(100,-1, null, false);
         StateChunk chunk = (StateChunk) space.createAndMark(ChunkType.STATE_CHUNK, 0, 0, 0);
         Relation relation = (Relation) chunk.getOrCreateAt(0, Type.RELATION);
 
@@ -69,7 +69,7 @@ public abstract class AbstractRelationTest {
 
     @Test
     public void insertTest() {
-        ChunkSpace space = factory.newSpace(100, null, false);
+        ChunkSpace space = factory.newSpace(100, -1, null, false);
         StateChunk chunk = (StateChunk) space.createAndMark(ChunkType.STATE_CHUNK, 0, 0, 0);
         Relation relation = (Relation) chunk.getOrCreateAt(0, Type.RELATION);
         relation.add(1);

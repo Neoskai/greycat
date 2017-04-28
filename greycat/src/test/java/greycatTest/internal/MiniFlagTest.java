@@ -16,6 +16,7 @@
 package greycatTest.internal;
 
 import greycat.*;
+import greycat.struct.Buffer;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -40,9 +41,9 @@ public class MiniFlagTest {
 
                 //   ((HeapChunkSpace) graph.space()).printMarked();
 
-                graph.space().save(new Callback<Boolean>() {
+                graph.space().save(false,false,new Callback<Buffer>() {
                     @Override
-                    public void on(Boolean result) {
+                    public void on(Buffer result) {
 
                         // System.out.println("<=============>");
 
