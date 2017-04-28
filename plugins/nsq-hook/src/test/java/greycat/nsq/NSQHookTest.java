@@ -14,15 +14,11 @@
  * limitations under the License.
  */
 
-package com.datathings;
+package greycat.nsq;
 
 import greycat.*;
+import greycat.aerospike.AerospikeDBStorage;
 import greycat.struct.Buffer;
-import greycat.struct.BufferIterator;
-import greycat.utility.BufferView;
-import greycat.utility.Tuple;
-import greycat.utility.VerbosePlugin;
-import org.junit.Assert;
 import org.junit.Test;
 
 import static greycat.Tasks.newTask;
@@ -36,6 +32,7 @@ public class NSQHookTest {
 
         Graph g = new GraphBuilder()
                 .withPlugin(new NSQPlugin())
+                .withStorage(new AerospikeDBStorage("localhost",3000, "test"))
                 .build();
 
         g.connect(isConnected -> {
@@ -64,7 +61,9 @@ public class NSQHookTest {
 
     @Test
     public void manualTest(){
-        Graph g = GraphBuilder.newBuilder().build();
+        Graph g = GraphBuilder.newBuilder()
+                .withStorage(new AerospikeDBStorage("localhost",3000, "test"))
+                .build();
         //Graph g = GraphBuilder.newBuilder().withPlugin(new VerbosePlugin()).build();
         g.connect(result -> {
 
@@ -97,13 +96,14 @@ public class NSQHookTest {
 
                         @Override
                         public void beforeTask(TaskContext parentContext, TaskContext context) {
-                            _sender.sendMessage("Task:"+context.template("name")+":"+context.resultAsStrings());
+                            //_sender.sendMessage("Task:"+context.template("name")+":"+context.resultAsStrings());
+                            System.out.println("Before task");
 
                         }
 
                         @Override
                         public void afterTask(TaskContext context) {
-                            //System.out.println("After task hook");
+                            System.out.println("After task hook");
                         }
 
                         @Override
@@ -126,6 +126,7 @@ public class NSQHookTest {
                     .then(setAttribute("temp", Type.DOUBLE, "-2.5"))
                     .then(travelInTime("100"))
                     .then(setAttribute("temp", Type.DOUBLE, "-18.5"))
+                    .then(save())
                     .execute(g, null);
 
         });

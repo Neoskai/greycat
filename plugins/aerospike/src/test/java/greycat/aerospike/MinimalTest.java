@@ -38,7 +38,6 @@ public class MinimalTest {
             sensor0.set("sensorId", Type.INT, 12);
             sensor0.set("name", Type.STRING, "sensor0");
 
-
             Node room0 = g.newNode(0, 0);
             room0.set("name", Type.STRING, "room0");
             room0.addToRelation("sensors", sensor0);
@@ -46,7 +45,6 @@ public class MinimalTest {
             g.disconnect(result -> {
                 System.out.println("End");
             });
-
 
         });
     }

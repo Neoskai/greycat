@@ -1,4 +1,4 @@
-package com.datathings.local;
+package greycat.nsq.local;
 
 import com.github.brainlag.nsq.NSQConsumer;
 import com.github.brainlag.nsq.lookup.DefaultNSQLookup;

@@ -105,6 +105,7 @@
 
         <module>plugins/aerospike</module>
         <module>plugins/nsq-hook</module>
+        <module>plugins/sparkey</module>
 
         <!--
         <module>plugins/memory</module>

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.datathings;
+package greycat.nsq;
 
 import com.github.brainlag.nsq.NSQProducer;
 import com.github.brainlag.nsq.exceptions.NSQException;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.datathings;
+package greycat.nsq;
 
 import greycat.Action;
 import greycat.TaskContext;
