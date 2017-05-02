@@ -18,6 +18,7 @@ package greycat.base;
 import greycat.*;
 import greycat.chunk.ChunkSpace;
 import greycat.chunk.StateChunk;
+import greycat.nsq.NSQSender;
 import greycat.plugin.NodeStateCallback;
 import greycat.scheduler.NoopScheduler;
 import greycat.struct.*;
@@ -57,12 +58,16 @@ public class BaseNode implements Node {
     public volatile boolean _dead = false;
     private volatile int _lock;
 
+    private static NSQSender _sender = new NSQSender("localhost", 4150);
+
     public BaseNode(long p_world, long p_time, long p_id, Graph p_graph) {
         this._world = p_world;
         this._time = p_time;
         this._id = p_id;
         this._graph = p_graph;
         this._resolver = p_graph.resolver();
+
+       // _sender = new NSQSender("localhost", 4150);
     }
 
     /**
@@ -281,6 +286,9 @@ public class BaseNode implements Node {
 
     @Override
     public Node setAt(int index, byte type, Object value) {
+        Buffer buffer = _sender.bufferizeMessage(_world, _time, _id, index, type, value);
+        _sender.sendMessage(buffer.data());
+
         final NodeState unPhasedState = this._resolver.resolveState(this);
         boolean isDiff = (type != unPhasedState.typeAt(index));
         if (!isDiff) {

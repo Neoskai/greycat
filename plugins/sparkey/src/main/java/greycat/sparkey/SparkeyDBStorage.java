@@ -217,8 +217,6 @@ public class SparkeyDBStorage implements Storage {
 
         try{
             if(!indexFile.exists()){
-                System.out.println("I don't exist");
-
                 indexFile.mkdirs();
                 _writer = Sparkey.createNew(indexFile, CompressionType.SNAPPY, 8000);
                 _writer.flush();
