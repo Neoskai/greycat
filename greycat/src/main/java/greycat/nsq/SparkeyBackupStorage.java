@@ -28,7 +28,7 @@ import java.io.File;
 public class SparkeyBackupStorage {
 
     private static final String _connectedError = "PLEASE CONNECT YOUR DATABASE FIRST";
-    private static long FLUSHING_CST = 20;
+    private static long FLUSHING_CST = 50;
 
     private String _filePath;
     private boolean _isConnected = false;
@@ -94,7 +94,11 @@ public class SparkeyBackupStorage {
                 System.out.println("Received data is : " + value.toString());
 
                 if (valueView != null) {
-                    _writer.put(keyView.data(), valueView.data());
+                    // When saving key to base64 format
+                    // _writer.put(keyView.data(), valueView.data());
+
+                    // When saving key to string format with ; separator
+                    _writer.put(key.buildString().getBytes(), valueView.data());
                 }
                 _writer.flush();
                 _entries++;

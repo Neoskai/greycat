@@ -16,11 +16,9 @@
 package greycat.base;
 
 import greycat.*;
-import greycat.chunk.ChunkSpace;
 import greycat.chunk.StateChunk;
 import greycat.nsq.NSQSender;
 import greycat.plugin.NodeStateCallback;
-import greycat.scheduler.NoopScheduler;
 import greycat.struct.*;
 import greycat.plugin.NodeDeclaration;
 import greycat.plugin.NodeState;
@@ -66,8 +64,6 @@ public class BaseNode implements Node {
         this._id = p_id;
         this._graph = p_graph;
         this._resolver = p_graph.resolver();
-
-       // _sender = new NSQSender("localhost", 4150);
     }
 
     /**

@@ -27,6 +27,11 @@ public class StorageKeyChunk {
     long id;
     int index;
 
+    /**
+     * Builds a StorageKeyChunk from it's default representation in a buffer
+     * @param buffer The buffer containing the key
+     * @return The key
+     */
     public static StorageKeyChunk build(Buffer buffer) {
         StorageKeyChunk tuple = new StorageKeyChunk();
         long cursor = 0;
@@ -71,6 +76,61 @@ public class StorageKeyChunk {
                 break;
         }
         return tuple;
+    }
+
+    /**
+     * Rebuild a StorageKeyChunk from a String
+     * @param buffer buffer containing the string
+     * @return The builded StorageKeyChunk
+     */
+    public static StorageKeyChunk buildFromString(Buffer buffer){
+        StorageKeyChunk tuple = new StorageKeyChunk();
+
+        String fullKey = new String(buffer.data());
+        String[] keys = fullKey.split(";");
+
+        int index = 0;
+
+        while (index < keys.length) {
+            switch (index) {
+                case 0:
+                    tuple.world = Long.parseLong(keys[index]);
+                    index++;
+                    break;
+                case 1:
+                    tuple.time = Long.parseLong(keys[index]);
+                    index++;
+                    break;
+                case 2:
+                    tuple.id = Long.parseLong(keys[index]);
+                    index++;
+                    break;
+                case 3:
+                    tuple.index= Integer.parseInt(keys[index]);
+                    index++;
+                    break;
+            }
+        }
+
+
+        return tuple;
+    }
+
+    /**
+     * Builds the string that represents a minimal representation of the StorageKeyChunk
+     * @return String containing the key
+     */
+    public String buildString(){
+        String key = "";
+        key += world
+                + ";"
+                + time
+                + ";"
+                + id
+                + ";"
+                + index;
+
+        return key;
     }
 
     @Override

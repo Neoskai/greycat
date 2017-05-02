@@ -72,7 +72,12 @@ public class BackupLoader {
                 if (entry.getType() == SparkeyReader.Type.PUT) {
                     Buffer buffer = _graph.newBuffer();
                     buffer.writeAll(entry.getKey());
-                    StorageKeyChunk key = StorageKeyChunk.build(buffer);
+
+                    // Building key from String after save
+                    StorageKeyChunk key = StorageKeyChunk.buildFromString(buffer);
+
+                    // Building key from Base64 after save
+                    //StorageKeyChunk key = StorageKeyChunk.build(buffer);
 
                     buffer.free();
                     buffer.writeAll(entry.getValue());
