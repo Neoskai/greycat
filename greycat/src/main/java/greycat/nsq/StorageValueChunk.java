@@ -25,7 +25,7 @@ public class StorageValueChunk {
     byte type;
     Object value;
 
-    static StorageValueChunk build(Buffer buffer){
+    public static StorageValueChunk build(Buffer buffer){
         StorageValueChunk tuple = new StorageValueChunk();
         long cursor = 0;
         long length = buffer.length();

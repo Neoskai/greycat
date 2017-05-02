@@ -21,7 +21,6 @@ import com.github.brainlag.nsq.lookup.NSQLookup;
 import greycat.Callback;
 import greycat.Graph;
 import greycat.GraphBuilder;
-import greycat.plugin.Storage;
 import greycat.struct.Buffer;
 
 
@@ -32,7 +31,10 @@ public class NSQConsumer {
         NSQLookup lookup = new DefaultNSQLookup();
 
         Graph localGraph = GraphBuilder.newBuilder().build();
-        Storage storage = new SparkeyDBStorage("data/data.spl");
+        SparkeyBackupStorage storage = new SparkeyBackupStorage("data/data.spl");
+
+        lookup.addLookupAddress("localhost", 4161);
+
         storage.connect(localGraph, new Callback<Boolean>() {
             @Override
             public void on(Boolean result) {
@@ -40,20 +42,19 @@ public class NSQConsumer {
             }
         });
 
-        lookup.addLookupAddress("localhost", 4161);
-
         com.github.brainlag.nsq.NSQConsumer consumer = new com.github.brainlag.nsq.NSQConsumer(lookup, "Greycat", "MyChannel", (message) -> {
             try {
                 Buffer buffer = localGraph.newBuffer();
                 buffer.writeAll(message.getMessage());
 
                 // Storing
-                storage.put(buffer, new Callback<Boolean>() {
+                storage.putAndFlush(buffer, new Callback<Boolean>() {
                     @Override
                     public void on(Boolean result) {
                         buffer.free();
                     }
                 });
+
                 message.finished();
 
             } catch (Exception e){

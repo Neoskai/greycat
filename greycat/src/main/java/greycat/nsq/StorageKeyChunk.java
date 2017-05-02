@@ -27,7 +27,7 @@ public class StorageKeyChunk {
     long id;
     int index;
 
-    static StorageKeyChunk build(Buffer buffer) {
+    public static StorageKeyChunk build(Buffer buffer) {
         StorageKeyChunk tuple = new StorageKeyChunk();
         long cursor = 0;
         long length = buffer.length();
