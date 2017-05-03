@@ -136,7 +136,17 @@ public class BackupLoader {
                         if(value.type() == Type.REMOVE){
                             n.remove(key.index());
                         } else {
-                            n.set(key.index(), value.type(), value.value());
+                            if(n.world() != key.world() || n.time() != key.time()){
+                                n.travel(key.world(), n.time(), new Callback<Node>() {
+                                    @Override
+                                    public void on(Node result) {
+                                        result.set(key.index(), value.type(), value.value());
+                                    }
+                                });
+                            }
+                            else{
+                                n.set(key.index(), value.type(), value.value());
+                            }
                         }
                     } // If graph does not already have this node, we need to create it and register it
                     else {

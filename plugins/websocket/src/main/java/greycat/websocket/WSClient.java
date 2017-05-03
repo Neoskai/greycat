@@ -208,7 +208,7 @@ public class WSClient implements Storage, TaskExecutor {
                 }
                 buffer.free();
                 final BaseTaskResult baseTaskResult = new BaseTaskResult(null, false);
-                baseTaskResult.load(bufferResult, _graph);
+                //baseTaskResult.load(bufferResult, _graph);
                 process_notify(baseTaskResult.notifications());
                 baseTaskResult.loadRefs(_graph, new Callback<Boolean>() {
                     @Override
