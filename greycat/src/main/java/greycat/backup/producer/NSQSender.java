@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package greycat.nsq;
+package greycat.backup.producer;
 
 import com.github.brainlag.nsq.NSQProducer;
 import com.github.brainlag.nsq.exceptions.NSQException;
@@ -70,7 +70,8 @@ public class NSQSender {
     }
 
     /**
-     * Parses a message
+     * (NOT USED ANYMORE)
+     * Creates a string representation of a message
      * @param world Current world
      * @param time Current time
      * @param id Current id
@@ -108,7 +109,7 @@ public class NSQSender {
      * @param value Value
      * @return Buffer containing key and value
      */
-    public Buffer bufferizeMessage(long world, long time, long id, int index, byte type, Object value){
+    public Buffer bufferizeMessage(long world, long time, long id, String index, byte type, Object value){
         Graph g = GraphBuilder.newBuilder().build();
         Buffer buffer = g.newBuffer();
 
@@ -118,18 +119,30 @@ public class NSQSender {
         buffer.write(Constants.KEY_SEP);
         Base64.encodeLongToBuffer(id, buffer);
         buffer.write(Constants.KEY_SEP);
-        Base64.encodeIntToBuffer(index, buffer);
+        Base64.encodeStringToBuffer(index, buffer);
 
         buffer.write(Constants.BUFFER_SEP);
-        buffer.write(type);
-        buffer.write(Constants.CHUNK_SEP);
-        buffer.writeAll(serialize(value, type));
+
+        if(value == null){
+            buffer.write(Type.REMOVE);
+            buffer.write(Constants.CHUNK_SEP);
+        }else{
+            buffer.write(type);
+            buffer.write(Constants.CHUNK_SEP);
+            valueToBuffer(buffer,value, type);
+        }
+
+        // To use if wanting to use byte format for values instead of Base64
+        //buffer.write(Constants.CHUNK_SEP);
+        //buffer.writeAll(serialize(value, type));
 
         return buffer;
     }
 
     /**
+     * (INCOMPLETE) ONLY HAS STRING AND BOOL PRIMITIVES
      * Serialize abstract objects to byte array so we can send them through the buffer
+     * To complete and use if not wanting to use Base64 Values.
      * @param obj Object to serialize
      * @return Byte array containing the object
      */
@@ -137,8 +150,43 @@ public class NSQSender {
         switch (type){
             case Type.STRING:
                 return ((String) obj).getBytes();
+            case Type.BOOL:
+                return new byte[(boolean) obj?1:0];
         }
         return null;
+    }
+
+    /**
+     * (INCOMPLETE) PRIMITIVE TYPES ONLY
+     * Writes data to buffer using Base64 writing
+     * @param buffer The buffer to write in
+     * @param obj The object to write
+     * @param type The type of the object
+     * @return The buffer with the object written in
+     */
+    private static Buffer valueToBuffer(Buffer buffer, Object obj, byte type){
+        if (obj == null){
+            return buffer;
+        }
+
+        switch (type){
+            case Type.STRING:
+                Base64.encodeStringToBuffer((String) obj, buffer);
+                break;
+            case Type.BOOL:
+                buffer.write((byte) ((boolean) obj?1:0));
+                break;
+            case Type.LONG:
+                Base64.encodeLongToBuffer((long) obj, buffer);
+                break;
+            case Type.INT:
+                Base64.encodeIntToBuffer((int) obj, buffer);
+                break;
+            case Type.DOUBLE:
+                Base64.encodeDoubleToBuffer((double) obj, buffer);
+                break;
+        }
+        return buffer;
     }
 
 }

@@ -17,7 +17,7 @@ package greycat.base;
 
 import greycat.*;
 import greycat.chunk.StateChunk;
-import greycat.nsq.NSQSender;
+import greycat.backup.producer.NSQSender;
 import greycat.plugin.NodeStateCallback;
 import greycat.struct.*;
 import greycat.plugin.NodeDeclaration;
@@ -282,7 +282,7 @@ public class BaseNode implements Node {
 
     @Override
     public Node setAt(int index, byte type, Object value) {
-        Buffer buffer = _sender.bufferizeMessage(_world, _time, _id, index, type, value);
+        Buffer buffer = _sender.bufferizeMessage(_world, _time, _id, _resolver.hashToString(index), type, value);
         _sender.sendMessage(buffer.data());
 
         final NodeState unPhasedState = this._resolver.resolveState(this);

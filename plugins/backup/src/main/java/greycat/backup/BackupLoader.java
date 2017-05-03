@@ -18,14 +18,14 @@ package greycat.backup;
 import com.spotify.sparkey.Sparkey;
 import com.spotify.sparkey.SparkeyLogIterator;
 import com.spotify.sparkey.SparkeyReader;
-import greycat.Graph;
-import greycat.GraphBuilder;
-import greycat.nsq.StorageKeyChunk;
-import greycat.nsq.StorageValueChunk;
+import greycat.*;
+import greycat.backup.tools.StorageKeyChunk;
+import greycat.backup.tools.StorageValueChunk;
 import greycat.struct.Buffer;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 
 public class BackupLoader {
     private SparkeyReader _reader;
@@ -91,6 +91,79 @@ public class BackupLoader {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Rebuilds the graph from a sparkey file
+     * @return Final graph
+     */
+    public Graph buildFromLogs(){
+        if(!_isLoaded){
+            System.err.println("Not connected");
+            return null;
+        }
+
+        _graph.connect(new Callback<Boolean>() {
+            @Override
+            public void on(Boolean result) {
+                System.out.println("Starting backup");
+            }
+        });
+
+        try {
+            SparkeyLogIterator logIterator = new SparkeyLogIterator(Sparkey.getLogFile(_indexFile));
+            HashMap<Long, Node> nodeMap = new HashMap<Long, Node>();
+
+            for (SparkeyReader.Entry entry : logIterator) {
+                if (entry.getType() == SparkeyReader.Type.PUT) {
+                    Buffer buffer = _graph.newBuffer();
+                    buffer.writeAll(entry.getKey());
+
+                    // Building key from String after save
+                    StorageKeyChunk key = StorageKeyChunk.buildFromString(buffer);
+
+                    // Building key from Base64 after save
+                    //StorageKeyChunk key = StorageKeyChunk.build(buffer);
+
+                    buffer.free();
+                    buffer.writeAll(entry.getValue());
+                    StorageValueChunk value = StorageValueChunk.build(buffer);
+                    buffer.free();
+
+                    // If graph already has key, we move to the node and overwrite on it
+                    if(nodeMap.containsKey(key.id())){
+                        Node n = nodeMap.get(key.id());
+                        if(value.type() == Type.REMOVE){
+                            n.remove(key.index());
+                        } else {
+                            n.set(key.index(), value.type(), value.value());
+                        }
+                    } // If graph does not already have this node, we need to create it and register it
+                    else {
+                        Node newNode = _graph.newNode(key.world(), key.time());
+                        newNode.set(key.index(), value.type(), value.value());
+                        nodeMap.put(key.id(), newNode);
+                    }
+
+                    //System.out.println("Key is: "+ key + " with value " + value);
+                }
+            }
+
+            System.out.println("Nodemap is: " + nodeMap);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        _graph.disconnect(new Callback<Boolean>() {
+            @Override
+            public void on(Boolean result) {
+                System.out.println("Backup ended");
+            }
+        });
+
+        return _graph;
+
     }
 
     /**

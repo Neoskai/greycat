@@ -57,6 +57,8 @@ public class Type {
     public static final byte NODE = 24;
     public static final byte NODE_ARRAY = 25;
 
+    public static final byte REMOVE = 26;
+
 
     /**
      * Convert a type that represent a byte to a readable String representation

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package greycat.nsq;
+package greycat.backup.tools;
 
 import greycat.Constants;
 import greycat.struct.Buffer;
@@ -22,10 +22,10 @@ import greycat.utility.Base64;
 
 public class StorageKeyChunk {
 
-    long world;
-    long time;
-    long id;
-    int index;
+    private long world;
+    private long time;
+    private long id;
+    private String index;
 
     /**
      * Builds a StorageKeyChunk from it's default representation in a buffer
@@ -52,7 +52,7 @@ public class StorageKeyChunk {
                         tuple.id = Base64.decodeToLongWithBounds(buffer, previous, cursor);
                         break;
                     case 3:
-                        tuple.index= Base64.decodeToIntWithBounds(buffer, previous, cursor);
+                        tuple.index= Base64.decodeToStringWithBounds(buffer, previous, cursor);
                         break;
                 }
                 index++;
@@ -72,7 +72,7 @@ public class StorageKeyChunk {
                 tuple.id = Base64.decodeToLongWithBounds(buffer, previous, cursor);
                 break;
             case 3:
-                tuple.index= Base64.decodeToIntWithBounds(buffer, previous, cursor);
+                tuple.index= Base64.decodeToStringWithBounds(buffer, previous, cursor);
                 break;
         }
         return tuple;
@@ -106,7 +106,7 @@ public class StorageKeyChunk {
                     index++;
                     break;
                 case 3:
-                    tuple.index= Integer.parseInt(keys[index]);
+                    tuple.index= keys[index];
                     index++;
                     break;
             }
@@ -141,6 +141,22 @@ public class StorageKeyChunk {
                 ", id=" + id +
                 ", index=" + index +
                 '}';
+    }
+
+    public long id(){
+        return id;
+    }
+
+    public String index(){
+        return index;
+    }
+
+    public long world(){
+        return world;
+    }
+
+    public long time(){
+        return time;
     }
 }
 

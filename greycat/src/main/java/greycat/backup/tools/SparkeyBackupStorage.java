@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package greycat.nsq;
+package greycat.backup.tools;
 
-import com.spotify.sparkey.CompressionType;
 import com.spotify.sparkey.Sparkey;
 import com.spotify.sparkey.SparkeyWriter;
 import greycat.Callback;
@@ -90,8 +89,7 @@ public class SparkeyBackupStorage {
                 StorageKeyChunk key = StorageKeyChunk.build(keyView);
                 StorageValueChunk value = StorageValueChunk.build(valueView);
 
-                System.out.println("Received key is : " + key.toString());
-                System.out.println("Received data is : " + value.toString());
+                System.out.println("Received key is : " + key.toString() + " with data: " + value.toString());
 
                 if (valueView != null) {
                     // When saving key to base64 format

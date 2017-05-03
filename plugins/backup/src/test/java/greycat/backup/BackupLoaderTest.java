@@ -15,6 +15,9 @@
  */
 package greycat.backup;
 
+import greycat.Callback;
+import greycat.Graph;
+import greycat.Node;
 import org.junit.Test;
 
 public class BackupLoaderTest {
@@ -25,5 +28,27 @@ public class BackupLoaderTest {
         loader.load();
         //loader.run();
         loader.logRun();
+
+        Graph g = loader.buildFromLogs();
+
+        g.connect(new Callback<Boolean>() {
+            @Override
+            public void on(Boolean result) {
+                System.out.println("Connecting to backup graph");
+            }
+        });
+        g.lookup(0, 0, 1, new Callback<Node>() {
+            @Override
+            public void on(Node result) {
+                System.out.println("Node found: ");
+                System.out.println(result.toString());
+            }
+        });
+        g.disconnect(new Callback<Boolean>() {
+            @Override
+            public void on(Boolean result) {
+                System.out.println("Disconnecting from backup graph");
+            }
+        });
     }
 }

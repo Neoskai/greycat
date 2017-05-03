@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package greycat.nsq;
+package greycat.backup.consumer;
 
+import com.github.brainlag.nsq.NSQConsumer;
 import com.github.brainlag.nsq.lookup.DefaultNSQLookup;
 import com.github.brainlag.nsq.lookup.NSQLookup;
 import greycat.Callback;
 import greycat.Graph;
 import greycat.GraphBuilder;
+import greycat.backup.tools.SparkeyBackupStorage;
 import greycat.struct.Buffer;
 
-
-public class NSQConsumer {
+public class NSQReceiver {
 
     public static void main( String[] args )
     {
@@ -42,7 +43,7 @@ public class NSQConsumer {
             }
         });
 
-        com.github.brainlag.nsq.NSQConsumer consumer = new com.github.brainlag.nsq.NSQConsumer(lookup, "Greycat", "MyChannel", (message) -> {
+        NSQConsumer consumer = new NSQConsumer(lookup, "Greycat", "MyChannel", (message) -> {
             try {
                 Buffer buffer = localGraph.newBuffer();
                 buffer.writeAll(message.getMessage());

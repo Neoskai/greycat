@@ -40,5 +40,10 @@
             <artifactId>greycat</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.datathings</groupId>
+            <artifactId>greycat-websocket</artifactId>
+            <version>7-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 </project>

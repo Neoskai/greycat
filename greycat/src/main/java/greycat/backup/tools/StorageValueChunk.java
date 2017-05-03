@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package greycat.nsq;
+package greycat.backup.tools;
 
 import greycat.Constants;
 import greycat.Type;
 import greycat.struct.Buffer;
+import greycat.utility.Base64;
 
 public class StorageValueChunk {
 
@@ -53,14 +54,16 @@ public class StorageValueChunk {
                 tuple.type = buffer.slice(previous,cursor)[0];
                 break;
             case 1:
-                tuple.value= deserialize(buffer.slice(previous,cursor-1), tuple.type);
+                tuple.value = valueFromBuffer(buffer, previous, cursor, tuple.type);
+                //tuple.value= deserialize(buffer.slice(previous,cursor-1), tuple.type);
                 break;
         }
         return tuple;
     }
 
     /**
-     * Deserialize Object
+     * (INCOMPLETE) ONLY SUPPORT STRING OBJECTS
+     * Deserialize Object from a byte array
      * @param bytes Object bytes
      * @return Deserialized object
      */
@@ -71,6 +74,43 @@ public class StorageValueChunk {
         }
 
         return null;
+    }
+
+    /**
+     * (INCOMPLETE) ONLY SUPPORTS ALL PRIMITIVE TYPES
+     * Rebuilds the object from the buffer, given the index of beginning and end of the object in the buffer
+     * Object has to be written in Base64 format
+     * @param buffer The complete buffer where the object is
+     * @param begin First index of the object in buffer
+     * @param end End index of the object in buffer
+     * @param type The type of the Object
+     * @return The builded object from buffer
+     */
+    public static Object valueFromBuffer(Buffer buffer, long begin, long end, byte type) {
+        switch (type){
+            case Type.STRING:
+                return Base64.decodeToStringWithBounds(buffer,begin,end);
+            case Type.BOOL:
+                return buffer.slice(begin,end)[0] != 0;
+            case Type.LONG:
+                return Base64.decodeToLongWithBounds(buffer,begin,end);
+            case Type.INT:
+                return Base64.decodeToIntWithBounds(buffer, begin, end);
+            case Type.DOUBLE:
+                return Base64.decodeToDoubleWithBounds(buffer, begin, end);
+            case Type.REMOVE:
+                return null;
+        }
+
+        return null;
+    }
+
+    public byte type(){
+        return type;
+    }
+
+    public Object value(){
+        return value;
     }
 
     @Override
