@@ -31,6 +31,9 @@ public class CoreActionNames {
     public static String CLONE_NODES = "cloneNodes";
     public static String CLEAR_RESULT = "clearResult";
 
+    public static String START_TRANSACTION = "startTransaction";
+    public static String STOP_TRANSACTION = "stopTransaction";
+
     public static String ADD_TO_VAR = "addToVar";
     public static String ATTRIBUTES = "attributes";
     public static String ATTRIBUTES_WITH_TYPE = "attributesWithType";

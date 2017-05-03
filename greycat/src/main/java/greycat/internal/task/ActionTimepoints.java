@@ -92,6 +92,9 @@ class ActionTimepoints implements Action {
     public void serialize(final Buffer builder) {
         builder.writeString(CoreActionNames.TIMEPOINTS);
         builder.writeChar(Constants.TASK_PARAM_OPEN);
+        TaskHelper.serializeString(_from, builder, true);
+        builder.writeChar(Constants.TASK_PARAM_SEP);
+        TaskHelper.serializeString(_to, builder, true);
         builder.writeChar(Constants.TASK_PARAM_CLOSE);
     }
 

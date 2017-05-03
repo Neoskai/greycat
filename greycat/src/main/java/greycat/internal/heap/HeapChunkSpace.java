@@ -27,6 +27,7 @@ import greycat.struct.EGraph;
 import greycat.utility.HashHelper;
 import greycat.utility.KeyHelper;
 import greycat.chunk.Chunk;
+import greycat.utility.LMap;
 
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicLongArray;
@@ -392,28 +393,39 @@ public class HeapChunkSpace implements ChunkSpace {
     }
 
     @Override
-    public final synchronized void save(final boolean silent, final boolean partial, final Callback<Buffer> callback) {
+    public final synchronized void save(final boolean silent, final boolean partial, final LMap filter, final Callback<Buffer> callback) {
         final Buffer stream = this._graph.newBuffer();
         boolean isFirst = true;
         int counter = 0;
         while (_dirtiesStack.size() != 0 && (!partial || _batchSize == -1 || counter <= _batchSize)) {
             int tail = (int) _dirtiesStack.dequeueTail();
             counter++;
-            Chunk loopChunk = _chunkValues.get(tail);
-            //Save chunk Key
-            if (isFirst) {
-                isFirst = false;
-            } else {
-                stream.write(Constants.BUFFER_SEP);
+
+            boolean filtered = false;
+            if (filter != null) {
+                if (!filter.contains(_chunkIds.get(tail))) {
+                    filtered = true;
+                }
             }
-            KeyHelper.keyToBuffer(stream, _chunkTypes.get(tail), _chunkWorlds.get(tail), _chunkTimes.get(tail), _chunkIds.get(tail));
-            //Save chunk payload
-            stream.write(Constants.BUFFER_SEP);
-            try {
-                loopChunk.save(stream);
-                unmark(tail);
-            } catch (Exception e) {
-                e.printStackTrace();
+            if (!filtered) {
+                //Save chunk Key
+                if (isFirst) {
+                    isFirst = false;
+                } else {
+                    stream.write(Constants.BUFFER_SEP);
+                }
+                KeyHelper.keyToBuffer(stream, _chunkTypes.get(tail), _chunkWorlds.get(tail), _chunkTimes.get(tail), _chunkIds.get(tail));
+                //Save chunk payload
+                stream.write(Constants.BUFFER_SEP);
+                try {
+                    final Chunk loopChunk = _chunkValues.get(tail);
+                    loopChunk.save(stream);
+                    unmark(tail);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            } else {
+                _dirtiesStack.enqueue(tail);
             }
         }
         if (silent) {

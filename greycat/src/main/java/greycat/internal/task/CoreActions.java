@@ -446,6 +446,25 @@ public class CoreActions {
     }
 
     /**
+     * Start a transactional task.
+     *
+     * @return the action to chain
+     */
+    public static Action startTransaction() {
+        return new ActionStartTransaction();
+    }
+
+    /**
+     * Start a transactional task.
+     *
+     * @return the action to chain
+     */
+    public static Action stopTransaction() {
+        return new ActionStopTransaction();
+    }
+
+
+    /**
      * Execute a JS script
      * The task context is inject in the variable 'ctx'
      * <p>

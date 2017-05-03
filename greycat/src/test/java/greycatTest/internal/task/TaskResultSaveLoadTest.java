@@ -13,40 +13,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package greycatTest.base;
+package greycatTest.internal.task;
 
 import greycat.Graph;
 import greycat.GraphBuilder;
+import greycat.TaskContext;
+import greycat.TaskResult;
 import greycat.base.BaseTaskResult;
 import greycat.internal.heap.HeapBuffer;
+import greycat.internal.task.CoreTask;
 import greycat.struct.Buffer;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class BaseTaskResultTest {
-
+public class TaskResultSaveLoadTest {
 
     @Test
-    public void saveLoadTest() {
+    public void test() {
         Graph graph = GraphBuilder.newBuilder().build();
-        graph.connect(connected -> {
-            try {
-                BaseTaskResult<String> taskResultOrigin = new BaseTaskResult("ResultContent", false);
-                taskResultOrigin.setException(new RuntimeException("Exception text"));
+        CoreTask task = new CoreTask();
 
-                Buffer buffer = new HeapBuffer();
-                taskResultOrigin.saveToBuffer(buffer);
+        BaseTaskResult res = new BaseTaskResult(null, false);
+        res.add("start");
+        res.add(null);
+        res.add("end");
 
-                BaseTaskResult taskResultLoaded = new BaseTaskResult(null, false);
-                taskResultLoaded.load(buffer,0, graph);
+        TaskContext ctx = task.prepare(graph, res, null);
+        Buffer buf = new HeapBuffer();
+        ctx.saveToBuffer(buf);
 
-            } catch (Throwable t) {
-                Assert.fail("Exception raised !");
-                t.printStackTrace();
-            }
-            graph.disconnect(null);
-        });
+        TaskContext ctx2 = task.prepare(graph, null, null);
+        ctx2.loadFromBuffer(buf, null);
+
+        TaskResult res2 = ctx2.result();
+        Assert.assertEquals(res2.get(0), "start");
+        Assert.assertEquals(res2.get(1), null);
+        Assert.assertEquals(res2.get(2), "end");
+
     }
-
 
 }

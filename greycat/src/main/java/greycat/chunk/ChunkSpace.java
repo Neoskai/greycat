@@ -19,6 +19,7 @@ import greycat.Graph;
 import greycat.struct.Buffer;
 import greycat.struct.EGraph;
 import greycat.Callback;
+import greycat.utility.LMap;
 
 public interface ChunkSpace {
 
@@ -123,7 +124,7 @@ public interface ChunkSpace {
      * @param partial  specifies if the batch size configuration should be used
      * @param callback the method to be called when save is completed. Parameter indicates status of the save.
      */
-    void save(boolean silent, boolean partial, Callback<Buffer> callback);
+    void save(boolean silent, boolean partial, LMap filter, Callback<Buffer> callback);
 
     void clear();
 

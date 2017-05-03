@@ -86,6 +86,20 @@ public class Constants {
 
     /**
      * {@native ts
+     * public static BLOCK_OPEN : number = "[".charCodeAt(0);
+     * }
+     */
+    public static final byte BLOCK_OPEN = '[';
+
+    /**
+     * {@native ts
+     * public static BLOCK_CLOSE : number = "]".charCodeAt(0);
+     * }
+     */
+    public static final byte BLOCK_CLOSE = ']';
+
+    /**
+     * {@native ts
      * return param != undefined && param != null;
      * }
      */

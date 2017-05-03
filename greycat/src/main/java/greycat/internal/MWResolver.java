@@ -1451,7 +1451,7 @@ final class MWResolver implements Resolver {
     }
 
     @Override
-    public int stringToHash(String name, boolean insertIfNotExists) {
+    public final int stringToHash(String name, boolean insertIfNotExists) {
         int hash = HashHelper.hash(name);
         if (insertIfNotExists) {
             StringIntMap dictionaryIndex = (StringIntMap) this.dictionary.getAt(0);
@@ -1466,7 +1466,7 @@ final class MWResolver implements Resolver {
     }
 
     @Override
-    public String hashToString(int key) {
+    public final String hashToString(int key) {
         final StringIntMap dictionaryIndex = (StringIntMap) this.dictionary.getAt(0);
         if (dictionaryIndex != null) {
             return dictionaryIndex.getByHash(key);

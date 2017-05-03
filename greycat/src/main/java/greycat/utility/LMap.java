@@ -94,6 +94,22 @@ public class LMap {
         }
     }
 
+    public final boolean contains(final long requestKey) {
+        boolean result = false;
+        if (keys != null) {
+            final int hashIndex = (int) HashHelper.longHash(requestKey, capacity * 2);
+            int m = hash(hashIndex, capacity);
+            while (m >= 0) {
+                if (requestKey == key(m)) {
+                    result = true;
+                    break;
+                }
+                m = next(m);
+            }
+        }
+        return result;
+    }
+
     public final long get(final long requestKey) {
         long result = Constants.NULL_LONG;
         if (keys != null) {

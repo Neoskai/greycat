@@ -45,6 +45,11 @@ public interface Graph {
     Node newTypedNode(long world, long time, String nodeType);
 
     /**
+     * @ignore ts
+     */
+    <A extends Node> A newTypedNode(long world, long time, String nodeType, Class<A> type);
+
+    /**
      * Create a copy of this node that can be freed independently
      *
      * @param origin node to be cloned

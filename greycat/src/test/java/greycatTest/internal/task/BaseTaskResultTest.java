@@ -25,9 +25,6 @@ import greycat.struct.Buffer;
 import org.junit.Assert;
 import org.junit.Test;
 
-/**
- * Created by Gregory NAIN on 17/04/17.
- */
 public class BaseTaskResultTest {
 
 
@@ -44,7 +41,7 @@ public class BaseTaskResultTest {
             result.saveToBuffer(buffer);
 
             BaseTaskResult resultBack = new BaseTaskResult(null, false);
-            resultBack.load(buffer, graph);
+            resultBack.load(buffer,0, graph);
             resultBack.loadRefs(graph, done->{
                 Assert.assertEquals(result.size(), resultBack.size());
                 Assert.assertEquals(((Node)result.get(0)).id(), ((Node)resultBack.get(0)).id());

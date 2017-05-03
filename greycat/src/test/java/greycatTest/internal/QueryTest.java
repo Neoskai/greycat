@@ -98,6 +98,14 @@ public class QueryTest implements Resolver, Graph {
         return null;
     }
 
+    /**
+     * @ignore ts
+     */
+    @Override
+    public <A extends Node> A newTypedNode(long world, long time, String nodeType, Class<A> type) {
+        return null;
+    }
+
     @Override
     public Node cloneNode(Node origin) {
         return null;

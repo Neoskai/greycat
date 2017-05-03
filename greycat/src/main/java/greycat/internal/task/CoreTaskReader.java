@@ -53,7 +53,7 @@ class CoreTaskReader {
     }
 
     public CoreTaskReader slice(int cursor) {
-        return new CoreTaskReader(flat, cursor);
+        return new CoreTaskReader(flat, offset + cursor);
     }
 
 }

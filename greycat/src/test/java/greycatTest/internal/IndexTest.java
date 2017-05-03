@@ -77,6 +77,7 @@ public class IndexTest {
         graph.connect(new Callback<Boolean>() {
             @Override
             public void on(Boolean result) {
+
                 final Node node_t0 = graph.newNode(0, 0);
 
                 final Node node_t1 = graph.newNode(0, 0);

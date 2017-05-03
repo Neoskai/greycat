@@ -41,7 +41,7 @@ public class MiniFlagTest {
 
                 //   ((HeapChunkSpace) graph.space()).printMarked();
 
-                graph.space().save(false,false,new Callback<Buffer>() {
+                graph.space().save(false,false, null,new Callback<Buffer>() {
                     @Override
                     public void on(Buffer result) {
 

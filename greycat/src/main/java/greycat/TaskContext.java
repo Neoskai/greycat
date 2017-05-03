@@ -16,6 +16,7 @@
 package greycat;
 
 import greycat.struct.Buffer;
+import greycat.utility.LMap;
 import greycat.utility.Tuple;
 
 public interface TaskContext {
@@ -104,5 +105,13 @@ public interface TaskContext {
     void reportProgress(int step, int total, String comment);
 
     void setProgressHook(Callback<TaskProgressReport> hook);
+
+    void initTracker();
+
+    void removeTracker();
+
+    LMap tracker();
+
+    void track(Node ptr);
 
 }

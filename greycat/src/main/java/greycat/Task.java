@@ -383,6 +383,10 @@ public interface Task {
 
     Task save();
 
+    Task startTransaction();
+
+    Task stopTransaction();
+
     Task script(String script);
 
     Task asyncScript(String ascript);
