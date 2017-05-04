@@ -101,9 +101,10 @@ public class SparkeyBackupStorage {
                 _writer.flush();
                 _entries++;
 
-                if(_entries % FLUSHING_CST == 0){
+                // Writing hash has outoufbond exception
+                /*if(_entries % FLUSHING_CST == 0){
                     _writer.writeHash();
-                }
+                }*/
             }
 
             if (callback != null) {

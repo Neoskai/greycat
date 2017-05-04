@@ -27,7 +27,7 @@ public class BackupLoaderTest {
         BackupLoader loader = new BackupLoader("data/data.spi");
         loader.load();
         //loader.run();
-        loader.logRun();
+        //loader.logRun();
 
         Graph g = loader.buildFromLogs();
 
@@ -38,6 +38,13 @@ public class BackupLoaderTest {
             }
         });
         g.lookup(0, 0, 1, new Callback<Node>() {
+            @Override
+            public void on(Node result) {
+                System.out.println("Node found: ");
+                System.out.println(result.toString());
+            }
+        });
+        g.lookup(0, 10, 1, new Callback<Node>() {
             @Override
             public void on(Node result) {
                 System.out.println("Node found: ");

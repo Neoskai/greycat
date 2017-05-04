@@ -48,6 +48,21 @@ public class WorldSample {
                         node0.set("value", Type.STRING, "MyValue");
                         node0.set("name", Type.STRING, "MyName2");
 
+                        node0.travelInTime(10, new Callback<Node>() {
+                            @Override
+                            public void on(Node result) {
+                                result.set("value", Type.STRING, "Value10Time");
+                                result.set("time", Type.INT, 10);
+                            }
+                        });
+
+                        node0.travelInTime(0, new Callback<Node>() {
+                            @Override
+                            public void on(Node result) {
+                                // Nothing
+                            }
+                        });
+
                         //Create a new node
                         Node node1 = graph.newNode(0, 0);
 
@@ -100,6 +115,14 @@ public class WorldSample {
             @Override
             public void on(Boolean result) {
                 graph.lookup(0, 0, 1, new Callback<Node>() {
+                    @Override
+                    public void on(Node result) {
+                        System.out.println("Node found: ");
+                        System.out.println(result.toString());
+                    }
+                });
+
+                graph.lookup(0, 10, 1, new Callback<Node>() {
                     @Override
                     public void on(Node result) {
                         System.out.println("Node found: ");

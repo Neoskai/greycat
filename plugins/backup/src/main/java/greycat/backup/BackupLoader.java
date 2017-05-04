@@ -112,7 +112,7 @@ public class BackupLoader {
 
         try {
             SparkeyLogIterator logIterator = new SparkeyLogIterator(Sparkey.getLogFile(_indexFile));
-            HashMap<Long, Node> nodeMap = new HashMap<Long, Node>();
+            HashMap<Long, Long> nodeMap = new HashMap<Long, Long>();
 
             for (SparkeyReader.Entry entry : logIterator) {
                 if (entry.getType() == SparkeyReader.Type.PUT) {
@@ -130,32 +130,28 @@ public class BackupLoader {
                     StorageValueChunk value = StorageValueChunk.build(buffer);
                     buffer.free();
 
-                    // If graph already has key, we move to the node and overwrite on it
-                    if(nodeMap.containsKey(key.id())){
-                        Node n = nodeMap.get(key.id());
-                        if(value.type() == Type.REMOVE){
-                            n.remove(key.index());
-                        } else {
-                            if(n.world() != key.world() || n.time() != key.time()){
-                                n.travel(key.world(), n.time(), new Callback<Node>() {
-                                    @Override
-                                    public void on(Node result) {
-                                        result.set(key.index(), value.type(), value.value());
-                                    }
-                                });
-                            }
-                            else{
-                                n.set(key.index(), value.type(), value.value());
-                            }
-                        }
-                    } // If graph does not already have this node, we need to create it and register it
-                    else {
+                    // If graph does not already have this node, we need to create it and register it
+                    if(!nodeMap.containsKey(key.id())){
                         Node newNode = _graph.newNode(key.world(), key.time());
                         newNode.set(key.index(), value.type(), value.value());
-                        nodeMap.put(key.id(), newNode);
+                        nodeMap.put(key.id(), newNode.id());
+
+                        //System.out.println("Key is: "+ key + " with value " + value);
+                    }else{
+                        // If this node was already created, we lookup for it and write the value
+                        _graph.lookup(key.world(), key.time(), nodeMap.get(key.id()), new Callback<Node>() {
+                            @Override
+                            public void on(Node result) {
+                                if(value.type() == Type.REMOVE){
+                                    result.remove(key.index());
+                                }else {
+                                    //System.out.println("Current system: " + key.index() + " " + key.world() + " " +  key.time() + " " + value.type() + " " + value.value());
+                                    result.set(key.index(), value.type(), value.value());
+                                }
+                            }
+                        });
                     }
 
-                    //System.out.println("Key is: "+ key + " with value " + value);
                 }
             }
 
