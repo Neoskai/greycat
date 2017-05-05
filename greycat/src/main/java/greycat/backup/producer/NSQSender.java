@@ -113,17 +113,17 @@ public class NSQSender {
         Graph g = GraphBuilder.newBuilder().build();
         Buffer buffer = g.newBuffer();
 
-        Base64.encodeLongToBuffer(world, buffer);
-        buffer.write(Constants.KEY_SEP);
-        Base64.encodeLongToBuffer(time, buffer);
-        buffer.write(Constants.KEY_SEP);
         Base64.encodeLongToBuffer(id, buffer);
         buffer.write(Constants.KEY_SEP);
-        Base64.encodeStringToBuffer(index, buffer);
-        buffer.write(Constants.KEY_SEP);
         Base64.encodeLongToBuffer(eventId, buffer);
-
         buffer.write(Constants.BUFFER_SEP);
+
+        Base64.encodeLongToBuffer(world, buffer);
+        buffer.write(Constants.CHUNK_SEP);
+        Base64.encodeLongToBuffer(time, buffer);
+        buffer.write(Constants.CHUNK_SEP);
+        Base64.encodeStringToBuffer(index, buffer);
+        buffer.write(Constants.CHUNK_SEP);
 
         if(value == null){
             buffer.write(Type.REMOVE);

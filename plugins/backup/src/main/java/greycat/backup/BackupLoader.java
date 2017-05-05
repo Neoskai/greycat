@@ -132,19 +132,19 @@ public class BackupLoader {
 
                     // If graph does not already have this node, we need to create it and register it
                     if(!nodeMap.containsKey(key.id())){
-                        Node newNode = _graph.newNode(key.world(), key.time());
-                        newNode.set(key.index(), value.type(), value.value());
+                        Node newNode = _graph.newNode(value.world(), value.time());
+                        newNode.set(value.index(), value.type(), value.value());
                         nodeMap.put(key.id(), newNode.id());
                     } else {
                         // If this node was already created, we lookup for it and write the value
-                        _graph.lookup(key.world(), key.time(), nodeMap.get(key.id()), new Callback<Node>() {
+                        _graph.lookup(value.world(), value.time(), nodeMap.get(key.id()), new Callback<Node>() {
                             @Override
                             public void on(Node result) {
                                 if(value.type() == Type.REMOVE){
-                                    result.remove(key.index());
+                                    result.remove(value.index());
                                 }else {
                                     //System.out.println("Current system: " + key.index() + " " + key.world() + " " +  key.time() + " " + value.type() + " " + value.value());
-                                    result.set(key.index(), value.type(), value.value());
+                                    result.set(value.index(), value.type(), value.value());
                                 }
                             }
                         });

@@ -23,8 +23,11 @@ import greycat.utility.Base64;
 
 public class StorageValueChunk {
 
+    long world;
+    long time;
     byte type;
     Object value;
+    String index;
 
     public static StorageValueChunk build(Buffer buffer){
         StorageValueChunk tuple = new StorageValueChunk();
@@ -37,11 +40,21 @@ public class StorageValueChunk {
             if (current == Constants.CHUNK_SEP) {
                 switch (index) {
                     case 0:
-                        tuple.type = buffer.slice(previous,cursor)[0];
+                        tuple.world = Base64.decodeToLongWithBounds(buffer, previous, cursor);
                         break;
                     case 1:
-                        tuple.value= deserialize(buffer.slice(previous,cursor), tuple.type);
+                        tuple.time = Base64.decodeToLongWithBounds(buffer, previous, cursor);
                         break;
+                    case 2:
+                        tuple.index = Base64.decodeToStringWithBounds(buffer, previous, cursor);
+                        break;
+                    case 3:
+                        tuple.type = buffer.slice(previous,cursor)[0];
+                        break;
+                    case 4:
+                        tuple.value= valueFromBuffer(buffer, previous, cursor, tuple.type);
+                        break;
+
                 }
                 index++;
                 previous = cursor + 1;
@@ -51,11 +64,19 @@ public class StorageValueChunk {
         //collect last
         switch (index) {
             case 0:
-                tuple.type = buffer.slice(previous,cursor)[0];
+                tuple.world = Base64.decodeToLongWithBounds(buffer, previous, cursor);
                 break;
             case 1:
-                tuple.value = valueFromBuffer(buffer, previous, cursor, tuple.type);
-                //tuple.value= deserialize(buffer.slice(previous,cursor-1), tuple.type);
+                tuple.time = Base64.decodeToLongWithBounds(buffer, previous, cursor);
+                break;
+            case 2:
+                tuple.index = Base64.decodeToStringWithBounds(buffer, previous, cursor);
+                break;
+            case 3:
+                tuple.type = buffer.slice(previous,cursor)[0];
+                break;
+            case 4:
+                tuple.value= valueFromBuffer(buffer, previous, cursor, tuple.type);
                 break;
         }
         return tuple;
@@ -111,6 +132,18 @@ public class StorageValueChunk {
 
     public Object value(){
         return value;
+    }
+
+    public long world(){
+        return world;
+    }
+
+    public long time(){
+        return time;
+    }
+
+    public String index(){
+        return index;
     }
 
     @Override

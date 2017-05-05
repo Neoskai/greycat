@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package greycat.backup.consumer;
+package greycat.backup.tools;
 
 import greycat.Callback;
 import greycat.backup.tools.SparkeyBackupStorage;

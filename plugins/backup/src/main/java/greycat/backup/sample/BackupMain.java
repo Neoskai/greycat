@@ -22,7 +22,7 @@ import greycat.websocket.WSServer;
 
 public class BackupMain {
     public static void main(String[] args) {
-        BackupLoader loader = new BackupLoader("data/data.spi");
+        BackupLoader loader = new BackupLoader("data/save_1_0.spi");
         loader.load();
         //loader.run();
         loader.logRun();

@@ -22,10 +22,7 @@ import greycat.utility.Base64;
 
 public class StorageKeyChunk {
 
-    private long world;
-    private long time;
     private long id;
-    private String index;
     private long eventId;
 
     /**
@@ -44,18 +41,9 @@ public class StorageKeyChunk {
             if (current == Constants.KEY_SEP) {
                 switch (index) {
                     case 0:
-                        tuple.world = Base64.decodeToLongWithBounds(buffer, previous, cursor);
-                        break;
-                    case 1:
-                        tuple.time = Base64.decodeToLongWithBounds(buffer, previous, cursor);
-                        break;
-                    case 2:
                         tuple.id = Base64.decodeToLongWithBounds(buffer, previous, cursor);
                         break;
-                    case 3:
-                        tuple.index= Base64.decodeToStringWithBounds(buffer, previous, cursor);
-                        break;
-                    case 4:
+                    case 1:
                         tuple.eventId= Base64.decodeToLongWithBounds(buffer, previous, cursor);
                         break;
                 }
@@ -67,18 +55,9 @@ public class StorageKeyChunk {
         //collect last
         switch (index) {
             case 0:
-                tuple.world = Base64.decodeToLongWithBounds(buffer, previous, cursor);
-                break;
-            case 1:
-                tuple.time = Base64.decodeToLongWithBounds(buffer, previous, cursor);
-                break;
-            case 2:
                 tuple.id = Base64.decodeToLongWithBounds(buffer, previous, cursor);
                 break;
-            case 3:
-                tuple.index= Base64.decodeToStringWithBounds(buffer, previous, cursor);
-                break;
-            case 4:
+            case 1:
                 tuple.eventId= Base64.decodeToLongWithBounds(buffer, previous, cursor);
                 break;
         }
@@ -101,22 +80,10 @@ public class StorageKeyChunk {
         while (index < keys.length) {
             switch (index) {
                 case 0:
-                    tuple.world = Long.parseLong(keys[index]);
-                    index++;
-                    break;
-                case 1:
-                    tuple.time = Long.parseLong(keys[index]);
-                    index++;
-                    break;
-                case 2:
                     tuple.id = Long.parseLong(keys[index]);
                     index++;
                     break;
-                case 3:
-                    tuple.index= keys[index];
-                    index++;
-                    break;
-                case 4:
+                case 1:
                     tuple.eventId = Long.parseLong(keys[index]);
                     index++;
                     break;
@@ -133,14 +100,8 @@ public class StorageKeyChunk {
      */
     public String buildString(){
         String key = "";
-        key += world
+        key +=  id
                 + ";"
-                + time
-                + ";"
-                + id
-                + ";"
-                + index
-                +";"
                 +eventId;
 
         return key;
@@ -149,27 +110,13 @@ public class StorageKeyChunk {
     @Override
     public String toString() {
         return "StorageKeyChunk{" +
-                "world=" + world +
-                ", time=" + time +
-                ", id=" + id +
-                ", index=" + index +
+                "id=" + id +
+                ", eventId=" + eventId +
                 '}';
     }
 
     public long id(){
         return id;
-    }
-
-    public String index(){
-        return index;
-    }
-
-    public long world(){
-        return world;
-    }
-
-    public long time(){
-        return time;
     }
 
     public long eventId() {
