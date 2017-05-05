@@ -57,6 +57,7 @@ public class BaseNode implements Node {
     private volatile int _lock;
 
     private static NSQSender _sender = new NSQSender("localhost", 4150);
+    private long _eventId;
 
     public BaseNode(long p_world, long p_time, long p_id, Graph p_graph) {
         this._world = p_world;
@@ -64,6 +65,8 @@ public class BaseNode implements Node {
         this._id = p_id;
         this._graph = p_graph;
         this._resolver = p_graph.resolver();
+
+        _eventId = 0;
     }
 
     /**
@@ -282,7 +285,7 @@ public class BaseNode implements Node {
 
     @Override
     public Node setAt(int index, byte type, Object value) {
-        Buffer buffer = _sender.bufferizeMessage(_world, _time, _id, _resolver.hashToString(index), type, value);
+        Buffer buffer = _sender.bufferizeMessage(_world, _time, _id, _resolver.hashToString(index), _eventId++, type, value);
         _sender.sendMessage(buffer.data());
 
         final NodeState unPhasedState = this._resolver.resolveState(this);

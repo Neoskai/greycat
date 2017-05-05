@@ -109,7 +109,7 @@ public class NSQSender {
      * @param value Value
      * @return Buffer containing key and value
      */
-    public Buffer bufferizeMessage(long world, long time, long id, String index, byte type, Object value){
+    public Buffer bufferizeMessage(long world, long time, long id, String index, long eventId, byte type, Object value){
         Graph g = GraphBuilder.newBuilder().build();
         Buffer buffer = g.newBuffer();
 
@@ -120,6 +120,8 @@ public class NSQSender {
         Base64.encodeLongToBuffer(id, buffer);
         buffer.write(Constants.KEY_SEP);
         Base64.encodeStringToBuffer(index, buffer);
+        buffer.write(Constants.KEY_SEP);
+        Base64.encodeLongToBuffer(eventId, buffer);
 
         buffer.write(Constants.BUFFER_SEP);
 

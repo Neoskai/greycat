@@ -18,7 +18,6 @@ package greycat.backup.tools;
 import com.spotify.sparkey.Sparkey;
 import com.spotify.sparkey.SparkeyWriter;
 import greycat.Callback;
-import greycat.Graph;
 import greycat.struct.Buffer;
 import greycat.struct.BufferIterator;
 
@@ -27,41 +26,46 @@ import java.io.File;
 public class SparkeyBackupStorage {
 
     private static final String _connectedError = "PLEASE CONNECT YOUR DATABASE FIRST";
-    private static long FLUSHING_CST = 50;
+
+    private static final int MAXENTRIES = 5; // Number of maximum entries vefore flushing file
+    private int _currentFile;
+    private int _currentEntries;
+    private int _currentPool;
 
     private String _filePath;
     private boolean _isConnected = false;
-    private Graph _graph;
 
-    private long _entries;
+    private SparkeyWriter _writer = null;
 
-    private static SparkeyWriter _writer = null;
+    public SparkeyBackupStorage(int poolId){
+        _currentFile = 0;
+        _currentEntries = 0;
+        _currentPool = poolId;
+
+        _filePath = "data/save_" + poolId + "_" + _currentFile++ + ".spl";
+    }
 
     public SparkeyBackupStorage(String filePath) {
         _filePath = filePath;
-        _isConnected = false;
-        _entries = 0;
+
+        _currentFile = 0;
+        _currentEntries = 0;
     }
 
-    public void connect(Graph graph, Callback<Boolean> callback) {
-        _graph = graph;
-
+    public void connect(Callback<Boolean> callback) {
         File indexFile = new File(_filePath);
 
         try {
-            if (_writer == null){
-                if (!indexFile.exists()) {
-
-                    indexFile.mkdirs();
-                    //_writer = Sparkey.createNew(indexFile, CompressionType.SNAPPY, 512);
-                    _writer = Sparkey.createNew(indexFile);
-                    _writer.flush();
-                    _writer.writeHash();
-                    _writer.close();
-                }
-
-                _writer = Sparkey.append(indexFile);
+            if (!indexFile.exists()) {
+                indexFile.mkdirs();
+                System.out.println("Creating new file: " + indexFile.getName());
+                _writer = Sparkey.createNew(indexFile);
+                _writer.flush();
+                _writer.writeHash();
+                _writer.close();
             }
+
+            _writer = Sparkey.append(indexFile);
 
             _isConnected = true;
             if (callback != null) {
@@ -76,11 +80,13 @@ public class SparkeyBackupStorage {
         }
     }
 
-    public void putAndFlush(Buffer stream, Callback<Boolean> callback){
+    public void put(Buffer stream, Callback<Boolean> callback){
         if (!_isConnected) {
             throw new RuntimeException(_connectedError);
         }
         try {
+            _currentEntries++;
+
             BufferIterator it = stream.iterator();
             while (it.hasNext()) {
                 Buffer keyView = it.next();
@@ -89,23 +95,18 @@ public class SparkeyBackupStorage {
                 StorageKeyChunk key = StorageKeyChunk.build(keyView);
                 StorageValueChunk value = StorageValueChunk.build(valueView);
 
-                System.out.println("Received key is : " + key.toString() + " with data: " + value.toString());
+                //System.out.println("Received key is : " + key.toString() + " with data: " + value.toString() + " written in " + _filePath);
 
                 if (valueView != null) {
                     // When saving key to base64 format
-                    // _writer.put(keyView.data(), valueView.data());
+                    // _writer.process(keyView.data(), valueView.data());
 
                     // When saving key to string format with ; separator
                     _writer.put(key.buildString().getBytes(), valueView.data());
                 }
-                _writer.flush();
-                _entries++;
-
-                // Writing hash has outoufbond exception
-                /*if(_entries % FLUSHING_CST == 0){
-                    _writer.writeHash();
-                }*/
             }
+
+            swapCheck();
 
             if (callback != null) {
                 callback.on(true);
@@ -118,4 +119,46 @@ public class SparkeyBackupStorage {
         }
     }
 
+    public void swapCheck(){
+        if(_currentEntries == MAXENTRIES){
+            disconnect(new Callback<Boolean>() {
+                @Override
+                public void on(Boolean result) {
+                    // NOTHING
+                }
+            });
+
+            _filePath = "data/save_" + _currentPool + "_" + _currentFile++ + ".spl";
+
+            connect(new Callback<Boolean>() {
+                @Override
+                public void on(Boolean result) {
+                    // NOTHING
+                }
+            });
+
+            _currentEntries = 0;
+        }
+
+    }
+
+    public void disconnect(Callback<Boolean> callback){
+        try{
+            _writer.writeHash();
+            _writer.flush();
+            _writer.close();
+
+            _writer = null;
+
+            _isConnected = false;
+            if (callback != null) {
+                callback.on(true);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (callback != null) {
+                callback.on(false);
+            }
+        }
+    }
 }

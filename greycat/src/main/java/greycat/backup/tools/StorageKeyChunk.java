@@ -26,6 +26,7 @@ public class StorageKeyChunk {
     private long time;
     private long id;
     private String index;
+    private long eventId;
 
     /**
      * Builds a StorageKeyChunk from it's default representation in a buffer
@@ -54,6 +55,9 @@ public class StorageKeyChunk {
                     case 3:
                         tuple.index= Base64.decodeToStringWithBounds(buffer, previous, cursor);
                         break;
+                    case 4:
+                        tuple.eventId= Base64.decodeToLongWithBounds(buffer, previous, cursor);
+                        break;
                 }
                 index++;
                 previous = cursor + 1;
@@ -73,6 +77,9 @@ public class StorageKeyChunk {
                 break;
             case 3:
                 tuple.index= Base64.decodeToStringWithBounds(buffer, previous, cursor);
+                break;
+            case 4:
+                tuple.eventId= Base64.decodeToLongWithBounds(buffer, previous, cursor);
                 break;
         }
         return tuple;
@@ -109,6 +116,10 @@ public class StorageKeyChunk {
                     tuple.index= keys[index];
                     index++;
                     break;
+                case 4:
+                    tuple.eventId = Long.parseLong(keys[index]);
+                    index++;
+                    break;
             }
         }
 
@@ -128,7 +139,9 @@ public class StorageKeyChunk {
                 + ";"
                 + id
                 + ";"
-                + index;
+                + index
+                +";"
+                +eventId;
 
         return key;
     }
@@ -157,6 +170,10 @@ public class StorageKeyChunk {
 
     public long time(){
         return time;
+    }
+
+    public long eventId() {
+        return eventId;
     }
 }
 

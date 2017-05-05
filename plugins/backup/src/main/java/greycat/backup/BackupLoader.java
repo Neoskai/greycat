@@ -135,9 +135,7 @@ public class BackupLoader {
                         Node newNode = _graph.newNode(key.world(), key.time());
                         newNode.set(key.index(), value.type(), value.value());
                         nodeMap.put(key.id(), newNode.id());
-
-                        //System.out.println("Key is: "+ key + " with value " + value);
-                    }else{
+                    } else {
                         // If this node was already created, we lookup for it and write the value
                         _graph.lookup(key.world(), key.time(), nodeMap.get(key.id()), new Callback<Node>() {
                             @Override
@@ -154,8 +152,6 @@ public class BackupLoader {
 
                 }
             }
-
-            System.out.println("Nodemap is: " + nodeMap);
 
         } catch (IOException e) {
             e.printStackTrace();

@@ -19,42 +19,29 @@ package greycat.backup.consumer;
 import com.github.brainlag.nsq.NSQConsumer;
 import com.github.brainlag.nsq.lookup.DefaultNSQLookup;
 import com.github.brainlag.nsq.lookup.NSQLookup;
-import greycat.Callback;
 import greycat.Graph;
 import greycat.GraphBuilder;
-import greycat.backup.tools.SparkeyBackupStorage;
 import greycat.struct.Buffer;
 
 public class NSQReceiver {
 
-    public static void main( String[] args )
+
+    public static void main(String[] args )
     {
         NSQLookup lookup = new DefaultNSQLookup();
-
-        Graph localGraph = GraphBuilder.newBuilder().build();
-        SparkeyBackupStorage storage = new SparkeyBackupStorage("data/data.spl");
-
         lookup.addLookupAddress("localhost", 4161);
 
-        storage.connect(localGraph, new Callback<Boolean>() {
-            @Override
-            public void on(Boolean result) {
-                // DO NOTHING
-            }
-        });
+        Graph localGraph = GraphBuilder.newBuilder().build();
+
+        StorageHandler storageHandler = new StorageHandler();
+        storageHandler.load();
 
         NSQConsumer consumer = new NSQConsumer(lookup, "Greycat", "MyChannel", (message) -> {
             try {
                 Buffer buffer = localGraph.newBuffer();
                 buffer.writeAll(message.getMessage());
 
-                // Storing
-                storage.putAndFlush(buffer, new Callback<Boolean>() {
-                    @Override
-                    public void on(Boolean result) {
-                        buffer.free();
-                    }
-                });
+                storageHandler.process(buffer);
 
                 message.finished();
 
