@@ -48,7 +48,6 @@ public class NodeLoader extends Thread{
         try {
             File backupFile = new File(filepath);
 
-            System.out.println("Looking for: " + filepath);
             if (!backupFile.exists()) {
                 System.err.println("File does not exist");
             }
@@ -62,8 +61,6 @@ public class NodeLoader extends Thread{
     }
 
     public void run(Graph g) {
-        System.out.println("Launching backup for node");
-
         openReader(findHolder(0));
         for(int i= 0; i < _totalEvents; i++){
             // Opening the holder of the given id if not loaded

@@ -39,7 +39,7 @@ public class BackupLoader {
 
         //Testing purpose, will be replaced by a loading phase from the ressource file
         nodes = new HashMap<>();
-        nodes.put(1L, 5);
+        nodes.put(1L, 7);
     }
 
     public void init(){
