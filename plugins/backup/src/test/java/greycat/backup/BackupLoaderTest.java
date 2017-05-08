@@ -23,39 +23,40 @@ import org.junit.Test;
 public class BackupLoaderTest {
 
     @Test
-    public void testBackup(){
-        BackupLoader loader = new BackupLoader("data/save_1_0.spi");
-        loader.load();
-        //loader.run();
-        //loader.logRun();
+    public void test(){
+        try {
+            BackupLoader loader = new BackupLoader("data");
+            loader.init();
+            Graph g = loader.backup();
 
-        Graph g = loader.buildFromLogs();
-
-        g.connect(new Callback<Boolean>() {
-            @Override
-            public void on(Boolean result) {
-                System.out.println("Connecting to backup graph");
-            }
-        });
-        g.lookup(0, 0, 1, new Callback<Node>() {
-            @Override
-            public void on(Node result) {
-                System.out.println("Node found: ");
-                System.out.println(result.toString());
-            }
-        });
-        g.lookup(0, 10, 1, new Callback<Node>() {
-            @Override
-            public void on(Node result) {
-                System.out.println("Node found: ");
-                System.out.println(result.toString());
-            }
-        });
-        g.disconnect(new Callback<Boolean>() {
-            @Override
-            public void on(Boolean result) {
-                System.out.println("Disconnecting from backup graph");
-            }
-        });
+            g.connect(new Callback<Boolean>() {
+                @Override
+                public void on(Boolean result) {
+                    System.out.println("Connecting to backup graph");
+                }
+            });
+            g.lookup(0, 0, 1, new Callback<Node>() {
+                @Override
+                public void on(Node result) {
+                    System.out.println("Node found: ");
+                    System.out.println(result.toString());
+                }
+            });
+            g.lookup(0, 10, 1, new Callback<Node>() {
+                @Override
+                public void on(Node result) {
+                    System.out.println("Node found: ");
+                    System.out.println(result.toString());
+                }
+            });
+            g.disconnect(new Callback<Boolean>() {
+                @Override
+                public void on(Boolean result) {
+                    System.out.println("Disconnecting from backup graph");
+                }
+            });
+        } catch (Exception e){
+            e.printStackTrace();
+        }
     }
 }

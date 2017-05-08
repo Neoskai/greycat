@@ -15,184 +15,68 @@
  */
 package greycat.backup;
 
-import com.spotify.sparkey.Sparkey;
-import com.spotify.sparkey.SparkeyLogIterator;
-import com.spotify.sparkey.SparkeyReader;
-import greycat.*;
-import greycat.backup.tools.StorageKeyChunk;
-import greycat.backup.tools.StorageValueChunk;
-import greycat.struct.Buffer;
+import greycat.Callback;
+import greycat.Graph;
+import greycat.GraphBuilder;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class BackupLoader {
-    private SparkeyReader _reader;
+    private static final int POOLSIZE = 5;
+
     private Graph _graph;
-    private String _filePath;
-    private File _indexFile;
+    private String _folderPath;
 
-    private boolean _isLoaded = false;
+    private HashMap<Long, Integer> nodes;
 
-    public BackupLoader(String filePath){
-        _filePath = filePath;
+
+    public BackupLoader(String folderPath){
+        _folderPath = folderPath;
         _graph = GraphBuilder.newBuilder().build();
+
+        //Testing purpose, will be replaced by a loading phase from the ressource file
+        nodes = new HashMap<>();
+        nodes.put(1L, 5);
     }
 
-    public void load(){
-        try {
-            _indexFile = new File(_filePath);
-
-            if (!_indexFile.exists()){
-                System.err.println("File does not exist");
-            }
-
-            _reader = Sparkey.open(_indexFile);
-            _isLoaded = true;
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Reads entries from the log file
-     */
-    public void logRun(){
-        if(!_isLoaded){
-            System.err.println("Not connected");
-            return;
-        }
-
-        try {
-            SparkeyLogIterator logIterator = new SparkeyLogIterator(Sparkey.getLogFile(_indexFile));
-
-            for (SparkeyReader.Entry entry : logIterator) {
-                if (entry.getType() == SparkeyReader.Type.PUT) {
-                    Buffer buffer = _graph.newBuffer();
-                    buffer.writeAll(entry.getKey());
-
-                    // Building key from String after save
-                    StorageKeyChunk key = StorageKeyChunk.buildFromString(buffer);
-
-                    // Building key from Base64 after save
-                    //StorageKeyChunk key = StorageKeyChunk.build(buffer);
-
-                    buffer.free();
-                    buffer.writeAll(entry.getValue());
-                    StorageValueChunk value = StorageValueChunk.build(buffer);
-                    buffer.free();
-
-                    System.out.println("Key is: "+ key + " with value " + value);
-                }
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Rebuilds the graph from a sparkey file
-     * @return Final graph
-     */
-    public Graph buildFromLogs(){
-        if(!_isLoaded){
-            System.err.println("Not connected");
-            return null;
-        }
-
+    public void init(){
+        // Load the nodes and the total number of event received for each.
         _graph.connect(new Callback<Boolean>() {
             @Override
             public void on(Boolean result) {
                 System.out.println("Starting backup");
             }
         });
+    }
 
-        try {
-            SparkeyLogIterator logIterator = new SparkeyLogIterator(Sparkey.getLogFile(_indexFile));
-            HashMap<Long, Long> nodeMap = new HashMap<Long, Long>();
-
-            for (SparkeyReader.Entry entry : logIterator) {
-                if (entry.getType() == SparkeyReader.Type.PUT) {
-                    Buffer buffer = _graph.newBuffer();
-                    buffer.writeAll(entry.getKey());
-
-                    // Building key from String after save
-                    StorageKeyChunk key = StorageKeyChunk.buildFromString(buffer);
-
-                    // Building key from Base64 after save
-                    //StorageKeyChunk key = StorageKeyChunk.build(buffer);
-
-                    buffer.free();
-                    buffer.writeAll(entry.getValue());
-                    StorageValueChunk value = StorageValueChunk.build(buffer);
-                    buffer.free();
-
-                    // If graph does not already have this node, we need to create it and register it
-                    if(!nodeMap.containsKey(key.id())){
-                        Node newNode = _graph.newNode(value.world(), value.time());
-                        newNode.set(value.index(), value.type(), value.value());
-                        nodeMap.put(key.id(), newNode.id());
-                    } else {
-                        // If this node was already created, we lookup for it and write the value
-                        _graph.lookup(value.world(), value.time(), nodeMap.get(key.id()), new Callback<Node>() {
-                            @Override
-                            public void on(Node result) {
-                                if(value.type() == Type.REMOVE){
-                                    result.remove(value.index());
-                                }else {
-                                    //System.out.println("Current system: " + key.index() + " " + key.world() + " " +  key.time() + " " + value.type() + " " + value.value());
-                                    result.set(value.index(), value.type(), value.value());
-                                }
-                            }
-                        });
-                    }
-
+    public Graph backup() throws InterruptedException {
+        ExecutorService es = Executors.newCachedThreadPool();
+        for (Long id: nodes.keySet()){
+            System.out.println("Loading node: " + id);
+            es.execute(new Runnable() {
+                @Override
+                public void run() {
+                    NodeLoader loader = new NodeLoader(id, _folderPath, nodes.get(id));
+                    loader.run(_graph);
                 }
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
+            });
         }
+        es.shutdown();
 
+        es.awaitTermination(1, TimeUnit.MINUTES);
+
+        return _graph;
+    }
+
+    public void disconnect(){
         _graph.disconnect(new Callback<Boolean>() {
             @Override
             public void on(Boolean result) {
                 System.out.println("Backup ended");
             }
         });
-
-        return _graph;
-
-    }
-
-    /**
-     * Reads entries from the data file
-     * Non working version
-     */
-    public void run(){
-        if(!_isLoaded){
-            System.err.println("Not connected");
-            return;
-        }
-
-        try{
-            for (SparkeyReader.Entry entry : _reader) {
-                Buffer buffer = _graph.newBuffer();
-                buffer.writeAll(entry.getKey());
-                StorageKeyChunk key = StorageKeyChunk.build(buffer);
-
-                buffer.free();
-                buffer.writeAll(entry.getValue());
-                StorageValueChunk value = StorageValueChunk.build(buffer);
-                buffer.free();
-
-                System.out.println("Key is: "+ key + " with value " + value);
-            }
-        } catch (Exception e){
-            e.printStackTrace();
-        }
     }
 }

@@ -24,9 +24,6 @@ public class WorldSample {
     public static void main(String[] args) {
         Graph g = GraphBuilder.newBuilder().build();
         test(g);
-
-        //WSServer serverDebug = new WSServer(g,8050);
-        //serverDebug.start();
     }
 
     public static void test(final Graph graph) {

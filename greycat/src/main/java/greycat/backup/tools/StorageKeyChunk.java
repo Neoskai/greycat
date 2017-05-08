@@ -90,7 +90,6 @@ public class StorageKeyChunk {
             }
         }
 
-
         return tuple;
     }
 
