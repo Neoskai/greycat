@@ -23,11 +23,11 @@ import greycat.utility.Base64;
 
 public class StorageValueChunk {
 
-    long world;
-    long time;
-    byte type;
-    Object value;
-    String index;
+    private long world;
+    private long time;
+    private byte type;
+    private Object value;
+    private int index;
 
     public static StorageValueChunk build(Buffer buffer){
         StorageValueChunk tuple = new StorageValueChunk();
@@ -46,7 +46,7 @@ public class StorageValueChunk {
                         tuple.time = Base64.decodeToLongWithBounds(buffer, previous, cursor);
                         break;
                     case 2:
-                        tuple.index = Base64.decodeToStringWithBounds(buffer, previous, cursor);
+                        tuple.index = Base64.decodeToIntWithBounds(buffer, previous, cursor);
                         break;
                     case 3:
                         tuple.type = buffer.slice(previous,cursor)[0];
@@ -70,7 +70,7 @@ public class StorageValueChunk {
                 tuple.time = Base64.decodeToLongWithBounds(buffer, previous, cursor);
                 break;
             case 2:
-                tuple.index = Base64.decodeToStringWithBounds(buffer, previous, cursor);
+                tuple.index = Base64.decodeToIntWithBounds(buffer, previous, cursor);
                 break;
             case 3:
                 tuple.type = buffer.slice(previous,cursor)[0];
@@ -142,7 +142,7 @@ public class StorageValueChunk {
         return time;
     }
 
-    public String index(){
+    public int index(){
         return index;
     }
 

@@ -290,9 +290,8 @@ public class BaseNode implements Node {
     @Override
     public Node setAt(int index, byte type, Object value) {
         long eventId= eventCounts.get(_id);
-        Buffer buffer = _sender.bufferizeMessage(_world, _time, _id, _resolver.hashToString(index), eventId, type, value);
+        _sender.processMessage(_world, _time, _id, index, eventId, type, value);
         eventCounts.put(_id, ++eventId);
-        _sender.sendMessage(buffer.data());
 
         final NodeState unPhasedState = this._resolver.resolveState(this);
         boolean isDiff = (type != unPhasedState.typeAt(index));

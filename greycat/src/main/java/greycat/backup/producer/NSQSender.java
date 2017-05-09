@@ -25,14 +25,21 @@ import greycat.Type;
 import greycat.struct.Buffer;
 import greycat.utility.Base64;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 
 public class NSQSender {
 
     private NSQProducer _producer;
+    private Graph g = null;
+
+    private ExecutorService executor;
 
     public NSQSender(String address, int port){
         _producer = new NSQProducer().addAddress(address,port).start();
+        executor = Executors.newSingleThreadExecutor();
+
     }
 
     /**
@@ -44,9 +51,7 @@ public class NSQSender {
         try {
             _producer.produce("Greycat", message.getBytes());
             return true;
-        } catch (NSQException e) {
-            e.printStackTrace();
-        } catch (TimeoutException e) {
+        } catch (NSQException | TimeoutException e) {
             e.printStackTrace();
         }
         return false;
@@ -61,9 +66,7 @@ public class NSQSender {
         try {
             _producer.produce("Greycat", message);
             return true;
-        } catch (NSQException e) {
-            e.printStackTrace();
-        } catch (TimeoutException e) {
+        } catch (NSQException | TimeoutException e) {
             e.printStackTrace();
         }
         return false;
@@ -109,8 +112,11 @@ public class NSQSender {
      * @param value Value
      * @return Buffer containing key and value
      */
-    public Buffer bufferizeMessage(long world, long time, long id, String index, long eventId, byte type, Object value){
-        Graph g = GraphBuilder.newBuilder().build();
+    public Buffer bufferizeMessage(long world, long time, long id, int index, long eventId, byte type, Object value){
+        if (g == null){
+           g = GraphBuilder.newBuilder().build();
+        }
+
         Buffer buffer = g.newBuffer();
 
         Base64.encodeLongToBuffer(id, buffer);
@@ -122,7 +128,7 @@ public class NSQSender {
         buffer.write(Constants.CHUNK_SEP);
         Base64.encodeLongToBuffer(time, buffer);
         buffer.write(Constants.CHUNK_SEP);
-        Base64.encodeStringToBuffer(index, buffer);
+        Base64.encodeIntToBuffer(index, buffer);
         buffer.write(Constants.CHUNK_SEP);
 
         if(value == null){
@@ -139,6 +145,16 @@ public class NSQSender {
         //buffer.writeAll(serialize(value, type));
 
         return buffer;
+    }
+
+    public void processMessage(long world, long time, long id, int index, long eventId, byte type, Object value){
+        Buffer buffer = bufferizeMessage(world, time, id, index, eventId, type, value);
+        sendMessage(buffer.data());
+
+        /* executor.submit(() -> {
+            Buffer buffer = bufferizeMessage(world, time, id, index, eventId, type, value);
+            sendMessage(buffer.data());
+        });*/
     }
 
     /**

@@ -40,6 +40,9 @@ public class SimpleBackupLoader {
         _graph = GraphBuilder.newBuilder().build();
     }
 
+    /**
+     * Inits the backup loader
+     */
     public void load(){
         try {
             _indexFile = new File(_filePath);
@@ -133,7 +136,7 @@ public class SimpleBackupLoader {
                     // If graph does not already have this node, we need to create it and register it
                     if(!nodeMap.containsKey(key.id())){
                         Node newNode = _graph.newNode(value.world(), value.time());
-                        newNode.set(value.index(), value.type(), value.value());
+                        newNode.setAt(value.index(), value.type(), value.value());
                         nodeMap.put(key.id(), newNode.id());
                     } else {
                         // If this node was already created, we lookup for it and write the value
@@ -141,10 +144,10 @@ public class SimpleBackupLoader {
                             @Override
                             public void on(Node result) {
                                 if(value.type() == Type.REMOVE){
-                                    result.remove(value.index());
+                                    result.removeAt(value.index());
                                 }else {
                                     //System.out.println("Current system: " + key.index() + " " + key.world() + " " +  key.time() + " " + value.type() + " " + value.value());
-                                    result.set(value.index(), value.type(), value.value());
+                                    result.setAt(value.index(), value.type(), value.value());
                                 }
                             }
                         });

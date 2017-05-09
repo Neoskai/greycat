@@ -42,6 +42,9 @@ public class BackupLoader {
         nodes.put(1L, 7);
     }
 
+    /**
+     * Inits the backup loader by connecting to the new graph
+     */
     public void init(){
         // Load the nodes and the total number of event received for each.
         _graph.connect(new Callback<Boolean>() {
@@ -52,6 +55,11 @@ public class BackupLoader {
         });
     }
 
+    /**
+     * Launches the backup of the graph
+     * @return The Graph resulting of the execution of the backup process
+     * @throws InterruptedException Error if something happened during backup
+     */
     public Graph backup() throws InterruptedException {
         ExecutorService es = Executors.newCachedThreadPool();
         for (Long id: nodes.keySet()){
@@ -71,6 +79,9 @@ public class BackupLoader {
         return _graph;
     }
 
+    /**
+     * Disconnects the graph
+     */
     public void disconnect(){
         _graph.disconnect(new Callback<Boolean>() {
             @Override

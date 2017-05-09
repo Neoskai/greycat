@@ -26,7 +26,6 @@ import greycat.struct.Buffer;
 
 public class NSQReceiver {
 
-
     public static void main(String[] args )
     {
         NSQLookup lookup = new DefaultNSQLookup();

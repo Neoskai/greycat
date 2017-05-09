@@ -44,6 +44,10 @@ public class NodeLoader extends Thread{
         _newNodeId = 0;
     }
 
+    /**
+     * Opens the reader for backup for the given file
+     * @param filepath Path of the news file to read
+     */
     public void openReader(String filepath){
         try {
             File backupFile = new File(filepath);
@@ -60,6 +64,10 @@ public class NodeLoader extends Thread{
 
     }
 
+    /**
+     * Runs the backup process for the current node on the given graph
+     * @param g The graph to apply the backup on
+     */
     public void run(Graph g) {
         openReader(findHolder(0));
         for(int i= 0; i < _totalEvents; i++){
@@ -78,7 +86,7 @@ public class NodeLoader extends Thread{
 
                 if(i== 0){
                     Node newNode = g.newNode(value.world(), value.time());
-                    newNode.set(value.index(), value.type(), value.value());
+                    newNode.setAt(value.index(), value.type(), value.value());
                     _newNodeId = newNode.id();
                 } else {
                     // If this node was already created, we lookup for it and write the value
@@ -86,10 +94,10 @@ public class NodeLoader extends Thread{
                         @Override
                         public void on(Node result) {
                             if(value.type() == Type.REMOVE){
-                                result.remove(value.index());
+                                result.removeAt(value.index());
                             }else {
                                 //System.out.println("Current system: " + key.index() + " " + key.world() + " " +  key.time() + " " + value.type() + " " + value.value());
-                                result.set(value.index(), value.type(), value.value());
+                                result.setAt(value.index(), value.type(), value.value());
                             }
                         }
                     });

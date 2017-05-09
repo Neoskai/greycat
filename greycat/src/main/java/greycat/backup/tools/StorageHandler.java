@@ -17,8 +17,6 @@
 package greycat.backup.tools;
 
 import greycat.Callback;
-import greycat.backup.tools.SparkeyBackupStorage;
-import greycat.backup.tools.StorageKeyChunk;
 import greycat.struct.Buffer;
 import greycat.struct.BufferIterator;
 
@@ -31,6 +29,9 @@ public class StorageHandler {
         _storages = new SparkeyBackupStorage[POOLSIZE];
     }
 
+    /**
+     * Initialization of the storage handler and all the storages
+     */
     public void load(){
         for(int i = 0; i < POOLSIZE; i++){
             _storages[i] = new SparkeyBackupStorage(i);
@@ -44,6 +45,11 @@ public class StorageHandler {
         }
     }
 
+    /**
+     * Handles a buffer input by forwarding it to the good storage
+     * @param buffer The buffer to process
+     * @throws Exception Errors during the process
+     */
     public void process(Buffer buffer) throws Exception{
         BufferIterator iterator = buffer.iterator();
         Buffer keyBuffer = iterator.next();
@@ -62,10 +68,11 @@ public class StorageHandler {
         }
     }
 
+    /**
+     * Closes all the storages
+     */
     public void close(){
         for(int i = 0; i < POOLSIZE; i++){
-            _storages[i] = new SparkeyBackupStorage(i);
-
             _storages[i].disconnect(new Callback<Boolean>() {
                 @Override
                 public void on(Boolean result) {

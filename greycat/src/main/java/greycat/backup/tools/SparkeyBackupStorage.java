@@ -45,13 +45,10 @@ public class SparkeyBackupStorage {
         _filePath = "data/save_" + poolId + "_" + _currentFile++ + ".spl";
     }
 
-    public SparkeyBackupStorage(String filePath) {
-        _filePath = filePath;
-
-        _currentFile = 0;
-        _currentEntries = 0;
-    }
-
+    /**
+     * Connects the writer for this storage, or creates it if it didn't exist.
+     * @param callback Callback function
+     */
     public void connect(Callback<Boolean> callback) {
         File indexFile = new File(_filePath);
 
@@ -80,6 +77,11 @@ public class SparkeyBackupStorage {
         }
     }
 
+    /**
+     * Processes the buffer and adds the key / value it contains to the database
+     * @param stream The buffer to process
+     * @param callback Callback function
+     */
     public void put(Buffer stream, Callback<Boolean> callback){
         if (!_isConnected) {
             throw new RuntimeException(_connectedError);
@@ -119,7 +121,10 @@ public class SparkeyBackupStorage {
         }
     }
 
-    public void swapCheck(){
+    /**
+     * Check if we need to swap files at the end of an insert (depending on the max number of entry in a file)
+     */
+    private void swapCheck(){
         if(_currentEntries == MAXENTRIES){
             disconnect(new Callback<Boolean>() {
                 @Override
@@ -142,6 +147,10 @@ public class SparkeyBackupStorage {
 
     }
 
+    /**
+     * Disconnects the current storage writer and flush everything to the disk
+     * @param callback Callback function
+     */
     public void disconnect(Callback<Boolean> callback){
         try{
             _writer.writeHash();
