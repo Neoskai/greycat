@@ -15,15 +15,13 @@
  */
 package greycat.chunk;
 
-public interface TimeTreeChunk extends Chunk {
+public interface LTimeTreeChunk extends Chunk {
 
-    void insert(long key);
+    void insert(long key, long value);
 
-    void unsafe_insert(long key);
+    void unsafe_insert(long key, long value);
 
     long previousOrEqual(long key);
-
-    void clearAt(long max);
 
     void range(long startKey, long endKey, long maxElements, TreeWalker walker);
 
@@ -42,9 +40,5 @@ public interface TimeTreeChunk extends Chunk {
     long extra2();
 
     void setExtra2(long extraValue);
-
-    long extra3();
-
-    void setExtra3(long extraValue);
 
 }

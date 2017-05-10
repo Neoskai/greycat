@@ -15,36 +15,14 @@
  */
 package greycat.chunk;
 
-public interface TimeTreeChunk extends Chunk {
+public interface Interceptor {
 
-    void insert(long key);
+    boolean preChunkRead(final byte type, final long world, final long time, final long id);
 
-    void unsafe_insert(long key);
+    boolean preChunkCreate(final byte type, final long world, final long time, final long id);
 
-    long previousOrEqual(long key);
+    boolean preAttSet(final Chunk chunk, final int index);
 
-    void clearAt(long max);
-
-    void range(long startKey, long endKey, long maxElements, TreeWalker walker);
-
-    long magic();
-
-    long previous(long key);
-
-    long next(long key);
-
-    int size();
-
-    long extra();
-
-    void setExtra(long extraValue);
-
-    long extra2();
-
-    void setExtra2(long extraValue);
-
-    long extra3();
-
-    void setExtra3(long extraValue);
+    boolean postAttSet(final Chunk chunk, final int index);
 
 }

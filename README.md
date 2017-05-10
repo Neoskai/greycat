@@ -20,6 +20,8 @@ For any questions please contact us via our Gitter:
     - add clear method to all arrays chunk
     - add savePartial method
     - add batchSaveSize option to build
+    - add start and end transaction
+    - PROTOCOL change: adapt Remote Task Protocol to allows nested task result
 - Version 6 (11/04/2017)
     - Introducing Hash to check Remote Cache Consistency
     - New API for React Remote Graph usage

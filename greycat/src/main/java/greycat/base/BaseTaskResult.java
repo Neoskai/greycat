@@ -19,14 +19,17 @@ import greycat.*;
 import greycat.internal.CoreConstants;
 import greycat.internal.heap.HeapBuffer;
 import greycat.internal.task.TaskHelper;
+import greycat.plugin.Job;
 import greycat.struct.Buffer;
-import greycat.utility.Base64;
-import greycat.utility.LArray;
+import greycat.utility.*;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.List;
+
+import static greycat.utility.L3GMap.GROUP;
 
 public class BaseTaskResult<A> implements TaskResult<A> {
 
@@ -37,8 +40,6 @@ public class BaseTaskResult<A> implements TaskResult<A> {
     Exception _exception = null;
     String _output = null;
     Buffer _notifications;
-
-    private LArray refs = null;
 
     @Override
     public Object[] asArray() {
@@ -366,27 +367,30 @@ public class BaseTaskResult<A> implements TaskResult<A> {
         return _notifications;
     }
 
-    private void internal_load_element(final Buffer buffer, final int previous, final int cursor, final byte type, final int index) {
+    private void internal_load_element(final Buffer buffer, final int previous, final int cursor, final byte type, final int index, final L3GMap<List<Tuple<Object[], Integer>>> collector) {
         Object loaded = null;
         switch (type) {
             case Type.NODE:
-                if (refs == null) {
-                    refs = new LArray();
-                }
-                refs.add(index);
+                final long[] keys = new long[3];
+                int keys_index = 0;
                 int iCursor = previous;
                 int iPrevious = previous;
                 while (iCursor < cursor) {
                     byte current = buffer.read(iCursor);
                     if (current == Constants.CHUNK_VAL_SEP) {
-                        long idElem = Base64.decodeToLongWithBounds(buffer, iPrevious, iCursor);
-                        refs.add(idElem);
+                        keys[keys_index] = Base64.decodeToLongWithBounds(buffer, iPrevious, iCursor);
+                        keys_index++;
                         iPrevious = iCursor + 1;
                     }
                     iCursor++;
                 }
-                long idElem = Base64.decodeToLongWithBounds(buffer, iPrevious, iCursor);
-                refs.add(idElem);
+                keys[keys_index] = Base64.decodeToLongWithBounds(buffer, iPrevious, iCursor);
+                List<Tuple<Object[], Integer>> subCollector = collector.get(keys[0], keys[1], keys[2]);
+                if (subCollector == null) {
+                    subCollector = new ArrayList<Tuple<Object[], Integer>>();
+                    collector.put(keys[0], keys[1], keys[2], subCollector);
+                }
+                subCollector.add(new Tuple<Object[], Integer>(_backend, index));
                 break;
             case Type.STRING:
                 loaded = Base64.decodeToStringWithBounds(buffer, previous, cursor);
@@ -403,7 +407,42 @@ public class BaseTaskResult<A> implements TaskResult<A> {
         }
     }
 
-    public int load(final Buffer buffer, final int begin, final Graph graph) {
+    public void loadRefs(final Graph graph, final L3GMap<List<Tuple<Object[], Integer>>> collector, final Callback<Boolean> loaded) {
+        int collectorSize = collector.size();
+        if (collectorSize == 0) {
+            if (loaded != null) {
+                loaded.on(true);
+            }
+        } else {
+            long[] worlds = new long[collectorSize];
+            long[] times = new long[collectorSize];
+            long[] ids = new long[collectorSize];
+            for (int i = 0; i < collectorSize; i++) {
+                worlds[i] = collector.keys[i * GROUP];
+                times[i] = collector.keys[i * GROUP + 1];
+                ids[i] = collector.keys[i * GROUP + 2];
+            }
+            graph.lookupBatch(worlds, times, ids, new Callback<Node[]>() {
+                @Override
+                public void on(Node[] result) {
+                    for (int i = 0; i < collectorSize; i++) {
+                        List<Tuple<Object[], Integer>> subCollector = collector.get(worlds[i], times[i], ids[i]);
+                        if (subCollector != null) {
+                            for (int j = 0; j < subCollector.size(); j++) {
+                                Tuple<Object[], Integer> tuple = subCollector.get(j);
+                                tuple.left()[tuple.right()] = result[i];
+                            }
+                        }
+                    }
+                    if (loaded != null) {
+                        loaded.on(true);
+                    }
+                }
+            });
+        }
+    }
+
+    public int load(final Buffer buffer, final int begin, final Graph graph, final L3GMap<List<Tuple<Object[], Integer>>> collector) {
         int cursor = begin;
         int previous = 0;
         int index = 0;
@@ -445,7 +484,7 @@ public class BaseTaskResult<A> implements TaskResult<A> {
                             if (type == -1) {
                                 type = (byte) Base64.decodeToIntWithBounds(buffer, previous, cursor);
                             } else {
-                                internal_load_element(buffer, previous, cursor, type, index - 4);
+                                internal_load_element(buffer, previous, cursor, type, index - 4, collector);
                                 index++;
                                 type = -1;
                             }
@@ -457,50 +496,22 @@ public class BaseTaskResult<A> implements TaskResult<A> {
                     _backend[index - 4] = null;
                 } else {
                     if (type != -1) {
-                        internal_load_element(buffer, previous, cursor, type, index - 4);
+                        internal_load_element(buffer, previous, cursor, type, index - 4, collector);
                     }
                 }
                 return cursor;
-            } else if (current == Constants.BLOCK_OPEN) {
-                //TODO
-                //TODO
+            } else if (current == Constants.BLOCK_OPEN && cursor != begin) {
+                final BaseTaskResult subResult = new BaseTaskResult(null, false);
+                subResult.load(buffer, cursor, graph, collector);
+                _backend[index - 4] = subResult;
+                index++;
             }
             cursor++;
         }
         if (type != -1) {
-            internal_load_element(buffer, previous, cursor, type, index - 4);
+            internal_load_element(buffer, previous, cursor, type, index - 4, collector);
         }
         return cursor;
-    }
-
-    public final void loadRefs(final Graph graph, final Callback<Boolean> callback) {
-        if (refs != null) {
-            long[] allRefs = refs.all();
-            int nbElem = allRefs.length / 4;
-            long[] worlds = new long[nbElem];
-            long[] times = new long[nbElem];
-            long[] ids = new long[nbElem];
-            int[] indexes = new int[nbElem];
-            int index = 0;
-            for (int i = 0; i < refs.size(); i = i + 4) {
-                indexes[index] = (int) allRefs[i];
-                worlds[index] = allRefs[i + 1];
-                times[index] = allRefs[i + 2];
-                ids[index] = allRefs[i + 3];
-                index++;
-            }
-            graph.lookupBatch(worlds, times, ids, new Callback<Node[]>() {
-                @Override
-                public void on(Node[] result) {
-                    for (int i = 0; i < indexes.length; i++) {
-                        _backend[indexes[i]] = result[i];
-                    }
-                    callback.on(true);
-                }
-            });
-        } else {
-            callback.on(true);
-        }
     }
 
     private String toJson(boolean withContent) {

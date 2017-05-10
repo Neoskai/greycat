@@ -141,4 +141,10 @@ public interface ChunkSpace {
      */
     EGraph newVolatileGraph();
 
+    Interceptor[] interceptors();
+
+    void addInterceptorFirst(Interceptor it);
+
+    void addInterceptorLast(Interceptor it);
+
 }

@@ -56,7 +56,6 @@ public class StorageHandler {
 
         StorageKeyChunk keyChunk = StorageKeyChunk.build(keyBuffer);
         int currentPool = (int) keyChunk.id()%POOLSIZE;
-        System.out.println("Current pool is: " + currentPool);
 
         // Storing
         synchronized (_storages[currentPool]) {

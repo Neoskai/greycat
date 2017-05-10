@@ -15,12 +15,10 @@
  */
 package greycatTest.internal.task;
 
-import greycat.Graph;
-import greycat.GraphBuilder;
-import greycat.Node;
-import greycat.Type;
+import greycat.*;
 import greycat.base.BaseTaskResult;
 import greycat.internal.heap.HeapBuffer;
+import greycat.internal.task.CoreTask;
 import greycat.struct.Buffer;
 import org.junit.Assert;
 import org.junit.Test;
@@ -34,22 +32,26 @@ public class BaseTaskResultTest {
         Graph graph = GraphBuilder.newBuilder().build();
         graph.connect((connected) -> {
 
-            BaseTaskResult result = new BaseTaskResult(null, false);
-            result.add(graph.newNode(0, 0).set("name", Type.STRING, "node").set("value", Type.DOUBLE, 4.8));
+            BaseTaskResult<Node> result = new BaseTaskResult<Node>(null, false);
+            result.add((Node) graph.newNode(0, 0).set("name", Type.STRING, "node").set("value", Type.DOUBLE, 4.8));
 
-            Buffer buffer = new HeapBuffer();
-            result.saveToBuffer(buffer);
+            CoreTask task = new CoreTask();
+            TaskContext ctx = task.prepare(graph, result, null);
 
-            BaseTaskResult resultBack = new BaseTaskResult(null, false);
-            resultBack.load(buffer,0, graph);
-            resultBack.loadRefs(graph, done->{
-                Assert.assertEquals(result.size(), resultBack.size());
-                Assert.assertEquals(((Node)result.get(0)).id(), ((Node)resultBack.get(0)).id());
+            Buffer buffer = graph.newBuffer();
+            ctx.saveToBuffer(buffer);
+
+            TaskContext ctx2 = task.prepare(graph, null, null);
+            ctx2.loadFromBuffer(buffer, new Callback<Boolean>() {
+                @Override
+                public void on(Boolean loadResult) {
+                    TaskResult<Node> resultBack = ctx2.resultAsNodes();
+                    Assert.assertEquals(result.size(), resultBack.size());
+                    Assert.assertEquals(result.get(0).id(), resultBack.get(0).id());
+                }
             });
 
         });
-
-
     }
 
 }

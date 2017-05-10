@@ -15,6 +15,7 @@
 ///
 
 import * as greycat from "greycat";
+import * as jre from "j2ts-jre";
 
 export class WSClient implements greycat.plugin.Storage {
 
@@ -168,10 +169,11 @@ export class WSClient implements greycat.plugin.Storage {
         delete finalCallbacks[finalProgressHash];
       }
       reqBuffer.free();
+      let collector = new greycat.utility.L3GMap<jre.java.util.List<greycat.utility.Tuple<any[], number>>>(true);
       let baseTaskResult: greycat.base.BaseTaskResult<any> = new greycat.base.BaseTaskResult<any>(null, false);
-      baseTaskResult.load(resultBuffer, finalGraph);
+      baseTaskResult.load(resultBuffer, 0, finalGraph, collector);
       notifyMethod(baseTaskResult.notifications(), finalGraph);
-      baseTaskResult.loadRefs(finalGraph, function (b: boolean) {
+      baseTaskResult.loadRefs(finalGraph, collector, function (b: boolean) {
         resultBuffer.free();
         finalCB(baseTaskResult);
       });

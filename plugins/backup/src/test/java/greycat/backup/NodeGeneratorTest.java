@@ -18,6 +18,7 @@ package greycat.backup;
 
 import greycat.*;
 import greycat.plugin.Job;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class NodeGeneratorTest {
@@ -25,6 +26,7 @@ public class NodeGeneratorTest {
     final int valuesToInsert= 1000000;
     final long initialStamp = 1000;
 
+    @Ignore
     @Test
     public void test(){
         Graph graph = new GraphBuilder()
@@ -86,5 +88,71 @@ public class NodeGeneratorTest {
             }
         });
     }
+
+
+    @Test
+    public void testNodeCreation(){
+        Graph graph = new GraphBuilder()
+                .withMemorySize(2000000)
+                .build();
+
+        graph.connect(new Callback<Boolean>() {
+            @Override
+            public void on(Boolean result) {
+                final long before = System.currentTimeMillis();
+                System.out.println("Connected to graph");
+
+                final DeferCounter counter = graph.newCounter(valuesToInsert);
+
+                for(long i = 0 ; i < valuesToInsert; i++){
+                    Node initialNode = graph.newNode(0,0);
+
+                    final double value= i * 0.3;
+                    final long time = initialStamp + i;
+
+                    graph.lookup(0, time, initialNode.id(), new Callback<Node>() {
+                        @Override
+                        public void on(Node timedNode) {
+                            timedNode.set("value", Type.DOUBLE, value);
+                            counter.count();
+                            timedNode.free();
+                        }
+                    });
+
+
+                    if(i%(valuesToInsert/10) == 0) {
+                        System.out.println("<insert til " + i + " in " + (System.currentTimeMillis() - before) / 1000 + "s");
+                        graph.save(new Callback<Boolean>() {
+                            @Override
+                            public void on(Boolean result) {
+                                // NOTHING
+                            }
+                        });
+                    }
+
+                    initialNode.free();
+                }
+
+
+                counter.then(new Job() {
+                    @Override
+                    public void run() {
+                        System.out.println("<end insert phase>" + " " + (System.currentTimeMillis() - before) / 1000 + "s");
+                        System.out.println( "Sparkey result: " + (valuesToInsert / ((System.currentTimeMillis() - before) / 1000) / 1000) + "kv/s");
+
+
+                        graph.disconnect(new Callback<Boolean>() {
+                            @Override
+                            public void on(Boolean result) {
+                                System.out.println("Disconnected from graph");
+                            }
+                        });
+                    }
+                });
+
+            }
+        });
+    }
+
 
 }

@@ -20,6 +20,8 @@ import greycat.base.BaseTaskResult;
 import greycat.internal.task.CoreProgressReport;
 import greycat.plugin.TaskExecutor;
 import greycat.struct.BufferIterator;
+import greycat.utility.L3GMap;
+import greycat.utility.Tuple;
 import io.undertow.connector.ByteBufferPool;
 import io.undertow.server.DefaultByteBufferPool;
 import io.undertow.websockets.client.WebSocketClient;
@@ -208,9 +210,11 @@ public class WSClient implements Storage, TaskExecutor {
                 }
                 buffer.free();
                 final BaseTaskResult baseTaskResult = new BaseTaskResult(null, false);
-                //baseTaskResult.load(bufferResult, _graph);
+
+                L3GMap<List<Tuple<Object[], Integer>>> collector = new L3GMap<List<Tuple<Object[], Integer>>>(true);
+                baseTaskResult.load(bufferResult, 0, _graph, collector);
                 process_notify(baseTaskResult.notifications());
-                baseTaskResult.loadRefs(_graph, new Callback<Boolean>() {
+                baseTaskResult.loadRefs(_graph, collector, new Callback<Boolean>() {
                     @Override
                     public void on(Boolean result) {
                         bufferResult.free();

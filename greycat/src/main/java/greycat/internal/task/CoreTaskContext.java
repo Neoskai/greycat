@@ -23,16 +23,16 @@ import greycat.internal.task.math.CoreMathExpressionEngine;
 import greycat.internal.task.math.MathExpressionEngine;
 import greycat.base.BaseNode;
 import greycat.struct.Buffer;
-import greycat.utility.Base64;
-import greycat.utility.BufferView;
+import greycat.utility.*;
 import greycat.TaskProgressType;
-import greycat.utility.LMap;
-import greycat.utility.Tuple;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static greycat.utility.L3GMap.GROUP;
 
 class CoreTaskContext implements TaskContext {
 
@@ -792,7 +792,7 @@ class CoreTaskContext implements TaskContext {
         return cursor;
     }
 
-    private int readResult(final Buffer buffer, final int begin) {
+    private int readResult(final Buffer buffer, final int begin, final L3GMap<List<Tuple<Object[], Integer>>> collector) {
         int cursor = begin;
         String name = null;
         while (cursor < buffer.length()) {
@@ -803,7 +803,7 @@ class CoreTaskContext implements TaskContext {
                 }
                 //read result
                 BaseTaskResult loadedResult = new BaseTaskResult(null, false);
-                cursor = loadedResult.load(buffer, cursor, graph());
+                cursor = loadedResult.load(buffer, cursor, _graph, collector);
                 if (name == null) {
                     _result = loadedResult;
                 } else {
@@ -820,102 +820,49 @@ class CoreTaskContext implements TaskContext {
 
     @Override
     public final void loadFromBuffer(Buffer buffer, Callback<Boolean> loaded) {
+        L3GMap<List<Tuple<Object[], Integer>>> collector = new L3GMap<List<Tuple<Object[], Integer>>>(true);
         int cursor = 0;
         cursor = readLong(buffer, cursor, true);
         cursor++;
         cursor = readLong(buffer, cursor, false);
         cursor++;
         while (cursor < buffer.length()) {
-            cursor = readResult(buffer, cursor);
+            cursor = readResult(buffer, cursor, collector);
             cursor++;
         }
-    }
-
-    /*
-    @Override
-    public final void loadFromBuffer(Buffer buffer, Callback<Boolean> loaded) {
-
-        int cursor = 0;
-        int previous = 0;
-        String name = null;
-        int index = 0;
-        while (cursor < buffer.length()) {
-            byte current = buffer.read(cursor);
-            if (current == Constants.CHUNK_ESEP) {
-                switch (index) {
-                    case 0:
-                        _world = Base64.decodeToLongWithBounds(buffer, previous, cursor);
-                        index++;
-                        break;
-                    case 1:
-                        _time = Base64.decodeToLongWithBounds(buffer, previous, cursor);
-                        index++;
-                        break;
-                    default:
-                        if (name == null) {
-                            if (previous != cursor) {
-                                name = Base64.decodeToStringWithBounds(buffer, previous, cursor);
-                            } else {
-                                name = "";
-                            }
-                        } else {
-                            final BaseTaskResult subResult = new BaseTaskResult(null, false);
-                            final BufferView view = new BufferView(buffer, previous, cursor - 1);
-                            subResult.load(view, _graph);
-                            if (name.equals("")) {
-                                if (_result != null) {
-                                    _result.free();
-                                }
-                                _result = subResult;
-                            } else {
-                                defineVariable(name, subResult);
-                            }
-                            name = null;
-                        }
-                }
-                previous = cursor + 1;
+        int collectorSize = collector.size();
+        if (collectorSize == 0) {
+            if (loaded != null) {
+                loaded.on(true);
             }
-            cursor++;
-        }
-        if (name != null) {
-            final BaseTaskResult subResult = new BaseTaskResult(null, false);
-            final BufferView view = new BufferView(buffer, previous, cursor - 1);
-            subResult.load(view, _graph);
-            final String finalName = name;
-            subResult.loadRefs(_graph, done -> {
-                if (finalName.equals("")) {
-                    if (_result != null) {
-                        _result.free();
-                    }
-                    _result = subResult;
-                } else {
-                    defineVariable(finalName, subResult);
-                }
-                if (loaded != null) {
-                    loaded.on(true);
-                }
-            });
         } else {
-            if (index == 1) {
-                _time = Base64.decodeToLongWithBounds(buffer, previous, cursor);
-            } else {
-                //should not occurs
-                final BaseTaskResult subResult = new BaseTaskResult(null, false);
-                final BufferView view = new BufferView(buffer, previous, cursor - 1);
-                subResult.load(view, _graph);
-                subResult.loadRefs(_graph, done -> {
-                    if (_result != null) {
-                        _result.free();
+            long[] worlds = new long[collectorSize];
+            long[] times = new long[collectorSize];
+            long[] ids = new long[collectorSize];
+            for (int i = 0; i < collectorSize; i++) {
+                worlds[i] = collector.keys[i * GROUP];
+                times[i] = collector.keys[i * GROUP + 1];
+                ids[i] = collector.keys[i * GROUP + 2];
+            }
+            _graph.lookupBatch(worlds, times, ids, new Callback<Node[]>() {
+                @Override
+                public void on(Node[] result) {
+                    for (int i = 0; i < collectorSize; i++) {
+                        List<Tuple<Object[], Integer>> subCollector = collector.get(worlds[i], times[i], ids[i]);
+                        if (subCollector != null) {
+                            for (int j = 0; j < subCollector.size(); j++) {
+                                Tuple<Object[], Integer> tuple = subCollector.get(j);
+                                tuple.left()[tuple.right()] = result[i];
+                            }
+                        }
                     }
-                    _result = subResult;
                     if (loaded != null) {
                         loaded.on(true);
                     }
-                });
-            }
+                }
+            });
         }
     }
-*/
 
     @Override
     public final Callback<String> printHook() {
