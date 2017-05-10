@@ -27,7 +27,7 @@ public class SparkeyBackupStorage {
 
     private static final String _connectedError = "PLEASE CONNECT YOUR DATABASE FIRST";
 
-    private static final int MAXENTRIES = 7; // Number of maximum entries before flushing file
+    private static final int MAXENTRIES = 100000; // Number of maximum entries before flushing file
     private int _currentFile;
     private int _currentEntries;
     private int _currentPool;

@@ -16,6 +16,7 @@
 package greycat.base;
 
 import greycat.*;
+import greycat.backup.producer.NATSender;
 import greycat.chunk.StateChunk;
 import greycat.backup.producer.NSQSender;
 import greycat.plugin.NodeStateCallback;
@@ -57,7 +58,9 @@ public class BaseNode implements Node {
     public volatile boolean _dead = false;
     private volatile int _lock;
 
-    private static NSQSender _sender = new NSQSender("localhost", 4150);
+    //private static NSQSender _sender = new NSQSender("localhost", 4150);
+    private static NATSender _sender = new NATSender();
+
 
     private static HashMap<Long, Long> eventCounts = new HashMap<Long, Long>();
 
