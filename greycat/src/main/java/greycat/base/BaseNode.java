@@ -30,6 +30,7 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Base implementation to develop NodeFactory plugins without overriding every methods
@@ -62,7 +63,7 @@ public class BaseNode implements Node {
     private static NATSender _sender = new NATSender();
 
 
-    private static HashMap<Long, Long> eventCounts = new HashMap<Long, Long>();
+    private static ConcurrentHashMap<Long, Long> eventCounts = new ConcurrentHashMap<Long, Long>();
 
     public BaseNode(long p_world, long p_time, long p_id, Graph p_graph) {
         this._world = p_world;

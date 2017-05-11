@@ -35,11 +35,14 @@ public class BackupLoader {
 
     public BackupLoader(String folderPath){
         _folderPath = folderPath;
-        _graph = GraphBuilder.newBuilder().build();
+        _graph = GraphBuilder.newBuilder().withMemorySize(2000000).build();
 
         //Testing purpose, will be replaced by a loading phase from the ressource file
         nodes = new HashMap<>();
-        nodes.put(1L, 7);
+        nodes.put(1L, 500000);
+        nodes.put(2L, 500000);
+        nodes.put(3L, 500000);
+        nodes.put(4L, 500000);
     }
 
     /**

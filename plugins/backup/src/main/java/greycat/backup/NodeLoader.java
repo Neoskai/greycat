@@ -25,6 +25,7 @@ import greycat.backup.tools.StorageValueChunk;
 import greycat.struct.Buffer;
 
 import java.io.File;
+import java.io.IOException;
 
 public class NodeLoader extends Thread{
 
@@ -70,11 +71,13 @@ public class NodeLoader extends Thread{
      */
     public void run(Graph g) {
         openReader(findHolder(0));
+
         for(int i= 0; i < _totalEvents; i++){
             // Opening the holder of the given id if not loaded
             if(!_currentFile.equals(findHolder(i))){
                 openReader(findHolder(i));
             }
+
             try {
                 String currentKey = _nodeId + ";" + i;
                 byte[] valueBytes =_reader.getAsByteArray(currentKey.getBytes());
@@ -89,7 +92,6 @@ public class NodeLoader extends Thread{
                     newNode.setAt(value.index(), value.type(), value.value());
                     _newNodeId = newNode.id();
                 } else {
-                    // If this node was already created, we lookup for it and write the value
                     g.lookup(value.world(), value.time(), _newNodeId, new Callback<Node>() {
                         @Override
                         public void on(Node result) {
@@ -103,7 +105,16 @@ public class NodeLoader extends Thread{
                     });
                 }
 
-            } catch (Exception e ){
+                if(i%100000 == 0){
+                    g.save(new Callback<Boolean>() {
+                        @Override
+                        public void on(Boolean result) {
+                            // NOTHING
+                        }
+                    });
+                }
+
+            } catch (IOException | NullPointerException e ){
                 e.printStackTrace();
             }
 
@@ -116,7 +127,8 @@ public class NodeLoader extends Thread{
      * @return The filepath of the file containing this node/event
      */
     public String findHolder(long eventId){
-        int fileNumber = (int) eventId/10;
+        int fileNumber = (int) eventId/100000;
+
         return _folderPath + "/save_" + _nodeId + "_" + fileNumber+".spl";
     }
 }

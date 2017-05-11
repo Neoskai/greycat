@@ -23,6 +23,8 @@ import greycat.struct.Buffer;
 import io.nats.client.Connection;
 import io.nats.client.Nats;
 
+import java.io.IOException;
+
 public class NATReceiver {
 
     public static void main(String[] args )
@@ -42,6 +44,11 @@ public class NATReceiver {
                 try {
                     storageHandler.process(buffer);
                 } catch (Exception e) {
+                    try {
+                        nc.publish("Greycat", m.getData());
+                    } catch (IOException e1) {
+                        e1.printStackTrace();
+                    }
                     e.printStackTrace();
                 }
             });

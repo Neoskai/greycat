@@ -35,14 +35,42 @@ public class BackupLoaderTest {
                     System.out.println("Connecting to backup graph");
                 }
             });
-            g.lookup(0, 0, 1, new Callback<Node>() {
+            g.lookup(0, 1001, 1, new Callback<Node>() {
                 @Override
                 public void on(Node result) {
                     System.out.println("Node found: ");
                     System.out.println(result.toString());
                 }
             });
-            g.lookup(0, 10, 1, new Callback<Node>() {
+            g.lookup(0, 1200, 1, new Callback<Node>() {
+                @Override
+                public void on(Node result) {
+                    System.out.println("Node found: ");
+                    System.out.println(result.toString());
+                }
+            });
+            g.lookup(0, 120000, 1, new Callback<Node>() {
+                @Override
+                public void on(Node result) {
+                    System.out.println("Node found: ");
+                    System.out.println(result.toString());
+                }
+            });
+            g.lookup(0, 120000, 2, new Callback<Node>() {
+                @Override
+                public void on(Node result) {
+                    System.out.println("Node found: ");
+                    System.out.println(result.toString());
+                }
+            });
+            g.lookup(0, 120000, 3, new Callback<Node>() {
+                @Override
+                public void on(Node result) {
+                    System.out.println("Node found: ");
+                    System.out.println(result.toString());
+                }
+            });
+            g.lookup(0, 120000, 4, new Callback<Node>() {
                 @Override
                 public void on(Node result) {
                     System.out.println("Node found: ");
