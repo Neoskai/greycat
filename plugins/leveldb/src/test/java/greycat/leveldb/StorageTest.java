@@ -35,7 +35,7 @@ public class StorageTest {
 */
         //Unsafe.DEBUG_MODE = true;
 
-        test("leveldb_test ", new GraphBuilder().withStorage(new LevelDBStorage("data")).withScheduler(new NoopScheduler()).withMemorySize(2000000).build());
+        test("leveldb_test ", new GraphBuilder().withStorage(new LevelDBStorage("data")).withScheduler(new NoopScheduler()).withMemorySize(200000).build());
     }
 
     final int valuesToInsert = 1000000;
@@ -50,7 +50,7 @@ public class StorageTest {
                 final DeferCounter counter = graph.newCounter(valuesToInsert);
                 for (long i = 0; i < valuesToInsert; i++) {
 
-                    if (i % 100000 == 0) {
+                    if (i % 10000 == 0) {
                       //   System.out.println("<insert til " + i + " in " + (System.currentTimeMillis() - before) / 1000 + "s");
                         graph.save(null);
                     }

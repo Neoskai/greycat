@@ -29,6 +29,8 @@ import java.io.IOException;
 
 public class NodeLoader extends Thread{
 
+    private static final int SAVEPOINT = 10000;
+
     private long _totalEvents;
     private String _folderPath;
     private long _nodeId;
@@ -71,18 +73,23 @@ public class NodeLoader extends Thread{
      */
     public void run(Graph g) {
         openReader(findHolder(0));
+        Buffer buffer = g.newBuffer();
 
         for(int i= 0; i < _totalEvents; i++){
             // Opening the holder of the given id if not loaded
             if(!_currentFile.equals(findHolder(i))){
+                _reader.close();
                 openReader(findHolder(i));
+            }
+
+            if(i%SAVEPOINT == 0){
+                g.save(null);
             }
 
             try {
                 String currentKey = _nodeId + ";" + i;
                 byte[] valueBytes =_reader.getAsByteArray(currentKey.getBytes());
 
-                Buffer buffer = g.newBuffer();
                 buffer.writeAll(valueBytes);
                 StorageValueChunk value = StorageValueChunk.build(buffer);
                 buffer.free();
@@ -91,6 +98,7 @@ public class NodeLoader extends Thread{
                     Node newNode = g.newNode(value.world(), value.time());
                     newNode.setAt(value.index(), value.type(), value.value());
                     _newNodeId = newNode.id();
+
                 } else {
                     g.lookup(value.world(), value.time(), _newNodeId, new Callback<Node>() {
                         @Override
@@ -101,15 +109,7 @@ public class NodeLoader extends Thread{
                                 //System.out.println("Current system: " + key.index() + " " + key.world() + " " +  key.time() + " " + value.type() + " " + value.value());
                                 result.setAt(value.index(), value.type(), value.value());
                             }
-                        }
-                    });
-                }
-
-                if(i%100000 == 0){
-                    g.save(new Callback<Boolean>() {
-                        @Override
-                        public void on(Boolean result) {
-                            // NOTHING
+                            result.free();
                         }
                     });
                 }
@@ -117,7 +117,6 @@ public class NodeLoader extends Thread{
             } catch (IOException | NullPointerException e ){
                 e.printStackTrace();
             }
-
         }
     }
 

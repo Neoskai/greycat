@@ -113,6 +113,8 @@ public class SimpleBackupLoader {
             }
         });
 
+        int i = 0;
+
         try {
             SparkeyLogIterator logIterator = new SparkeyLogIterator(Sparkey.getLogFile(_indexFile));
             HashMap<Long, Long> nodeMap = new HashMap<Long, Long>();
@@ -133,6 +135,8 @@ public class SimpleBackupLoader {
                     StorageValueChunk value = StorageValueChunk.build(buffer);
                     buffer.free();
 
+                    i++;
+
                     // If graph does not already have this node, we need to create it and register it
                     if(!nodeMap.containsKey(key.id())){
                         Node newNode = _graph.newNode(value.world(), value.time());
@@ -151,6 +155,15 @@ public class SimpleBackupLoader {
                                 }
                             }
                         });
+
+                        if(i%1000 == 0){
+                            _graph.save(new Callback<Boolean>() {
+                                @Override
+                                public void on(Boolean result) {
+                                    // NOTHING
+                                }
+                            });
+                        }
                     }
 
                 }

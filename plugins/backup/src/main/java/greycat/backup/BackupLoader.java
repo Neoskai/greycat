@@ -18,7 +18,8 @@ package greycat.backup;
 import greycat.Callback;
 import greycat.Graph;
 import greycat.GraphBuilder;
-
+import greycat.rocksdb.RocksDBStorage;
+import greycat.scheduler.NoopScheduler;
 import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -32,10 +33,12 @@ public class BackupLoader {
 
     private HashMap<Long, Integer> nodes;
 
-
     public BackupLoader(String folderPath){
         _folderPath = folderPath;
-        _graph = GraphBuilder.newBuilder().withMemorySize(2000000).build();
+        _graph = new GraphBuilder()
+                .withStorage(new RocksDBStorage("data"))
+                .withMemorySize(100000)
+                .build();
 
         //Testing purpose, will be replaced by a loading phase from the ressource file
         nodes = new HashMap<>();
@@ -76,8 +79,7 @@ public class BackupLoader {
             });
         }
         es.shutdown();
-
-        es.awaitTermination(1, TimeUnit.MINUTES);
+        es.awaitTermination(2, TimeUnit.MINUTES);
 
         return _graph;
     }

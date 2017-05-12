@@ -45,5 +45,10 @@
             <artifactId>greycat-websocket</artifactId>
             <version>7-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>com.datathings</groupId>
+            <artifactId>greycat-rocksdb</artifactId>
+            <version>7-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 </project>
