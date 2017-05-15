@@ -18,7 +18,6 @@ package greycat.base;
 import greycat.*;
 import greycat.backup.producer.NATSender;
 import greycat.chunk.StateChunk;
-import greycat.backup.producer.NSQSender;
 import greycat.plugin.NodeStateCallback;
 import greycat.struct.*;
 import greycat.plugin.NodeDeclaration;
@@ -27,7 +26,6 @@ import greycat.plugin.Resolver;
 import greycat.struct.proxy.*;
 
 import java.lang.reflect.Field;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -61,7 +59,6 @@ public class BaseNode implements Node {
 
     //private static NSQSender _sender = new NSQSender("localhost", 4150);
     private static NATSender _sender = new NATSender();
-
 
     private static ConcurrentHashMap<Long, Long> eventCounts = new ConcurrentHashMap<Long, Long>();
 

@@ -19,7 +19,6 @@ import greycat.Callback;
 import greycat.Graph;
 import greycat.GraphBuilder;
 import greycat.rocksdb.RocksDBStorage;
-import greycat.scheduler.NoopScheduler;
 import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
