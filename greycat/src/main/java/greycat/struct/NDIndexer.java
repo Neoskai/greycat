@@ -15,33 +15,33 @@
  */
 package greycat.struct;
 
+import greycat.struct.ProfileResult;
+
 /**
- * Created by assaad on 02/05/2017.
+ * Created by assaad on 05/05/2017.
  */
-public interface NDHashManager {
+public interface NDIndexer {
+    void setDistance(int distanceType);
 
-    /**
-     * Create a new element in the hashtable
-     **/
-    long createNewElement();
+    void setResolution(double[] resolution);
 
+    void setMinBound(double[] min);
 
-    /**
-     * Update the element in the hashtable
-     *
-     * @param id                the id of the resolved element from the hashtable
-     * @param key               the multi dimensional key being inserted
-     * @param value             the object being indexed/profiled for this key
-     */
-    void update(long id, double[] key, long value);
+    void setMaxBound(double[] max);
 
+    void setBufferSize(int bufferSize);
 
-    /**
-     * Resolve the current object of the hashed id 
-     * @param id
-     * @return
-     */
-    Object get(long id);
+    void insert(double[] keys, long value);
 
+    ProfileResult queryAround(double[] keys, int max);
 
+    ProfileResult queryRadius(double[] keys, double radius);
+
+    ProfileResult queryBoundedRadius(double[] keys, double radius, int max);
+
+    ProfileResult queryArea(double[] min, double[] max);
+
+    long size();
+
+    long treeSize();
 }

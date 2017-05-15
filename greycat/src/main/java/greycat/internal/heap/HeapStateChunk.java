@@ -24,6 +24,7 @@ import greycat.chunk.StateChunk;
 import greycat.internal.CoreConstants;
 import greycat.internal.tree.KDTree;
 import greycat.internal.tree.NDTree;
+import greycat.internal.tree.ndmanager.IndexManager;
 import greycat.plugin.NodeStateCallback;
 import greycat.struct.*;
 import greycat.utility.Base64;
@@ -127,7 +128,7 @@ class HeapStateChunk implements StateChunk, HeapContainer {
             if (result != null) {
                 switch (_type[found]) {
                     case Type.NDTREE:
-                        return new NDTree((EGraph) result);
+                        return new NDTree((EGraph) result, new IndexManager());
                     case Type.KDTREE:
                         return new KDTree((EGraph) result);
                     default:
@@ -177,7 +178,7 @@ class HeapStateChunk implements StateChunk, HeapContainer {
             if (result != null) {
                 switch (_type[found]) {
                     case Type.NDTREE:
-                        return new NDTree((EGraph) result);
+                        return new NDTree((EGraph) result, new IndexManager());
                     case Type.KDTREE:
                         return new KDTree((EGraph) result);
                     default:
@@ -339,7 +340,7 @@ class HeapStateChunk implements StateChunk, HeapContainer {
             case Type.NDTREE:
                 EGraph tempND = new HeapEGraph(this, null, _space.graph());
                 toSet = tempND;
-                toGet = new NDTree(tempND);
+                toGet = new NDTree(tempND, new IndexManager());
                 break;
         }
         internal_set(p_key, p_type, toSet, true, false);

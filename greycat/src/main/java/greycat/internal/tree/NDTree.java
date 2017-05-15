@@ -21,58 +21,71 @@ import greycat.struct.*;
 import greycat.utility.distance.Distance;
 import greycat.utility.distance.Distances;
 
-public class NDTree implements Profile {
+public class NDTree implements NDIndexer {
 
+    //default values:
     public static int BUFFER_SIZE_DEF = 20;
+
+    //Settings on root node:
+
+    private static int BOUND_MIN = 8;
+    private static int BOUND_MAX = 9;
     public static int RESOLUTION = 10;
     public static int BUFFER_SIZE = 11;
     public static int DISTANCE = 12;
-    private static int STRATEGY = 13;
 
+    //Setttings on each subspace
     private static int E_TOTAL = 0;
     private static int E_SUBNODES = 1;
-    private static int E_TOTAL_SUBNODES = 2;
-    private static int E_MIN = 3;
-    private static int E_MAX = 4;
-    private static int E_BUFFER_KEYS = 5;
-    private static int E_BUFFER_VALUES = 6;
-    private static int E_VALUE = 7;
-    private static int E_PROFILE = 8;
+    private static int E_BUFFER_KEYS = 2;
+    private static int E_BUFFER_VALUES = 3;
+    private static int E_KEY = 4;
+    private static int E_VALUE = 5;
     private static int E_OFFSET_REL = 16;
 
-    private final EGraph eGraph;
+    private static int MIN = 0;
+    private static int MAX = 1;
+    private static int CENTER = 2;
 
-    public NDTree(final EGraph eGraph) {
+
+    private final EGraph eGraph;
+    private final NDManager manager;
+
+    public NDTree(final EGraph eGraph, final NDManager manager) {
         this.eGraph = eGraph;
+        this.manager = manager;
         if (eGraph.root() == null) {
             ENode root = eGraph.newNode();
             eGraph.setRoot(root);
         }
     }
 
-    private static int getRelationId(double[] centerKey, double[] keyToInsert) {
+
+    //From a key to insert, and a parent space with min and max boundaries, get the relation id of the subspace of child where to insert the key
+    private static int getRelationId(double[][] space, double[] keyToInsert) {
         int result = 0;
-        for (int i = 0; i < centerKey.length; i++) {
+        for (int i = 0; i < space[MIN].length; i++) {
             if (i != 0) {
                 result = result << 1;
             }
-            if (keyToInsert[i] > centerKey[i]) {
+            if (keyToInsert[i] > space[CENTER][i]) {
                 result += 1;
             }
         }
         return result + E_OFFSET_REL;
     }
 
-    private static boolean checkCreateLevels(double[] min, double[] max, double[] resolutions) {
+    //return a boolean whether with the current settings we can create more sublevels or not
+    private static boolean checkCreateLevels(double[][] space, double[] resolutions) {
         if (resolutions != null) {
-            for (int i = 0; i < min.length; i++) {
-                if ((max[i] - min[i]) > 2 * resolutions[i]) {
+            for (int i = 0; i < space[MIN].length; i++) {
+                if ((space[MAX][i] - space[MIN][i]) > 2 * resolutions[i]) {
                     return true;
                 }
             }
         } else {
-            for (int i = 0; i < min.length; i++) {
-                if ((max[i] > min[i])) {
+            for (int i = 0; i < space[MIN].length; i++) {
+                if ((space[MAX][i] > space[MIN][i])) {
                     return true;
                 }
             }
@@ -80,7 +93,7 @@ public class NDTree implements Profile {
         return false;
     }
 
-    private static double[] getCenterMinMax(double[] min, double[] max) {
+    private static double[] getCenter(final double[] min, final double[] max) {
         double[] center = new double[min.length];
         for (int i = 0; i < min.length; i++) {
             center[i] = (max[i] + min[i]) / 2;
@@ -88,11 +101,73 @@ public class NDTree implements Profile {
         return center;
     }
 
-    private static double[] getCenter(ENode node) {
-        double[] min = ((DoubleArray) node.getAt(E_MIN)).extract();
-        double[] max = ((DoubleArray) node.getAt(E_MAX)).extract();
-        return getCenterMinMax(min, max);
+    //From a relation id, get the directions in the multidimensional subspace
+    //this function is somehow the inverse of getRelationId
+    private static boolean[] binaryFromLong(long value, int dim) {
+        long tempvalue = value - E_OFFSET_REL;
+        long shiftvalue = tempvalue >> 1;
+        boolean[] res = new boolean[dim];
+        for (int i = 0; i < dim; i++) {
+            res[dim - i - 1] = ((tempvalue - (shiftvalue << 1)) == 1);
+            tempvalue = shiftvalue;
+            shiftvalue = tempvalue >> 1;
+        }
+        return res;
     }
+
+
+    private static double[][] getChildSpace(double[][] parentSpace, int index) {
+        boolean[] binaries = binaryFromLong(index, parentSpace[MIN].length);
+        double[][] childSpace = new double[3][parentSpace[MIN].length];
+
+        for (int i = 0; i < parentSpace[MIN].length; i++) {
+            if (!binaries[i]) {
+                childSpace[MIN][i] = parentSpace[MIN][i];
+                childSpace[MAX][i] = parentSpace[CENTER][i];
+
+            } else {
+                childSpace[MIN][i] = parentSpace[CENTER][i];
+                childSpace[MAX][i] = parentSpace[MAX][i];
+            }
+            childSpace[CENTER][i] = (childSpace[MIN][i] + childSpace[MAX][i]) / 2;
+        }
+        return childSpace;
+    }
+
+
+    private static double[][] getChildMinMax(double[][] parentSpace, int index) {
+        boolean[] binaries = binaryFromLong(index, parentSpace[MIN].length);
+        double[][] childSpace = new double[2][parentSpace[MIN].length];
+
+        for (int i = 0; i < parentSpace[MIN].length; i++) {
+            if (!binaries[i]) {
+                childSpace[MIN][i] = parentSpace[MIN][i];
+                childSpace[MAX][i] = (parentSpace[MIN][i] + parentSpace[MAX][i]) / 2;
+
+            } else {
+                childSpace[MIN][i] = (parentSpace[MIN][i] + parentSpace[MAX][i]) / 2;
+                childSpace[MAX][i] = parentSpace[MAX][i];
+            }
+        }
+        return childSpace;
+    }
+
+
+    private static double[][] getRootSpace(ENode root) {
+        double[][] space = new double[3][];
+        space[MIN] = ((DoubleArray) root.getAt(BOUND_MIN)).extract();
+        space[MAX] = ((DoubleArray) root.getAt(BOUND_MAX)).extract();
+        space[CENTER] = getCenter(space[MIN], space[MAX]);
+        return space;
+    }
+
+    private static double[][] getRootMinMax(ENode root) {
+        double[][] space = new double[2][];
+        space[MIN] = ((DoubleArray) root.getAt(BOUND_MIN)).extract();
+        space[MAX] = ((DoubleArray) root.getAt(BOUND_MAX)).extract();
+        return space;
+    }
+
 
     private static void check(double[] values, double[] min, double[] max) {
         if (min == null || max == null) {
@@ -108,193 +183,124 @@ public class NDTree implements Profile {
         }
     }
 
-    private static ENode createNewNode(final ENode parent, final ENode root, final int index, final double[] min, final double[] max, final double[] center, final double[] keyToInsert, final int buffersize) {
+    private static ENode createNewNode(final ENode parent, final ENode root, final int index) {
         ENode node = parent.egraph().newNode();
-        double[] minChild = new double[min.length];
-        double[] maxChild = new double[max.length];
-        for (int i = 0; i < min.length; i++) {
-            if (keyToInsert[i] <= center[i]) {
-                minChild[i] = min[i];
-                maxChild[i] = center[i];
-            } else {
-                minChild[i] = center[i];
-                maxChild[i] = max[i];
-            }
-        }
-        node.setAt(E_SUBNODES, Type.LONG, 0);
-        ((DoubleArray)node.getOrCreateAt(E_MIN, Type.DOUBLE_ARRAY)).initWith(minChild);
-        ((DoubleArray)node.getOrCreateAt(E_MAX, Type.DOUBLE_ARRAY)).initWith(maxChild);
+
         node.setAt(E_TOTAL, Type.LONG, 0);
-        root.setAt(E_TOTAL_SUBNODES, Type.LONG, (long) root.getAt(E_TOTAL_SUBNODES) + 1);
+        node.setAt(E_SUBNODES, Type.LONG, 0);
+
+        parent.setAt(index, Type.ENODE, node);
         parent.setAt(E_SUBNODES, Type.LONG, (long) parent.getAt(E_SUBNODES) + 1);
         parent.setAt(index, Type.ENODE, node);
-        //todo create buffer here
-       /* if (buffersize != 0) {
 
-        }*/
         return node;
     }
 
-    private static boolean subInsert(final ENode parent, final double[] key, final long value, final int strategyType, final double[] min, final double[] max, final double[] center, final double[] resolution, final int buffersize, final ENode root, boolean bufferupdate) {
-        int index = getRelationId(center, key);
+    private static boolean subInsert(final ENode parent, final double[] key, final Object value, final double[][] space, final double[] resolution, final int buffersize, final ENode root, boolean bufferupdate, final NDManager manager) {
+        int index = getRelationId(space, key);
 
         ENode child = (ENode) parent.getAt(index);
         if (child == null) {
-            child = createNewNode(parent, root, index, min, max, center, key, buffersize);
+            child = createNewNode(parent, root, index);
         }
-        double[] childmin = ((DoubleArray) child.getAt(E_MIN)).extract();
-        double[] childmax = ((DoubleArray) child.getAt(E_MAX)).extract();
-        double[] childcenter = getCenterMinMax(childmin, childmax);
-        boolean res = internalInsert(child, key, value, strategyType, childmin, childmax, childcenter, resolution, buffersize, root);
-        res = res && !bufferupdate;
+        double[][] childSpace = getChildSpace(space, index);
+        if (child.getAt(E_VALUE) == null && checkCreateLevels(childSpace, resolution) && manager.parentsHaveNodes()) {
+            child.setAt(E_VALUE, Type.LONG, manager.getNewParentNode());
+        }
 
+        boolean res = internalInsert(child, key, value, bufferupdate, childSpace, resolution, buffersize, root, manager) && !bufferupdate;
         if (res) {
-            switch (strategyType) {
-                case TreeStrategy.PROFILE: {
-                    parent.setAt(E_TOTAL, Type.LONG, (long) parent.getAt(E_TOTAL) + (long) value);
-                    break;
-                }
-                case TreeStrategy.INDEX: {
-                    parent.setAt(E_TOTAL, Type.LONG, (long) parent.getAt(E_TOTAL) + 1);
-                    break;
-                }
-                default: {
-                    throw new RuntimeException("Index strategy is wrong!");
-                }
+            parent.setAt(E_TOTAL, Type.LONG, (long) parent.getAt(E_TOTAL) + 1);
+            if (manager.parentsHaveNodes()) {
+                parent.setAt(E_VALUE, Type.LONG, manager.updateParent((long) parent.getAt(E_VALUE), key, value));
             }
         }
         return res;
     }
 
-    private static boolean internalInsert(final ENode node, final double[] key, final long value, final int strategyType, final double[] min, final double[] max, final double[] center, final double[] resolution, final int buffersize, final ENode root) {
+
+    private static boolean internalInsert(final ENode node, final double[] key, final Object value, final boolean bufferupdate, final double[][] space, final double[] resolution, final int buffersize, final ENode root, final NDManager manager) {
         if ((long) node.getAt(E_SUBNODES) != 0) {
-            return subInsert(node, key, value, strategyType, min, max, center, resolution, buffersize, root, false);
-        } else if (checkCreateLevels(min, max, resolution)) {
+            return subInsert(node, key, value, space, resolution, buffersize, root, false, manager);
+        } else if (checkCreateLevels(space, resolution)) {
             DMatrix buffer = null;
             if (buffersize > 0) {
                 buffer = (DMatrix) node.getOrCreateAt(E_BUFFER_KEYS, Type.DMATRIX);
             }
             if (buffer != null) {
                 //First step check if it already exists in the buffer
-                for (int i = 0; i < buffer.columns(); i++) {
-                    if (compare(key, buffer.column(i), resolution)) {
-                        switch (strategyType) {
-                            case TreeStrategy.PROFILE: {
-                                DMatrix bufferkeys = (DMatrix) node.getAt(E_PROFILE);
-                                for (int j = 0; j < key.length; j++) {
-                                    bufferkeys.set(j, i, bufferkeys.get(j, i) + key[j] * value);
-                                }
-                                LMatrix bufferValue = (LMatrix) node.getAt(E_BUFFER_VALUES);
-                                bufferValue.set(0, i, bufferValue.get(0, i) + value);
-                                node.setAt(E_TOTAL, Type.LONG, (long) node.getAt(E_TOTAL) + value);
-                                return true; //to update parent total
+                if (!bufferupdate) {
+                    for (int i = 0; i < buffer.columns(); i++) {
+                        if (compare(key, buffer.column(i), resolution)) {
+                            //call manager interface to get the boolean value here
+                            //if the key already exist
+                            LongArray bufferValue = (LongArray) node.getOrCreateAt(E_BUFFER_VALUES, Type.LONG_ARRAY);
+                            bufferValue.set(i, manager.updateExistingLeafNode(bufferValue.get(i), value));
+
+                            if (manager.updateParentsOnExisting() && manager.parentsHaveNodes()) {
+                                node.setAt(E_TOTAL, Type.LONG, (long) node.getAt(E_TOTAL) + 1);
+                                node.setAt(E_VALUE, Type.LONG, manager.updateParent((long) node.getAt(E_VALUE), key, value));
                             }
-                            case TreeStrategy.INDEX: {
-                                LMatrix bufferValue = (LMatrix) node.getAt(E_BUFFER_VALUES);
-                                bufferValue.set(0, i, value);
-                                return false; //Should not update parent total
-                            }
-                            default: {
-                                throw new RuntimeException("Index strategy is wrong!");
-                            }
+
+                            return manager.updateParentsOnExisting();
                         }
                     }
                 }
                 //Here it is not in the buffer, we check if we can append
                 if (buffer.columns() < buffersize) {
                     buffer.appendColumn(key);
-                    switch (strategyType) {
-                        case TreeStrategy.PROFILE: {
-                            DMatrix bufferkeys = (DMatrix) node.getOrCreateAt(E_PROFILE, Type.DMATRIX);
-                            bufferkeys.appendColumn(key);
-                            LMatrix bufferValue = (LMatrix) node.getOrCreateAt(E_BUFFER_VALUES, Type.LMATRIX);
-                            bufferValue.appendColumn(new long[]{value});
-                            node.setAt(E_TOTAL, Type.LONG, (long) node.getAt(E_TOTAL) + value);
-                            return true; //to update parent total
+                    LongArray bufferValue = (LongArray) node.getOrCreateAt(E_BUFFER_VALUES, Type.LONG_ARRAY);
+                    if (!bufferupdate) {
+                        bufferValue.addElement(manager.getNewLeafNode(value));
+                        node.setAt(E_TOTAL, Type.LONG, (long) node.getAt(E_TOTAL) + 1);
+                        if (manager.updateParentsOnNewValue() && manager.parentsHaveNodes()) {
+                            node.setAt(E_VALUE, Type.LONG, manager.updateParent((long) node.getAt(E_VALUE), key, value));
                         }
-
-                        case TreeStrategy.INDEX: {
-                            LMatrix bufferValue = (LMatrix) node.getOrCreateAt(E_BUFFER_VALUES, Type.LMATRIX);
-                            bufferValue.appendColumn(new long[]{(long) value});
-                            node.setAt(E_TOTAL, Type.LONG, (long) node.getAt(E_TOTAL) + 1);
-                            return true; //to update parent total
-                        }
-                        default: {
-                            throw new RuntimeException("Index strategy is wrong!");
-                        }
+                        return manager.updateParentsOnNewValue();
+                    } else {
+                        bufferValue.addElement((long) value);
+                        return false;
                     }
+
                 }
                 //here buffer is full we need to reinsert
                 else {
-                    //if it is a profile, get the average of all the keys and update the buffer before reinserting
-                    if (strategyType == TreeStrategy.PROFILE) {
-                        DMatrix bufferkeys = (DMatrix) node.getAt(E_PROFILE);
-                        LMatrix bufferValue = (LMatrix) node.getAt(E_BUFFER_VALUES);
-                        for (int i = 0; i < buffer.columns(); i++) {
-                            long t = bufferValue.get(0, i);
-                            for (int j = 0; j < buffer.rows(); j++) {
-                                buffer.set(j, i, bufferkeys.get(j, i) / t);
-                            }
-                        }
-                        node.setAt(E_PROFILE, Type.DMATRIX, null);
-                    }
-
-
                     //reinsert all children
 
-                    LMatrix bufferValue = (LMatrix) node.getAt(E_BUFFER_VALUES);
+                    LongArray bufferValue = (LongArray) node.getAt(E_BUFFER_VALUES);
                     for (int i = 0; i < buffer.columns(); i++) {
-                        subInsert(node, buffer.column(i), bufferValue.get(0, i), strategyType, min, max, center, resolution, buffersize, root, true);
+                        subInsert(node, buffer.column(i), bufferValue.get(i), space, resolution, buffersize, root, true, manager);
                     }
-                    node.setAt(E_BUFFER_VALUES, Type.LMATRIX, null);
+
 
                     //clear the buffer, update the total, and insert the new value
                     node.setAt(E_BUFFER_KEYS, Type.DMATRIX, null);
-                    return subInsert(node, key, value, strategyType, min, max, center, resolution, buffersize, root, false);
-
+                    node.setAt(E_BUFFER_VALUES, Type.LONG_ARRAY, null);
+                    return subInsert(node, key, value, space, resolution, buffersize, root, bufferupdate, manager);
                 }
 
 
             } //null buffer means to subinsert as long as we can create levels
             else {
-                return subInsert(node, key, value, strategyType, min, max, center, resolution, buffersize, root, false);
+                return subInsert(node, key, value, space, resolution, buffersize, root, bufferupdate, manager);
             }
         }
         //Else we reached here last level of the trees, and the array is full, we need to start a profiler
         else {
-            switch (strategyType) {
-                case TreeStrategy.PROFILE: {
-                    //todo add the value later
-                    double[] profile = ((DoubleArray) node.getAt(E_PROFILE)).extract();
-                    if (profile == null) {
-                        profile = new double[key.length];
-                        System.arraycopy(key, 0, profile, 0, key.length);
-                    } else {
-                        for (int i = 0; i < key.length; i++) {
-                            profile[i] += key[i] * value;
-                        }
-                    }
-                    ((DoubleArray)node.getOrCreateAt(E_PROFILE, Type.DOUBLE_ARRAY)).initWith(profile);
-                    node.setAt(E_TOTAL, Type.LONG, (long) node.getAt(E_TOTAL) + value);
-                    return true; //to update parent total
-                }
-                case TreeStrategy.INDEX: {
-                    if ((long) node.getAt(E_TOTAL) == 0) {
-                        ((DoubleArray)node.getOrCreateAt(E_PROFILE, Type.DOUBLE_ARRAY)).initWith(key);
-                        node.setAt(E_VALUE, Type.LONG, value);
-                        node.setAt(E_TOTAL, Type.LONG, 1);
-                        return true;
-                    } else {
-                        ((DoubleArray)node.getOrCreateAt(E_PROFILE, Type.DOUBLE_ARRAY)).initWith(key);
-                        node.setAt(E_VALUE, Type.LONG, value);
-                        return false;
-                    }
-                }
-                default: {
-                    throw new RuntimeException("Index strategy is wrong!");
+            if (bufferupdate) {
+                node.setAt(E_VALUE, Type.LONG, value);
+                return false;
+            } else {
+                long evalue = node.getAtWithDefault(E_VALUE, -1l);
+                if (evalue > 0) {
+                    long newvalue = manager.updateExistingLeafNode(evalue, value);
+                    node.setAt(E_VALUE, Type.LONG, newvalue);
+                    return manager.updateParentsOnExisting();
+                } else {
+                    node.setAt(E_VALUE, Type.LONG, manager.getNewLeafNode(value));
+                    return manager.updateParentsOnNewValue();
                 }
             }
-
         }
 
     }
@@ -325,18 +331,18 @@ public class NDTree implements Profile {
 
     @Override
     public void setResolution(double[] resolution) {
-        ((DoubleArray)(eGraph.root().getOrCreateAt(RESOLUTION, Type.DOUBLE_ARRAY))).initWith(resolution);
+        ((DoubleArray) (eGraph.root().getOrCreateAt(RESOLUTION, Type.DOUBLE_ARRAY))).initWith(resolution);
     }
 
     @Override
     public void setMinBound(double[] min) {
-        ((DoubleArray)(eGraph.root().getOrCreateAt(E_MIN, Type.DOUBLE_ARRAY))).initWith(min);
+        ((DoubleArray) (eGraph.root().getOrCreateAt(BOUND_MIN, Type.DOUBLE_ARRAY))).initWith(min);
     }
 
 
     @Override
     public void setMaxBound(double[] max) {
-        ((DoubleArray)(eGraph.root().getOrCreateAt(E_MAX, Type.DOUBLE_ARRAY))).initWith(max);
+        ((DoubleArray) (eGraph.root().getOrCreateAt(BOUND_MAX, Type.DOUBLE_ARRAY))).initWith(max);
     }
 
     @Override
@@ -352,48 +358,22 @@ public class NDTree implements Profile {
     @Override
     public void insert(final double[] keys, final long value) {
         ENode root = eGraph.root();
-        double[] min = ((DoubleArray) root.getAt(E_MIN)).extract();
-        double[] max = ((DoubleArray) root.getAt(E_MAX)).extract();
-        check(keys, min, max);
+        double[][] space = getRootSpace(root);
+        check(keys, space[MIN], space[MAX]);
         double[] resolution = ((DoubleArray) root.getAt(RESOLUTION)).extract();
+
+
         int buffersize = root.getAtWithDefault(BUFFER_SIZE, BUFFER_SIZE_DEF);
         //Distance distance = Distances.getDistance(state.getWithDefault(DISTANCE, DISTANCE_DEF));
         if (root.getAtWithDefault(E_TOTAL, 0L) == 0) {
-            root.setAt(STRATEGY, Type.INT, TreeStrategy.INDEX);
             root.setAt(E_TOTAL, Type.LONG, 0);
-            root.setAt(E_TOTAL_SUBNODES, Type.LONG, 0);
             root.setAt(E_SUBNODES, Type.LONG, 0);
+            if (manager.parentsHaveNodes()) {
+                root.setAt(E_VALUE, Type.LONG, manager.getNewParentNode());
+            }
 
-            ((DoubleArray)root.getOrCreateAt(E_MIN, Type.DOUBLE_ARRAY)).initWith(min);
-            ((DoubleArray)root.getOrCreateAt(E_MAX, Type.DOUBLE_ARRAY)).initWith(max);
         }
-        internalInsert(root, keys, value, TreeStrategy.INDEX, min, max, getCenterMinMax(min, max), resolution, buffersize, root);
-    }
-
-    @Override
-    public void profile(final double[] keys) {
-        profileWith(keys, 1);
-    }
-
-    @Override
-    public void profileWith(final double[] keys, final long occurrence) {
-        ENode root = eGraph.root();
-        double[] min = ((DoubleArray) root.getAt(E_MIN)).extract();
-        double[] max = ((DoubleArray) root.getAt(E_MAX)).extract();
-        check(keys, min, max);
-        double[] resolution = ((DoubleArray) root.getAt(RESOLUTION)).extract();
-        int buffersize = root.getAtWithDefault(BUFFER_SIZE, BUFFER_SIZE_DEF);
-        //Distance distance = Distances.getDistance(state.getWithDefault(DISTANCE, DISTANCE_DEF));
-        if (root.getAtWithDefault(E_TOTAL, 0L) == 0) {
-            root.setAt(STRATEGY, Type.INT, TreeStrategy.PROFILE);
-            root.setAt(E_TOTAL, Type.LONG, 0);
-            root.setAt(E_TOTAL_SUBNODES, Type.LONG, 0);
-            root.setAt(E_SUBNODES, Type.LONG, 0);
-            ((DoubleArray)root.getOrCreateAt(E_MIN, Type.DOUBLE_ARRAY)).initWith(min);
-            ((DoubleArray)root.getOrCreateAt(E_MAX, Type.DOUBLE_ARRAY)).initWith(max);
-        }
-        internalInsert(root, keys, occurrence, TreeStrategy.PROFILE, min, max, getCenterMinMax(min, max), resolution, buffersize, root);
-
+        internalInsert(root, keys, value, false, space, resolution, buffersize, root, manager);
     }
 
     @Override
@@ -412,18 +392,16 @@ public class NDTree implements Profile {
         if (root.getAtWithDefault(E_TOTAL, 0L) == 0) {
             return null;
         }
-        double[] emin = ((DoubleArray) root.getAt(E_MIN)).extract();
-        double[] emax = ((DoubleArray) root.getAt(E_MAX)).extract();
-        check(keys, emin, emax);
+        double[][] space = getRootMinMax(root);
+
+        check(keys, space[MIN], space[MAX]);
         Distance distance = Distances.getDistance(root.getAtWithDefault(DISTANCE, Distances.DEFAULT), null);
-        int strategyType = (int) root.getAt(STRATEGY);
         EGraph calcZone = eGraph.graph().space().newVolatileGraph();
         VolatileTreeResult nnl = new VolatileTreeResult(calcZone.newNode(), max);
-        reccursiveTraverse(root, calcZone, nnl, strategyType, distance, keys, null, null, radius);
+        reccursiveTraverse(root, calcZone, nnl, distance, keys, null, null, radius, space);
         nnl.sort(true);
         return nnl;
     }
-
 
 
     @Override
@@ -433,14 +411,15 @@ public class NDTree implements Profile {
             return null;
         }
         Distance distance = Distances.getDistance(root.getAtWithDefault(DISTANCE, Distances.DEFAULT), null);
-        int strategyType = (int) root.getAt(STRATEGY);
         final double[] center = new double[max.length];
         for (int i = 0; i < center.length; i++) {
             center[i] = (min[i] + max[i]) / 2;
         }
         EGraph calcZone = eGraph.graph().space().newVolatileGraph();
         VolatileTreeResult nnl = new VolatileTreeResult(calcZone.newNode(), -1);
-        reccursiveTraverse(root, calcZone, nnl, strategyType, distance, center, min, max, -1);
+        double[][] space = getRootMinMax(root);
+
+        reccursiveTraverse(root, calcZone, nnl, distance, center, min, max, -1, space);
         nnl.sort(true);
         return nnl;
     }
@@ -453,113 +432,50 @@ public class NDTree implements Profile {
 
     @Override
     public long treeSize() {
-        ENode root = eGraph.root();
-        return root.getAtWithDefault(E_TOTAL_SUBNODES, 0L);
+        return eGraph.size();
     }
 
 
-    private static boolean[] binaryFromLong(long value, int dim) {
-        long tempvalue = value - E_OFFSET_REL;
-        long shiftvalue = tempvalue >> 1;
-        boolean[] res = new boolean[dim];
-        for (int i = 0; i < dim; i++) {
-            res[dim - i - 1] = ((tempvalue - (shiftvalue << 1)) == 1);
-            tempvalue = shiftvalue;
-            shiftvalue = tempvalue >> 1;
-        }
-        return res;
-    }
-
-
-    private static void reccursiveTraverse(final ENode node, final EGraph calcZone, final VolatileTreeResult nnl, final int strategyType, final Distance distance, final double[] target, final double[] targetmin, final double[] targetmax,  final double radius) {
+    private static void reccursiveTraverse(final ENode node, final EGraph calcZone, final VolatileTreeResult nnl, final Distance distance, final double[] target, final double[] targetmin, final double[] targetmax, final double radius, final double[][] space) {
 
         if (node.getAtWithDefault(E_SUBNODES, 0L) == 0) {
             //Leave node
             DMatrix buffer = (DMatrix) node.getAt(E_BUFFER_KEYS);
-            LMatrix bufferValue = (LMatrix) node.getAt(E_BUFFER_VALUES);
+            LongArray bufferValue = (LongArray) node.getAt(E_BUFFER_VALUES);
 
             if (buffer != null) {
                 //Bufferizing node
-                switch (strategyType) {
-                    case TreeStrategy.PROFILE: {
-                        double[] tempK = new double[target.length];
-
-                        DMatrix bufferkeys = (DMatrix) node.getAt(E_PROFILE);
-                        for (int i = 0; i < buffer.columns(); i++) {
-                            long t = bufferValue.get(0, i);
-                            for (int j = 0; j < buffer.rows(); j++) {
-                                tempK[j] = bufferkeys.get(j, i) / t;
-                            }
-                            TreeHelper.filterAndInsert(tempK, t, target, targetmin, targetmax, distance, radius, nnl);
-                        }
-                        return;
-                    }
-                    case TreeStrategy.INDEX: {
-                        for (int i = 0; i < buffer.columns(); i++) {
-                            TreeHelper.filterAndInsert(buffer.column(i), bufferValue.get(0, i), target, targetmin, targetmax, distance, radius, nnl);
-                        }
-                        return;
-
-                    }
-                    default: {
-                        throw new RuntimeException("Index strategy is wrong!");
-                    }
+                //todo think about the manager here
+                for (int i = 0; i < buffer.columns(); i++) {
+                    TreeHelper.filterAndInsert(buffer.column(i), bufferValue.get(i), target, targetmin, targetmax, distance, radius, nnl);
                 }
+                return;
+
 
             } else {
                 //Very End node
-                switch (strategyType) {
-                    case TreeStrategy.PROFILE: {
-                        double[] keyo = ((DoubleArray) node.getAt(E_PROFILE)).extract();
-                        double[] key = new double[keyo.length];
-                        long value = (long) node.getAt(E_TOTAL);
-                        for (int i = 0; i < keyo.length; i++) {
-                            key[i] = keyo[i] / value;
-                        }
-                        TreeHelper.filterAndInsert(key, value, target, targetmin, targetmax, distance, radius, nnl);
-                        return;
-                    }
-                    case TreeStrategy.INDEX: {
-                        double[] key = ((DoubleArray) node.getAt(E_PROFILE)).extract();
-                        long value = (long) node.getAt(E_VALUE);
-                        TreeHelper.filterAndInsert(key, value, target, targetmin, targetmax, distance, radius, nnl);
-                        return;
-                    }
-                    default: {
-                        throw new RuntimeException("Index strategy is wrong!");
-                    }
-                }
+                //todo think about the manager here
+                double[] key = ((DoubleArray) node.getAt(E_KEY)).extract();
+                long value = (long) node.getAt(E_VALUE);
+                TreeHelper.filterAndInsert(key, value, target, targetmin, targetmax, distance, radius, nnl);
+                return;
             }
 
         } else {
             //Parent node
-            final double[] boundMax = ((DoubleArray) node.getAt(E_MAX)).extract();
-            final double[] boundMin = ((DoubleArray) node.getAt(E_MIN)).extract();
             final double worst = nnl.getWorstDistance();
             if (targetmin == null || targetmax == null) {
-                if (!nnl.isCapacityReached() || TreeHelper.getclosestDistance(target, boundMin, boundMax, distance) <= worst) {
+                if (!nnl.isCapacityReached() || TreeHelper.getclosestDistance(target, space[MIN], space[MAX], distance) <= worst) {
                     final ENode tempList = calcZone.newNode();
                     final VolatileTreeResult childPriority = new VolatileTreeResult(tempList, -1);
-                    final int dim = boundMax.length;
-                    final double[] childMin = new double[dim];
-                    final double[] childMax = new double[dim];
+
 
                     node.each(new NodeStateCallback() {
                         @Override
                         public void on(int attributeKey, byte elemType, Object elem) {
                             if (attributeKey >= E_OFFSET_REL) {
-                                boolean[] binaries = binaryFromLong(attributeKey, dim);
-                                for (int i = 0; i < dim; i++) {
-                                    if (!binaries[i]) {
-                                        childMin[i] = boundMin[i];
-                                        childMax[i] = (boundMax[i] + boundMin[i]) / 2;
-
-                                    } else {
-                                        childMin[i] = (boundMax[i] + boundMin[i]) / 2;
-                                        childMax[i] = boundMax[i];
-                                    }
-                                }
-                                childPriority.insert(childMin, attributeKey, TreeHelper.getclosestDistance(target, childMin, childMax, distance));
+                                double[][] childSpace = getChildMinMax(space, attributeKey);
+                                childPriority.insert(childSpace[MIN], attributeKey, TreeHelper.getclosestDistance(target, childSpace[MIN], childSpace[MAX], distance));
                             }
                         }
                     });
@@ -567,7 +483,8 @@ public class NDTree implements Profile {
 
                     for (int i = 0; i < childPriority.size(); i++) {
                         ENode child = (ENode) node.getAt((int) childPriority.value(i));
-                        reccursiveTraverse(child, calcZone, nnl, strategyType, distance, target, targetmin, targetmax, radius);
+                        double[][] childSpace = getChildMinMax(space, (int) childPriority.value(i));
+                        reccursiveTraverse(child, calcZone, nnl, distance, target, targetmin, targetmax, radius, childSpace);
                     }
                     childPriority.free();
                 }
@@ -577,8 +494,10 @@ public class NDTree implements Profile {
                     public void on(int attributeKey, byte elemType, Object elem) {
                         if (attributeKey >= E_OFFSET_REL) {
                             ENode child = (ENode) node.getAt(attributeKey);
-                            if (TreeHelper.checkBoundsIntersection(targetmin, targetmax, ((DoubleArray) child.getAt(E_MIN)).extract(), ((DoubleArray) child.getAt(E_MAX)).extract())) {
-                                reccursiveTraverse(child, calcZone, nnl, strategyType, distance, target, targetmin, targetmax, radius);
+                            double[][] childSpace = getChildMinMax(space, attributeKey);
+
+                            if (TreeHelper.checkBoundsIntersection(targetmin, targetmax, childSpace[MIN], childSpace[MAX])) {
+                                reccursiveTraverse(child, calcZone, nnl, distance, target, targetmin, targetmax, radius, childSpace);
                             }
                         }
                     }
