@@ -90,7 +90,6 @@ public class NodeGeneratorTest {
     }
 
 
-    @Ignore
     @Test
     public void testNodeCreation(){
         Graph graph = new GraphBuilder()
@@ -155,6 +154,7 @@ public class NodeGeneratorTest {
         });
     }
 
+    @Ignore
     @Test
     public void testMultiNodeCreation(){
         Graph graph = new GraphBuilder()

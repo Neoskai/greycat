@@ -20,6 +20,7 @@ import com.spotify.sparkey.SparkeyWriter;
 import greycat.Callback;
 import greycat.struct.Buffer;
 import greycat.struct.BufferIterator;
+import sun.security.util.AuthResources_ja;
 
 import java.io.File;
 
@@ -40,6 +41,8 @@ public class SparkeyBackupStorage {
     private long _currentTimelapse;
 
     private SparkeyWriter _writer = null;
+
+    private long _highestNode;
 
     public SparkeyBackupStorage(int poolId){
         _currentTimelapse = 0;
@@ -103,6 +106,10 @@ public class SparkeyBackupStorage {
 
                 StorageKeyChunk key = StorageKeyChunk.build(keyView);
                 StorageValueChunk value = StorageValueChunk.build(valueView);
+
+                if (key.id() > _highestNode){
+                    _highestNode = key.id();
+                }
 
                 //System.out.println("Received key is : " + key.toString() + " with data: " + value.toString() + " written in " + _filePath);
 
@@ -185,10 +192,14 @@ public class SparkeyBackupStorage {
 
             File indexFile = new File(_filePath);
             String[] split = _filePath.split(".spl");
-            String newPath = split[0] + "_" + System.currentTimeMillis() +".spl";
+            String newPath = split[0] + System.currentTimeMillis() + "_" + _highestNode;
 
-            File newFile = new File(newPath);
+            File spiFILE = new File(split[0] + ".spi");
+
+            File newSPIFile = new File(newPath + ".spi");
+            File newFile = new File(newPath +".spl");
             indexFile.renameTo(newFile);
+            spiFILE.renameTo(newSPIFile);
 
             _writer = null;
 
