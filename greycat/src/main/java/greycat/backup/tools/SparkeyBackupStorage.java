@@ -28,6 +28,8 @@ public class SparkeyBackupStorage {
     private static final String _connectedError = "PLEASE CONNECT YOUR DATABASE FIRST";
 
     private static final int MAXENTRIES = 100000; // Number of maximum entries before flushing file
+    private final int TIMELAPSEDURATION = 60000; // Timelapse we should swap folder after (We should build a snapshot after each timelapse)
+
     private int _currentFile;
     private int _currentEntries;
     private int _currentPool;
@@ -35,14 +37,17 @@ public class SparkeyBackupStorage {
     private String _filePath;
     private boolean _isConnected = false;
 
+    private long _currentTimelapse;
+
     private SparkeyWriter _writer = null;
 
     public SparkeyBackupStorage(int poolId){
+        _currentTimelapse = 0;
         _currentFile = 0;
         _currentEntries = 0;
         _currentPool = poolId;
 
-        _filePath = "data/save_" + poolId + "_" + _currentFile++ + ".spl";
+        loadFilePath();
     }
 
     /**
@@ -87,6 +92,8 @@ public class SparkeyBackupStorage {
             throw new RuntimeException(_connectedError);
         }
         try {
+            // Checking if we raised the max number of element in this file or if we need to change cause of timestamp
+            swapCheck();
             _currentEntries++;
 
             BufferIterator it = stream.iterator();
@@ -125,7 +132,8 @@ public class SparkeyBackupStorage {
      * Check if we need to swap files at the end of an insert (depending on the max number of entry in a file)
      */
     private void swapCheck(){
-        if(_currentEntries == MAXENTRIES){
+        long endLapse = (_currentTimelapse+1) * TIMELAPSEDURATION;
+        if(_currentEntries == MAXENTRIES || System.currentTimeMillis() > endLapse){
             disconnect(new Callback<Boolean>() {
                 @Override
                 public void on(Boolean result) {
@@ -133,7 +141,7 @@ public class SparkeyBackupStorage {
                 }
             });
 
-            _filePath = "data/save_" + _currentPool + "_" + _currentFile++ + ".spl";
+            loadFilePath();
 
             connect(new Callback<Boolean>() {
                 @Override
@@ -148,6 +156,24 @@ public class SparkeyBackupStorage {
     }
 
     /**
+     * Loads the new filepath
+     */
+    private void loadFilePath(){
+        // Constant part
+        String shard = "/shard_" + _currentPool;
+
+        // We then need to change the timelapse after each Backup Point. baseTime is the number of unit of timelapse in the current system
+        _currentTimelapse = (long) (System.currentTimeMillis() / TIMELAPSEDURATION);
+        String timelapse = "/timelapse_" +  _currentTimelapse + "_" + (_currentTimelapse+1);
+
+        // Finally, we need to swap each file after X Nodes, and write the beginning and end timelapse
+        long timeStamp = System.currentTimeMillis();
+        String fileId = "/save_" + _currentFile++ + "-" + timeStamp;
+
+        _filePath = "data" + shard + timelapse + fileId + "-.spl";
+    }
+
+    /**
      * Disconnects the current storage writer and flush everything to the disk
      * @param callback Callback function
      */
@@ -156,6 +182,13 @@ public class SparkeyBackupStorage {
             _writer.writeHash();
             _writer.flush();
             _writer.close();
+
+            File indexFile = new File(_filePath);
+            String[] split = _filePath.split(".spl");
+            String newPath = split[0] + "_" + System.currentTimeMillis() +".spl";
+
+            File newFile = new File(newPath);
+            indexFile.renameTo(newFile);
 
             _writer = null;
 

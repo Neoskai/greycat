@@ -30,6 +30,9 @@
  * (Timer error due to NATS Streaming when using with large number of messages + Not handling client name)
  */
 
+/*
+
+
 package greycat.backup.external;
 
 import greycat.Graph;
@@ -76,3 +79,5 @@ public class NATStreamingReceiver {
         }
     }
 }
+
+*/
