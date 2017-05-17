@@ -21,37 +21,41 @@ import greycat.Callback;
 import greycat.Graph;
 import greycat.Node;
 import greycat.Type;
+import greycat.backup.tools.FileKey;
 import greycat.backup.tools.StorageValueChunk;
 import greycat.struct.Buffer;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 public class NodeLoader extends Thread{
 
     private static final int SAVEPOINT = 10000;
 
-    private long _totalEvents;
-    private String _folderPath;
     private long _nodeId;
     private SparkeyReader _reader;
 
     private String _currentFile;
+    private Long _currentNumber;
+    private Map<Long, FileKey> _fileMap;
+
     private long _newNodeId;
 
-    public NodeLoader(long node, String folderPath, long totalEvents){
+
+    public NodeLoader(long node, Long firstFile, Map<Long, FileKey> submap){
         _nodeId = node;
-        _folderPath = folderPath;
-        _totalEvents = totalEvents;
-        _currentFile = "";
         _newNodeId = 0;
+        _currentNumber = firstFile;
+        _currentFile = submap.get(firstFile).getFilePath();
+        _fileMap = submap;
     }
 
     /**
      * Opens the reader for backup for the given file
      * @param filepath Path of the news file to read
      */
-    public void openReader(String filepath){
+    private void openReader(String filepath){
         try {
             File backupFile = new File(filepath);
 
@@ -60,7 +64,8 @@ public class NodeLoader extends Thread{
             }
 
             _reader = Sparkey.open(backupFile);
-            _currentFile = filepath;
+
+            _currentNumber++;
         } catch (Exception e){
             e.printStackTrace();
         }
@@ -72,29 +77,26 @@ public class NodeLoader extends Thread{
      * @param g The graph to apply the backup on
      */
     public void run(Graph g) {
-        openReader(findHolder(0));
+        openReader(_currentFile);
         Buffer buffer = g.newBuffer();
 
-        for(int i= 0; i < _totalEvents; i++){
-            // Opening the holder of the given id if not loaded
-            if(!_currentFile.equals(findHolder(i))){
-                _reader.close();
-                openReader(findHolder(i));
-            }
+        boolean backupEnded = false;
+        int eventId = 0;
 
-            if(i%SAVEPOINT == 0){
-                g.save(null);
-            }
-
+        while(!backupEnded){
             try {
-                String currentKey = _nodeId + ";" + i;
+                if(eventId%SAVEPOINT == 0){
+                    g.save(null);
+                }
+
+                String currentKey = _nodeId + ";" + eventId;
                 byte[] valueBytes =_reader.getAsByteArray(currentKey.getBytes());
 
                 buffer.writeAll(valueBytes);
                 StorageValueChunk value = StorageValueChunk.build(buffer);
                 buffer.free();
 
-                if(i== 0){
+                if(eventId== 0){
                     Node newNode = g.newNode(value.world(), value.time());
                     newNode.setAt(value.index(), value.type(), value.value());
                     _newNodeId = newNode.id();
@@ -106,12 +108,30 @@ public class NodeLoader extends Thread{
                             if(value.type() == Type.REMOVE){
                                 result.removeAt(value.index());
                             }else {
-                                //System.out.println("Current system: " + key.index() + " " + key.world() + " " +  key.time() + " " + value.type() + " " + value.value());
+                                //System.out.println("Current system: " + value.index() + " " + value.type() + " " + value.value());
                                 result.setAt(value.index(), value.type(), value.value());
                             }
                             result.free();
                         }
                     });
+                }
+
+                eventId++;
+
+                String upcomingKey = _nodeId + ";" + eventId;
+
+                while(_fileMap.keySet().contains(_currentNumber)){
+                    if(_reader.getAsByteArray(upcomingKey.getBytes()) == null) {
+                        _reader.close();
+                        openReader(nextHolder());
+                    }
+                    else{
+                        break;
+                    }
+                }
+
+                if(!_fileMap.keySet().contains(_currentNumber)){
+                    backupEnded = true;
                 }
 
             } catch (IOException | NullPointerException e ){
@@ -121,13 +141,11 @@ public class NodeLoader extends Thread{
     }
 
     /**
-     * Check the file holding the given event id for the current node
-     * @param eventId The concerned eventID
+     * Check for the next file in the list
      * @return The filepath of the file containing this node/event
      */
-    public String findHolder(long eventId){
-        int fileNumber = (int) eventId/100000;
-
-        return _folderPath + "/save_" + _nodeId + "_" + fileNumber+".spl";
+    private String nextHolder(){
+        return _fileMap.get(_currentNumber).getFilePath();
     }
+
 }

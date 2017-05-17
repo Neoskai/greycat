@@ -42,8 +42,6 @@ public class SparkeyBackupStorage {
 
     private SparkeyWriter _writer = null;
 
-    private long _highestNode;
-
     public SparkeyBackupStorage(int poolId){
         _currentTimelapse = 0;
         _currentFile = 0;
@@ -105,12 +103,8 @@ public class SparkeyBackupStorage {
                 Buffer valueView = it.next();
 
                 StorageKeyChunk key = StorageKeyChunk.build(keyView);
-                StorageValueChunk value = StorageValueChunk.build(valueView);
 
-                if (key.id() > _highestNode){
-                    _highestNode = key.id();
-                }
-
+                //StorageValueChunk value = StorageValueChunk.build(valueView);
                 //System.out.println("Received key is : " + key.toString() + " with data: " + value.toString() + " written in " + _filePath);
 
                 if (valueView != null) {
@@ -169,11 +163,11 @@ public class SparkeyBackupStorage {
         // Constant part
         String shard = "/shard_" + _currentPool;
 
-        // We then need to change the timelapse after each Backup Point. baseTime is the number of unit of timelapse in the current system
-        _currentTimelapse = (long) (System.currentTimeMillis() / TIMELAPSEDURATION);
+        // We then need to change the timelapse after each Backup Point. currentTimelapse is the current UNIT of Timelapseduration.
+        _currentTimelapse =  Math.floorDiv(System.currentTimeMillis() , TIMELAPSEDURATION);
         String timelapse = "/timelapse_" +  _currentTimelapse + "_" + (_currentTimelapse+1);
 
-        // Finally, we need to swap each file after X Nodes, and write the beginning and end timelapse
+        // Finally, we need to swap each file after X Entries, and write the beginning and end timelapse + the last node in this file
         long timeStamp = System.currentTimeMillis();
         String fileId = "/save_" + _currentFile++ + "-" + timeStamp;
 
@@ -192,7 +186,7 @@ public class SparkeyBackupStorage {
 
             File indexFile = new File(_filePath);
             String[] split = _filePath.split(".spl");
-            String newPath = split[0] + System.currentTimeMillis() + "_" + _highestNode;
+            String newPath = split[0] + System.currentTimeMillis();
 
             File spiFILE = new File(split[0] + ".spi");
 
