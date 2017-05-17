@@ -53,11 +53,16 @@ public class BackupLoader {
     private List<String> _fileList;
 
     public BackupLoader(String folderPath){
-        _folderPath = folderPath;
-        _graph = new GraphBuilder()
+        this(folderPath,
+                new GraphBuilder()
                 .withStorage(new RocksDBStorage("data"))
                 .withMemorySize(100000)
-                .build();
+                .build());
+    }
+
+    public BackupLoader(String folderPath, Graph graphToUse){
+        _folderPath = folderPath;
+        _graph = graphToUse;
 
         _fileMap = new HashMap<>();
         _nodes = new HashMap<>();
@@ -103,26 +108,49 @@ public class BackupLoader {
         return _graph;
     }
 
+    public Graph backupSequence(long initialStamp, long endStamp) throws InterruptedException {
+        loadFileFromSequence(_folderPath, initialStamp, endStamp);
+        loadNodes();
+
+        ExecutorService es = Executors.newCachedThreadPool();
+        for (Long id: _nodes.keySet()){
+            System.out.println("Loading node: " + id);
+            es.execute(new Runnable() {
+                @Override
+                public void run() {
+                    NodeLoader loader = new NodeLoader(id, _nodes.get(id), _fileMap.get(Math.toIntExact(id%POOLSIZE)));
+                    loader.run(_graph);
+                }
+            });
+        }
+        es.shutdown();
+        es.awaitTermination(2, TimeUnit.MINUTES);
+
+        return _graph;
+    }
+
     /**
      * Method to backup only one node on an existing graph
-     * @param existingGraph The graph to edit and recover the node on
      * @param nodeId Id of the node to recover
      * @return The graph edited with the backup for this node executed
      * @throws InterruptedException
      */
-    public Graph nodeBackup(Graph existingGraph, long nodeId) throws InterruptedException{
+    public Graph nodeBackup(long nodeId) throws InterruptedException{
+        loadFiles(_folderPath);
+        loadNodes();
+
         ExecutorService es = Executors.newCachedThreadPool();
         es.execute(new Runnable() {
             @Override
             public void run() {
                 NodeLoader loader = new NodeLoader(nodeId,_nodes.get(nodeId), _fileMap.get(Math.toIntExact(nodeId%POOLSIZE)));
-                loader.run(existingGraph);
+                loader.run(_graph);
             }
         });
         es.shutdown();
         es.awaitTermination(2, TimeUnit.MINUTES);
 
-        return existingGraph;
+        return _graph;
     }
 
     /**
@@ -177,6 +205,16 @@ public class BackupLoader {
      * @param basedir The basedir containing all the files of the backup
      */
     private void loadFiles(String basedir){
+        loadFileFromSequence(basedir, 0, System.currentTimeMillis());
+    }
+
+    /**
+     * Loads the map of elements for a given range of timestamp
+     * @param basedir Base directory containing all the files
+     * @param startSeq Timestamp we should start at
+     * @param endSeq Timestamp we should end at
+     */
+    private void loadFileFromSequence(String basedir, long startSeq, long endSeq){
         Path basePath = Paths.get(basedir);
 
         _fileList = getFiles(_fileList, basePath);
@@ -203,13 +241,15 @@ public class BackupLoader {
             key.setStartLapse(startLapse);
             key.setFilePath(file);
 
-            Map<Long, FileKey> initialMap = _fileMap.get(shard);
-            if(initialMap == null){
-                initialMap = new HashMap<>();
-            }
-            initialMap.put(fileNumber, key);
+            if( (startLapse > startSeq && startLapse < endSeq) || (endLapse > startSeq && endLapse < endSeq) ) {
+                Map<Long, FileKey> initialMap = _fileMap.get(shard);
+                if (initialMap == null) {
+                    initialMap = new HashMap<>();
+                }
+                initialMap.put(fileNumber, key);
 
-            _fileMap.put(shard, initialMap);
+                _fileMap.put(shard, initialMap);
+            }
         }
     }
 
