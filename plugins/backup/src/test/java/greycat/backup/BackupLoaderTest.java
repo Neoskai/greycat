@@ -23,7 +23,11 @@ import greycat.rocksdb.RocksDBStorage;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -32,7 +36,7 @@ import static org.junit.Assert.assertEquals;
 public class BackupLoaderTest {
 
     @Test
-    public void totalBackup(){
+    public void totalBackup() throws IOException {
         try {
             BackupLoader loader = new BackupLoader("data");
             loader.init();
@@ -47,43 +51,37 @@ public class BackupLoaderTest {
             g.lookup(0, 1001, 1, new Callback<Node>() {
                 @Override
                 public void on(Node result) {
-                    System.out.println("Node found: ");
-                    System.out.println(result.toString());
+                    assertTrue(result != null);
                 }
             });
             g.lookup(0, 1200, 1L, new Callback<Node>() {
                 @Override
                 public void on(Node result) {
-                    System.out.println("Node found: ");
-                    System.out.println(result.toString());
+                    assertTrue(result != null);
                 }
             });
             g.lookup(0, 120000, 2, new Callback<Node>() {
                 @Override
                 public void on(Node result) {
-                    System.out.println("Node found: ");
-                    System.out.println(result.toString());
+                    assertTrue(result != null);
                 }
             });
             g.lookup(0, 120000, 3, new Callback<Node>() {
                 @Override
                 public void on(Node result) {
-                    System.out.println("Node found: ");
-                    System.out.println(result.toString());
+                    assertTrue(result != null);
                 }
             });
             g.lookup(0, 120000, 4, new Callback<Node>() {
                 @Override
                 public void on(Node result) {
-                    System.out.println("Node found: ");
-                    System.out.println(result.toString());
+                    assertTrue(result != null);
                 }
             });
             g.lookup(0, 120000, 5, new Callback<Node>() {
                 @Override
                 public void on(Node result) {
-                    System.out.println("Node found: ");
-                    System.out.println(result.toString());
+                    assertTrue(result != null);
                 }
             });
             g.disconnect(new Callback<Boolean>() {
@@ -95,11 +93,15 @@ public class BackupLoaderTest {
         } catch (Exception e){
             e.printStackTrace();
         }
+
+        File data = new File("data/data");
+        if (data.exists()) {
+            delete(data);
+        }
     }
 
-    @Ignore
     @Test
-    public void nodeBackup(){
+    public void nodeBackup() throws IOException {
         try {
             Graph newGraph =  new GraphBuilder()
                     .withStorage(new RocksDBStorage("data"))
@@ -113,7 +115,7 @@ public class BackupLoaderTest {
             g.lookup(0, 1001, 1L, new Callback<Node>() {
                 @Override
                 public void on(Node result) {
-                    System.out.println("Node found: " + result.toString());
+                    assertTrue(result != null);
                 }
             });
 
@@ -135,11 +137,15 @@ public class BackupLoaderTest {
         } catch (Exception e){
             e.printStackTrace();
         }
+
+        File data = new File("data/data");
+        if (data.exists()) {
+            delete(data);
+        }
     }
 
-    @Ignore
     @Test
-    public void backupSequence(){
+    public void backupSequence() throws IOException {
         try {
             Graph newGraph = new GraphBuilder()
                     .withStorage(new RocksDBStorage("data"))
@@ -174,13 +180,96 @@ public class BackupLoaderTest {
             g.lookup(0, 975000, 5, new Callback<Node>() {
                 @Override
                 public void on(Node result) {
-                    assertEquals(null, result);
+                    assertTrue(result != null);
                 }
             });
 
             g.disconnect(null);
         } catch (Exception e){
             e.printStackTrace();
+        }
+
+        File data = new File("data/data");
+        if (data.exists()) {
+            delete(data);
+        }
+    }
+
+    @Test
+    public void testNodeSequence() throws IOException {
+        try {
+            Graph newGraph = new GraphBuilder()
+                    .withStorage(new RocksDBStorage("data"))
+                    .withMemorySize(100000)
+                    .build();
+
+            BackupLoader loader = new BackupLoader("data", newGraph);
+            loader.init();
+            Graph g = loader.backupNodeSequence(1494945502076L, System.currentTimeMillis(), 5L);
+            g.connect(null);
+            g.lookup(0, 500000, 1L, new Callback<Node>() {
+                @Override
+                public void on(Node result) {
+                    assertEquals(null, result);
+                }
+            });
+
+            g.lookup(0, 1000, 0, new Callback<Node>() {
+                @Override
+                public void on(Node result) {
+                    assertEquals(result, null);
+                }
+            });
+
+            g.lookup(0, 1000, 2, new Callback<Node>() {
+                @Override
+                public void on(Node result) {
+                    assertEquals(result, null);
+                }
+            });
+
+            g.lookup(0, 975000, 5, new Callback<Node>() {
+                @Override
+                public void on(Node result) {
+                    assertTrue(result != null);
+                }
+            });
+
+            g.disconnect(null);
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+
+        File data = new File("data/data");
+        if (data.exists()) {
+            delete(data);
+        }
+    }
+
+    private static void delete(File file) throws IOException {
+        if (file.isDirectory()) {
+            //directory is empty, then delete it
+            if (file.list().length == 0) {
+                file.delete();
+            } else {
+                //list all the directory contents
+                String files[] = file.list();
+                for (String temp : files) {
+                    //construct the file structure
+                    File fileDelete = new File(file, temp);
+
+                    //recursive delete
+                    delete(fileDelete);
+                }
+                //check the directory again, if empty then delete it
+                if (file.list().length == 0) {
+                    file.delete();
+                }
+            }
+
+        } else {
+            //if file, then delete it
+            file.delete();
         }
     }
 

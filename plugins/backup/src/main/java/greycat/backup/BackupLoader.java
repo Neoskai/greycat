@@ -143,6 +143,32 @@ public class BackupLoader {
     }
 
     /**
+     * Backup one node from a given timelapse
+     * @param initialStamp The starting lapse to backup from
+     * @param endStamp The ending lapse to backup to
+     * @param nodeId The node to backup
+     * @return The Graph with the node recovered on the given timelapse
+     * @throws InterruptedException
+     */
+    public Graph backupNodeSequence(long initialStamp, long endStamp, long nodeId) throws InterruptedException{
+        loadFileFromSequence(_folderPath, initialStamp, endStamp);
+        loadNodes();
+
+        ExecutorService es = Executors.newCachedThreadPool();
+        es.execute(new Runnable() {
+            @Override
+            public void run() {
+                NodeLoader loader = new NodeLoader(nodeId, _nodes.get(nodeId), _fileMap.get(Math.toIntExact(nodeId%POOLSIZE)));
+                loader.run(_graph);
+            }
+        });
+        es.shutdown();
+        es.awaitTermination(2, TimeUnit.MINUTES);
+
+        return _graph;
+    }
+
+    /**
      * Method to backup only one node on an existing graph
      * @param nodeId Id of the node to recover
      * @return The graph edited with the backup for this node executed
