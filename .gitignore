@@ -22,4 +22,4 @@ node_modules/
 *.ldt
 
 /data/
-/plugins/backup/data
+/plugins/backup/data*

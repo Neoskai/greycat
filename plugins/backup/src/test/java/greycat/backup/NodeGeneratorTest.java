@@ -23,12 +23,13 @@ import org.junit.Test;
 
 public class NodeGeneratorTest {
 
-    final int valuesToInsert= 1000000;
+    final int valuesToInsert= 100000;
     final long initialStamp = 1000;
 
     @Ignore
     @Test
-    public void test(){
+    public void testManyPoints(){
+        //1 Node with Many Points
         Graph graph = new GraphBuilder()
                 .withMemorySize(2000000)
                 .build();
@@ -90,9 +91,9 @@ public class NodeGeneratorTest {
     }
 
 
-    @Ignore
     @Test
-    public void testNodeCreation(){
+    public void testManyNodesCreation(){
+        // Many nodes with 1 point
         Graph graph = new GraphBuilder()
                 .withMemorySize(2000000)
                 .build();
@@ -155,8 +156,10 @@ public class NodeGeneratorTest {
         });
     }
 
+    @Ignore
     @Test
     public void testMultiNodeCreation(){
+        // 5 Nodes with many points
         Graph graph = new GraphBuilder()
                 .withMemorySize(2000000)
                 .build();

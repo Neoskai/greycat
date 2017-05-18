@@ -53,6 +53,12 @@ public class NATReceiver {
                 }
             });
 
+            Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+                public void run() {
+                    storageHandler.close();
+                }
+            }));
+
         } catch (Exception e) {
             e.printStackTrace();
         }

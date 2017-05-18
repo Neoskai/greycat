@@ -55,6 +55,10 @@ public class NodeLoader extends Thread{
      */
     private void openReader(String filepath){
         try {
+            if(_reader != null){
+                _reader.close();
+            }
+
             File backupFile = new File(filepath);
 
             if (!backupFile.exists()) {
@@ -94,7 +98,6 @@ public class NodeLoader extends Thread{
                 StorageValueChunk value = StorageValueChunk.build(buffer);
                 buffer.free();
 
-                //System.out.println("Backing up element; " + currentKey);
                 g.lookup(value.world(), value.time(), _nodeId, new Callback<Node>() {
                     @Override
                     public void on(Node result) {
@@ -102,6 +105,8 @@ public class NodeLoader extends Thread{
                             Node newNode = new BaseNode(value.world(), value.time(), _nodeId, g);
                             g.resolver().initNode(newNode, Constants.NULL_LONG);
                             newNode.setAt(value.index(), value.type(), value.value());
+
+                            newNode.free();
                         }
                         else {
                             if (value.type() == Type.REMOVE) {
@@ -137,6 +142,8 @@ public class NodeLoader extends Thread{
                 e.printStackTrace();
             }
         }
+
+        _reader.close();
     }
 
     /**

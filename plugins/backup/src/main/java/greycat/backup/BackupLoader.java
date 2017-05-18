@@ -19,16 +19,13 @@ import com.google.common.base.CharMatcher;
 import com.spotify.sparkey.Sparkey;
 import com.spotify.sparkey.SparkeyLogIterator;
 import com.spotify.sparkey.SparkeyReader;
-import greycat.Callback;
 import greycat.Graph;
 import greycat.GraphBuilder;
-import greycat.Node;
 import greycat.backup.tools.FileKey;
 import greycat.backup.tools.StartingPoint;
 import greycat.backup.tools.StorageKeyChunk;
 import greycat.rocksdb.RocksDBStorage;
 import greycat.struct.Buffer;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -45,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 
 public class BackupLoader {
     private static final int POOLSIZE = 5;
+    private static final int THREADPOOL = 1000;
 
     private Graph _graph;
     private String _folderPath;
@@ -72,40 +70,38 @@ public class BackupLoader {
     }
 
     /**
-     * Inits the backup loader by connecting to the new graph
-     */
-    public void init(){
-        // Load the _nodes and the total number of event received for each.
-        _graph.connect(new Callback<Boolean>() {
-            @Override
-            public void on(Boolean result) {
-                System.out.println("Starting backup");
-            }
-        });
-    }
-
-    /**
      * Launches the backup of the graph
      * @return The Graph resulting of the execution of the backup process
      * @throws InterruptedException Error if something happened during backup
      */
     public Graph backup() throws InterruptedException {
+        _graph.connect(null);
+        long initialBench = System.currentTimeMillis();
+
         loadFiles(_folderPath);
         loadNodes();
 
-        ExecutorService es = Executors.newCachedThreadPool();
+        ExecutorService es = Executors.newFixedThreadPool(THREADPOOL);
         for (Long id: _nodes.keySet()){
-            System.out.println("Loading node: " + id);
+            int currentPool = Math.toIntExact(id%POOLSIZE);
+            if( _fileMap.get(currentPool) == null || _nodes.get(id) == null){
+                continue;
+            }
             es.execute(new Runnable() {
                 @Override
                 public void run() {
                     NodeLoader loader = new NodeLoader(id, _nodes.get(id), _fileMap.get(Math.toIntExact(id%POOLSIZE)));
                     loader.run(_graph);
+                    _graph.save(null);
                 }
             });
         }
         es.shutdown();
-        es.awaitTermination(2, TimeUnit.MINUTES);
+        es.awaitTermination(10, TimeUnit.MINUTES);
+
+        System.out.println("Backup took: " + ((System.currentTimeMillis()-initialBench)/1000) + " s");
+
+        _graph.disconnect(null);
 
         return _graph;
     }
@@ -118,14 +114,17 @@ public class BackupLoader {
      * @throws InterruptedException
      */
     public Graph backupSequence(long initialStamp, long endStamp) throws InterruptedException {
+        _graph.connect(null);
+
+        long initialBench = System.currentTimeMillis();
         loadFileFromSequence(_folderPath, initialStamp, endStamp);
         loadNodes();
 
-        ExecutorService es = Executors.newCachedThreadPool();
+        ExecutorService es = Executors.newFixedThreadPool(THREADPOOL);
         for (Long id: _nodes.keySet()){
             int currentPool = Math.toIntExact(id%POOLSIZE);
 
-            if(_fileMap.get(currentPool) == null){
+            if(_fileMap.get(currentPool) == null || _nodes.get(id) == null){
                 continue;
             }
             es.execute(new Runnable() {
@@ -137,8 +136,11 @@ public class BackupLoader {
             });
         }
         es.shutdown();
-        es.awaitTermination(2, TimeUnit.MINUTES);
+        es.awaitTermination(10, TimeUnit.MINUTES);
 
+        System.out.println("Backup took: " + ((System.currentTimeMillis()-initialBench)/1000) + " s");
+
+        _graph.disconnect(null);
         return _graph;
     }
 
@@ -151,20 +153,29 @@ public class BackupLoader {
      * @throws InterruptedException
      */
     public Graph backupNodeSequence(long initialStamp, long endStamp, long nodeId) throws InterruptedException{
+        _graph.connect(null);
+
+        long initialBench = System.currentTimeMillis();
         loadFileFromSequence(_folderPath, initialStamp, endStamp);
         loadNodes();
 
-        ExecutorService es = Executors.newCachedThreadPool();
-        es.execute(new Runnable() {
-            @Override
-            public void run() {
-                NodeLoader loader = new NodeLoader(nodeId, _nodes.get(nodeId), _fileMap.get(Math.toIntExact(nodeId%POOLSIZE)));
-                loader.run(_graph);
-            }
-        });
-        es.shutdown();
-        es.awaitTermination(2, TimeUnit.MINUTES);
+        int currentPool = Math.toIntExact(nodeId%POOLSIZE);
+        if(! (_fileMap.get(currentPool) == null || _nodes.get(nodeId) == null) ){
+            ExecutorService es = Executors.newFixedThreadPool(THREADPOOL);
+            es.execute(new Runnable() {
+                @Override
+                public void run() {
+                    NodeLoader loader = new NodeLoader(nodeId, _nodes.get(nodeId), _fileMap.get(Math.toIntExact(nodeId%POOLSIZE)));
+                    loader.run(_graph);
+                }
+            });
+            es.shutdown();
+            es.awaitTermination(10, TimeUnit.MINUTES);
+        }
 
+        System.out.println("Backup took: " + ((System.currentTimeMillis()-initialBench)/1000) + " s");
+
+        _graph.disconnect(null);
         return _graph;
     }
 
@@ -175,10 +186,18 @@ public class BackupLoader {
      * @throws InterruptedException
      */
     public Graph nodeBackup(long nodeId) throws InterruptedException{
+        _graph.connect(null);
+
+        long initialBench = System.currentTimeMillis();
         loadFiles(_folderPath);
         loadNodes();
 
-        ExecutorService es = Executors.newCachedThreadPool();
+        int currentPool = Math.toIntExact(nodeId%POOLSIZE);
+        if(_fileMap.get(currentPool) == null || _nodes.get(nodeId) == null){
+            return _graph;
+        }
+
+        ExecutorService es = Executors.newFixedThreadPool(THREADPOOL);
         es.execute(new Runnable() {
             @Override
             public void run() {
@@ -187,23 +206,13 @@ public class BackupLoader {
             }
         });
         es.shutdown();
-        es.awaitTermination(2, TimeUnit.MINUTES);
+        es.awaitTermination(10, TimeUnit.MINUTES);
+
+        System.out.println("Backup took: " + ((System.currentTimeMillis()-initialBench)/1000) + " s");
+        _graph.disconnect(null);
 
         return _graph;
     }
-
-    /**
-     * Disconnects the graph
-     */
-    public void disconnect(){
-        _graph.disconnect(new Callback<Boolean>() {
-            @Override
-            public void on(Boolean result) {
-                System.out.println("Backup ended");
-            }
-        });
-    }
-
 
     /**
      * Function that load the _nodes and their first occurence in the process
@@ -212,8 +221,7 @@ public class BackupLoader {
         for (String file : _fileList) {
             try {
                 File logFile = new File(file);
-                SparkeyLogIterator logIterator = null;
-                logIterator = new SparkeyLogIterator(Sparkey.getLogFile(logFile));
+                SparkeyLogIterator logIterator = new SparkeyLogIterator(Sparkey.getLogFile(logFile));
 
                 for (SparkeyReader.Entry entry : logIterator) {
                     if (entry.getType() == SparkeyReader.Type.PUT) {
