@@ -25,9 +25,12 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
+
+/**
+ * Care when using lookup, node IDS are changing after each backup, so lookup result might not be as expected
+ */
 public class BackupLoaderTest {
 
-    @Ignore
     @Test
     public void totalBackup(){
         try {
@@ -48,14 +51,7 @@ public class BackupLoaderTest {
                     System.out.println(result.toString());
                 }
             });
-            g.lookup(0, 1200, 1, new Callback<Node>() {
-                @Override
-                public void on(Node result) {
-                    System.out.println("Node found: ");
-                    System.out.println(result.toString());
-                }
-            });
-            g.lookup(0, 120000, 1, new Callback<Node>() {
+            g.lookup(0, 1200, 1L, new Callback<Node>() {
                 @Override
                 public void on(Node result) {
                     System.out.println("Node found: ");
@@ -83,6 +79,13 @@ public class BackupLoaderTest {
                     System.out.println(result.toString());
                 }
             });
+            g.lookup(0, 120000, 5, new Callback<Node>() {
+                @Override
+                public void on(Node result) {
+                    System.out.println("Node found: ");
+                    System.out.println(result.toString());
+                }
+            });
             g.disconnect(new Callback<Boolean>() {
                 @Override
                 public void on(Boolean result) {
@@ -94,13 +97,14 @@ public class BackupLoaderTest {
         }
     }
 
+    @Ignore
     @Test
     public void nodeBackup(){
         try {
             Graph newGraph =  new GraphBuilder()
                     .withStorage(new RocksDBStorage("data"))
                     .withMemorySize(100000)
-            .build();
+                    .build();
 
             BackupLoader loader = new BackupLoader("data", newGraph);
             loader.init();
@@ -121,6 +125,53 @@ public class BackupLoaderTest {
             });
 
             g.lookup(0, 1030, 2, new Callback<Node>() {
+                @Override
+                public void on(Node result) {
+                    assertEquals(null, result);
+                }
+            });
+
+            g.disconnect(null);
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    @Ignore
+    @Test
+    public void backupSequence(){
+        try {
+            Graph newGraph = new GraphBuilder()
+                    .withStorage(new RocksDBStorage("data"))
+                    .withMemorySize(100000)
+                    .build();
+
+            BackupLoader loader = new BackupLoader("data", newGraph);
+            loader.init();
+            Graph g = loader.backupSequence(1494945502076L, System.currentTimeMillis());
+            g.connect(null);
+            g.lookup(0, 500000, 1L, new Callback<Node>() {
+                @Override
+                public void on(Node result) {
+                    assertEquals(null, result);
+                }
+            });
+
+            g.lookup(0, 1000, 0, new Callback<Node>() {
+                @Override
+                public void on(Node result) {
+                    assertEquals(result, null);
+                }
+            });
+
+            g.lookup(0, 1000, 2, new Callback<Node>() {
+                @Override
+                public void on(Node result) {
+                    assertEquals(result, null);
+                }
+            });
+
+            g.lookup(0, 975000, 5, new Callback<Node>() {
                 @Override
                 public void on(Node result) {
                     assertEquals(null, result);

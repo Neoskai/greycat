@@ -22,7 +22,9 @@ import com.spotify.sparkey.SparkeyReader;
 import greycat.Callback;
 import greycat.Graph;
 import greycat.GraphBuilder;
+import greycat.Node;
 import greycat.backup.tools.FileKey;
+import greycat.backup.tools.StartingPoint;
 import greycat.backup.tools.StorageKeyChunk;
 import greycat.rocksdb.RocksDBStorage;
 import greycat.struct.Buffer;
@@ -47,7 +49,7 @@ public class BackupLoader {
     private Graph _graph;
     private String _folderPath;
 
-    private HashMap<Long, Long> _nodes;
+    private HashMap<Long, StartingPoint> _nodes;
     private Map<Integer, Map<Long, FileKey>> _fileMap;
 
     private List<String> _fileList;
@@ -108,17 +110,28 @@ public class BackupLoader {
         return _graph;
     }
 
+    /**
+     * Backup system on a given period
+     * @param initialStamp Starting timestamp to backup
+     * @param endStamp Ending timestamp to backup
+     * @return The graph recovered
+     * @throws InterruptedException
+     */
     public Graph backupSequence(long initialStamp, long endStamp) throws InterruptedException {
         loadFileFromSequence(_folderPath, initialStamp, endStamp);
         loadNodes();
 
         ExecutorService es = Executors.newCachedThreadPool();
         for (Long id: _nodes.keySet()){
-            System.out.println("Loading node: " + id);
+            int currentPool = Math.toIntExact(id%POOLSIZE);
+
+            if(_fileMap.get(currentPool) == null){
+                continue;
+            }
             es.execute(new Runnable() {
                 @Override
                 public void run() {
-                    NodeLoader loader = new NodeLoader(id, _nodes.get(id), _fileMap.get(Math.toIntExact(id%POOLSIZE)));
+                    NodeLoader loader = new NodeLoader(id, _nodes.get(id), _fileMap.get(currentPool));
                     loader.run(_graph);
                 }
             });
@@ -143,7 +156,7 @@ public class BackupLoader {
         es.execute(new Runnable() {
             @Override
             public void run() {
-                NodeLoader loader = new NodeLoader(nodeId,_nodes.get(nodeId), _fileMap.get(Math.toIntExact(nodeId%POOLSIZE)));
+                NodeLoader loader = new NodeLoader(nodeId, _nodes.get(nodeId), _fileMap.get(Math.toIntExact(nodeId%POOLSIZE)));
                 loader.run(_graph);
             }
         });
@@ -188,7 +201,8 @@ public class BackupLoader {
                         long fileNumber = Long.valueOf(numberMatch);
 
                         if(!_nodes.keySet().contains(key.id())){
-                            _nodes.put(key.id(), fileNumber);
+                            StartingPoint start = new StartingPoint(fileNumber, key.eventId());
+                            _nodes.put(key.id(), start);
                         }
 
                         buffer.free();
@@ -217,9 +231,10 @@ public class BackupLoader {
     private void loadFileFromSequence(String basedir, long startSeq, long endSeq){
         Path basePath = Paths.get(basedir);
 
-        _fileList = getFiles(_fileList, basePath);
+        List<String> files = new ArrayList<>();
+        files = getFiles(files, basePath);
 
-        for(String file : _fileList){
+        for(String file : files){
             FileKey key = new FileKey();
             String midPath = file.substring(file.indexOf("/shard"), file.length());
 
@@ -241,7 +256,7 @@ public class BackupLoader {
             key.setStartLapse(startLapse);
             key.setFilePath(file);
 
-            if( (startLapse > startSeq && startLapse < endSeq) || (endLapse > startSeq && endLapse < endSeq) ) {
+            if((startLapse >= startSeq && startLapse <= endSeq) || (endLapse >= startSeq && endLapse <= endSeq) ) {
                 Map<Long, FileKey> initialMap = _fileMap.get(shard);
                 if (initialMap == null) {
                     initialMap = new HashMap<>();
@@ -249,7 +264,9 @@ public class BackupLoader {
                 initialMap.put(fileNumber, key);
 
                 _fileMap.put(shard, initialMap);
+                _fileList.add(file);
             }
+
         }
     }
 

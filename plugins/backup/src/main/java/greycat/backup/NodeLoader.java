@@ -17,12 +17,11 @@ package greycat.backup;
 
 import com.spotify.sparkey.Sparkey;
 import com.spotify.sparkey.SparkeyReader;
-import greycat.Callback;
-import greycat.Graph;
-import greycat.Node;
-import greycat.Type;
+import greycat.*;
 import greycat.backup.tools.FileKey;
+import greycat.backup.tools.StartingPoint;
 import greycat.backup.tools.StorageValueChunk;
+import greycat.base.BaseNode;
 import greycat.struct.Buffer;
 
 import java.io.File;
@@ -40,15 +39,14 @@ public class NodeLoader extends Thread{
     private Long _currentNumber;
     private Map<Long, FileKey> _fileMap;
 
-    private long _newNodeId;
+    private StartingPoint _startPoint;
 
-
-    public NodeLoader(long node, Long firstFile, Map<Long, FileKey> submap){
+    public NodeLoader(long node, StartingPoint start, Map<Long, FileKey> submap){
         _nodeId = node;
-        _newNodeId = 0;
-        _currentNumber = firstFile;
-        _currentFile = submap.get(firstFile).getFilePath();
+        _currentNumber = start.getFilenumber();
+        _currentFile = submap.get(start.getFilenumber()).getFilePath();
         _fileMap = submap;
+        _startPoint = start;
     }
 
     /**
@@ -81,7 +79,7 @@ public class NodeLoader extends Thread{
         Buffer buffer = g.newBuffer();
 
         boolean backupEnded = false;
-        int eventId = 0;
+        Long eventId = _startPoint.getStartingEvent();
 
         while(!backupEnded){
             try {
@@ -96,25 +94,26 @@ public class NodeLoader extends Thread{
                 StorageValueChunk value = StorageValueChunk.build(buffer);
                 buffer.free();
 
-                if(eventId== 0){
-                    Node newNode = g.newNode(value.world(), value.time());
-                    newNode.setAt(value.index(), value.type(), value.value());
-                    _newNodeId = newNode.id();
-
-                } else {
-                    g.lookup(value.world(), value.time(), _newNodeId, new Callback<Node>() {
-                        @Override
-                        public void on(Node result) {
-                            if(value.type() == Type.REMOVE){
+                //System.out.println("Backing up element; " + currentKey);
+                g.lookup(value.world(), value.time(), _nodeId, new Callback<Node>() {
+                    @Override
+                    public void on(Node result) {
+                        if(result == null) {
+                            Node newNode = new BaseNode(value.world(), value.time(), _nodeId, g);
+                            g.resolver().initNode(newNode, Constants.NULL_LONG);
+                            newNode.setAt(value.index(), value.type(), value.value());
+                        }
+                        else {
+                            if (value.type() == Type.REMOVE) {
                                 result.removeAt(value.index());
-                            }else {
+                            } else {
                                 //System.out.println("Current system: " + value.index() + " " + value.type() + " " + value.value());
                                 result.setAt(value.index(), value.type(), value.value());
                             }
                             result.free();
                         }
-                    });
-                }
+                    }
+                });
 
                 eventId++;
 
