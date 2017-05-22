@@ -21,6 +21,9 @@ import greycat.Type;
 import greycat.struct.Buffer;
 import greycat.utility.Base64;
 
+/**
+ * @ignore ts
+ */
 public class StorageValueChunk {
 
     private long world;

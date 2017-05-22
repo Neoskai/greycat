@@ -24,6 +24,9 @@ import sun.security.util.AuthResources_ja;
 
 import java.io.File;
 
+/**
+ * @ignore ts
+ */
 public class SparkeyBackupStorage {
 
     private static final String _connectedError = "PLEASE CONNECT YOUR DATABASE FIRST";

@@ -20,6 +20,7 @@ import greycat.*;
 import greycat.aerospike.AerospikeDBStorage;
 import greycat.backup.producer.NSQSender;
 import greycat.struct.Buffer;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static greycat.Tasks.newTask;
@@ -28,6 +29,7 @@ import static greycat.internal.task.CoreActions.*;
 
 public class NSQHookTest {
 
+    @Ignore
     @Test
     public void test() {
 
@@ -60,6 +62,7 @@ public class NSQHookTest {
 
     private greycat.backup.producer.NSQSender _sender;
 
+    @Ignore
     @Test
     public void manualTest(){
         Graph g = GraphBuilder.newBuilder()

@@ -23,6 +23,7 @@ import com.aerospike.client.policy.WritePolicy;
 import greycat.*;
 import greycat.plugin.Job;
 import greycat.scheduler.NoopScheduler;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class StorageTest {
@@ -34,6 +35,7 @@ public class StorageTest {
      * Requires local version of Aerospike running on port 3000, with namespace test available
      * Can be edited to use an other Aerospike cfg
      */
+    @Ignore
     @Test
     public void test(){
         Graph graph = new GraphBuilder().withStorage(new AerospikeDBStorage("localhost",3000, "test")).withScheduler(new NoopScheduler()).withMemorySize(2000000).build();

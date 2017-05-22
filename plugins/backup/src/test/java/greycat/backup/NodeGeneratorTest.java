@@ -222,6 +222,7 @@ public class NodeGeneratorTest {
         });
     }
 
+    @Ignore
     @Test
     public void testRealistic(){
         // 100K x 100K

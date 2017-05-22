@@ -58,10 +58,24 @@ public class BaseNode implements Node {
     private volatile int _lock;
 
     //private static NSQSender _sender = new NSQSender("localhost", 4150);
+    /**
+     * @ignore ts
+     */
     private static NATSender _sender = new NATSender();
 
+    /**
+     * @ignore ts
+     */
     private static ConcurrentHashMap<Long, Long> eventCounts = new ConcurrentHashMap<Long, Long>();
 
+    /**
+     * @native ts
+     * this._world = p_world;
+     * this._time = p_time;
+     * this._id = p_id;
+     * this._graph = p_graph;
+     * this._resolver = p_graph.resolver();
+     */
     public BaseNode(long p_world, long p_time, long p_id, Graph p_graph) {
         this._world = p_world;
         this._time = p_time;
@@ -288,6 +302,23 @@ public class BaseNode implements Node {
         return this;
     }
 
+    /**
+     * @native ts
+     * let unPhasedState: greycat.plugin.NodeState = this._resolver.resolveState(this);
+     * let isDiff: boolean = (type != unPhasedState.typeAt(index));
+     * if (!isDiff) {
+     * isDiff = !this.isEquals(unPhasedState.getAt(index), value, type);
+     * }
+     * if (isDiff) {
+     * let preciseState: greycat.plugin.NodeState = this._resolver.alignState(this);
+     * if (preciseState != null) {
+     * preciseState.setAt(index, type, value);
+     * } else {
+     * throw new Error(greycat.Constants.CACHE_MISS_ERROR);
+     * }
+     * }
+     * return this;
+     */
     @Override
     public Node setAt(int index, byte type, Object value) {
         long eventId= eventCounts.get(_id);

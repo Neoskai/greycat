@@ -35,6 +35,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class BackupLoaderTest {
 
+    @Ignore
     @Test
     public void totalBackup() throws IOException {
         try {
@@ -99,6 +100,7 @@ public class BackupLoaderTest {
         }
     }
 
+    @Ignore
     @Test
     public void nodeBackup() throws IOException {
         try {
@@ -142,6 +144,7 @@ public class BackupLoaderTest {
         }
     }
 
+    @Ignore
     @Test
     public void backupSequence() throws IOException {
         try {
@@ -193,6 +196,7 @@ public class BackupLoaderTest {
         }
     }
 
+    @Ignore
     @Test
     public void testNodeSequence() throws IOException {
         try {

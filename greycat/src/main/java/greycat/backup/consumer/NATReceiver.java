@@ -25,6 +25,9 @@ import io.nats.client.Nats;
 
 import java.io.IOException;
 
+/**
+ * @ignore ts
+ */
 public class NATReceiver {
 
     public static void main(String[] args )

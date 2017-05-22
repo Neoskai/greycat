@@ -20,6 +20,9 @@ import greycat.Callback;
 import greycat.struct.Buffer;
 import greycat.struct.BufferIterator;
 
+/**
+ * @ignore ts
+ */
 public class StorageHandler {
     private static final int POOLSIZE = 5;
 

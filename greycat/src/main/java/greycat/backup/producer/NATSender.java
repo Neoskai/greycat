@@ -27,6 +27,9 @@ import io.nats.client.Nats;
 
 import java.io.IOException;
 
+/**
+ * @ignore ts
+ */
 public class NATSender {
 
     private Graph g = null;

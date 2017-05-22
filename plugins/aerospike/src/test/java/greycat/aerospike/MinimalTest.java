@@ -20,10 +20,12 @@ import greycat.Graph;
 import greycat.GraphBuilder;
 import greycat.Node;
 import greycat.Type;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class MinimalTest {
 
+    @Ignore
     @Test
     public void minimalTest(){
         Graph g = new GraphBuilder()

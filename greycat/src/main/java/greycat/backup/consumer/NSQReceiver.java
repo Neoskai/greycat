@@ -24,6 +24,9 @@ import greycat.GraphBuilder;
 import greycat.backup.tools.StorageHandler;
 import greycat.struct.Buffer;
 
+/**
+ * @ignore ts
+ */
 public class NSQReceiver {
 
     public static void main(String[] args )
