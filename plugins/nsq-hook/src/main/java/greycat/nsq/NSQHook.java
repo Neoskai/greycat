@@ -19,13 +19,13 @@ package greycat.nsq;
 import greycat.Action;
 import greycat.TaskContext;
 import greycat.TaskHook;
-import greycat.backup.producer.NSQSender;
+import greycat.backup.NSQSender;
 
 public class NSQHook  implements TaskHook{
     private String _address;
     private int _port;
 
-    private greycat.backup.producer.NSQSender _sender;
+    private NSQSender _sender;
 
     public NSQHook(String address, int port){
         _address = address;

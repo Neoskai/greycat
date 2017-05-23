@@ -18,7 +18,7 @@ package greycat.nsq;
 
 import greycat.*;
 import greycat.aerospike.AerospikeDBStorage;
-import greycat.backup.producer.NSQSender;
+import greycat.backup.NSQSender;
 import greycat.struct.Buffer;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -60,7 +60,7 @@ public class NSQHookTest {
     private String _address = "localhost";
     private int _port = 4150;
 
-    private greycat.backup.producer.NSQSender _sender;
+    private NSQSender _sender;
 
     @Ignore
     @Test

@@ -14,33 +14,49 @@
  * limitations under the License.
  */
 
-package greycat.backup.producer;
+package greycat.backup;
 
+import com.github.brainlag.nsq.NSQProducer;
+import com.github.brainlag.nsq.exceptions.NSQException;
 import greycat.Constants;
 import greycat.Graph;
 import greycat.GraphBuilder;
 import greycat.Type;
 import greycat.struct.Buffer;
 import greycat.utility.Base64;
-import io.nats.client.Connection;
-import io.nats.client.Nats;
 
-import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @ignore ts
  */
-public class NATSender {
+public class NSQSender {
 
+    private NSQProducer _producer;
     private Graph g = null;
-    private Connection _producer;
+    private ExecutorService executor;
 
-    public NATSender(){
+    public NSQSender(String address, int port){
+        _producer = new NSQProducer().addAddress(address,port).start();
+        executor = Executors.newSingleThreadExecutor();
+
+    }
+
+    /**
+     * Sending a message to the Greycat topic of our NSQ server
+     * @param message String message
+     * @return True if success to send, false otherwise
+     */
+    public boolean sendMessage(String message){
         try {
-            _producer = Nats.connect();
-        } catch (IOException e) {
+            _producer.produce("Greycat", message.getBytes());
+            return true;
+        } catch (NSQException | TimeoutException e) {
             e.printStackTrace();
         }
+        return false;
     }
 
     /**
@@ -50,12 +66,42 @@ public class NATSender {
      */
     public boolean sendMessage(byte[] message){
         try {
-            _producer.publish("Greycat", message);
+            _producer.produce("Greycat", message);
             return true;
-        } catch (IOException e) {
+        } catch (NSQException | TimeoutException e) {
             e.printStackTrace();
         }
         return false;
+    }
+
+    /**
+     * (NOT USED ANYMORE)
+     * Creates a string representation of a message
+     * @param world Current world
+     * @param time Current time
+     * @param id Current id
+     * @param index Id of setter
+     * @param type Type of value
+     * @param value Value
+     * @return
+     */
+    public String parseMessage(long world, long time, long id, int index, byte type, Object value){
+
+        String base = "";
+
+        String KEYSEP = ";";
+        String VALUESEP = "#";
+
+        base += world + KEYSEP +
+                time + KEYSEP
+                + id + KEYSEP
+                + index + KEYSEP
+                + type + VALUESEP
+                + value.toString();
+
+
+        System.out.println("Parsed message: " + base);
+        return base;
     }
 
     /**
@@ -70,7 +116,7 @@ public class NATSender {
      */
     public Buffer bufferizeMessage(long world, long time, long id, int index, long eventId, byte type, Object value){
         if (g == null){
-            g = GraphBuilder.newBuilder().build();
+           g = GraphBuilder.newBuilder().build();
         }
 
         Buffer buffer = g.newBuffer();
@@ -103,16 +149,6 @@ public class NATSender {
         return buffer;
     }
 
-    /**
-     * Bufferize and send a message to the NATS Server
-     * @param world Current world
-     * @param time Time to edit
-     * @param id Id of the node
-     * @param index Index of the element
-     * @param eventId ID of the event
-     * @param type The type of the value we are setting
-     * @param value The value to set
-     */
     public void processMessage(long world, long time, long id, int index, long eventId, byte type, Object value){
         Buffer buffer = bufferizeMessage(world, time, id, index, eventId, type, value);
         sendMessage(buffer.data());
@@ -121,6 +157,23 @@ public class NATSender {
             Buffer buffer = bufferizeMessage(world, time, id, index, eventId, type, value);
             sendMessage(buffer.data());
         });*/
+    }
+
+    /**
+     * (INCOMPLETE) ONLY HAS STRING AND BOOL PRIMITIVES
+     * Serialize abstract objects to byte array so we can send them through the buffer
+     * To complete and use if not wanting to use Base64 Values.
+     * @param obj Object to serialize
+     * @return Byte array containing the object
+     */
+    public static byte[] serialize(Object obj, byte type){
+        switch (type){
+            case Type.STRING:
+                return ((String) obj).getBytes();
+            case Type.BOOL:
+                return new byte[(boolean) obj?1:0];
+        }
+        return null;
     }
 
     /**
@@ -155,4 +208,5 @@ public class NATSender {
         }
         return buffer;
     }
+
 }

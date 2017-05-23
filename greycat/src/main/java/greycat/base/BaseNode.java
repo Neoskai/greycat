@@ -16,7 +16,7 @@
 package greycat.base;
 
 import greycat.*;
-import greycat.backup.producer.NATSender;
+import greycat.backup.NATSender;
 import greycat.chunk.StateChunk;
 import greycat.plugin.NodeStateCallback;
 import greycat.struct.*;

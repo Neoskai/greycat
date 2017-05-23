@@ -32,9 +32,15 @@
 
     <properties>
         <header.path>${basedir}/../../HEADER</header.path>
+        <sparkey.version>2.1.3</sparkey.version>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>com.spotify.sparkey</groupId>
+            <artifactId>sparkey</artifactId>
+            <version>${sparkey.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.datathings</groupId>
             <artifactId>greycat</artifactId>
