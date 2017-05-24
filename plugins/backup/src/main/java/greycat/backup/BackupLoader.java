@@ -40,10 +40,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-public class BackupLoader {
-    private static final int POOLSIZE = 5;
-    private static final int THREADPOOL = 1000;
+import static greycat.Constants.POOLSIZE;
+import static greycat.Constants.THREADPOOL;
 
+public class BackupLoader {
     private Graph _graph;
     private String _folderPath;
 
@@ -218,6 +218,20 @@ public class BackupLoader {
      * Function that load the _nodes and their first occurence in the process
      */
     private void loadNodes(){
+        try {
+            ExecutorService es = Executors.newFixedThreadPool(THREADPOOL);
+            es.execute(new Runnable() {
+                @Override
+                public void run() {
+
+                }
+            });
+            es.shutdown();
+            es.awaitTermination(10, TimeUnit.HOURS);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
         for (String file : _fileList) {
             try {
                 File logFile = new File(file);

@@ -28,10 +28,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
+import static greycat.Constants.SAVEPOINT;
+
 public class NodeLoader extends Thread{
-
-    private static final int SAVEPOINT = 10000;
-
     private long _nodeId;
     private SparkeyReader _reader;
 
