@@ -25,7 +25,9 @@ import greycat.utility.Base64;
 import io.nats.client.Connection;
 import io.nats.client.Nats;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 
 
 /**
@@ -101,10 +103,6 @@ public class NATSender {
             valueToBuffer(buffer,value, type);
         }
 
-        // To use if wanting to use byte format for values instead of Base64
-        //buffer.write(Constants.CHUNK_SEP);
-        //buffer.writeAll(serialize(value, type));
-
         return buffer;
     }
 
@@ -158,12 +156,31 @@ public class NATSender {
                 Base64.encodeDoubleToBuffer((double) obj, buffer);
                 break;
             default:
-                buffer.writeAll((byte[]) obj);
+                buffer.writeAll(serialize(obj));
         }
         return buffer;
     }
 
     public boolean isConnected(){
         return _isConnected;
+    }
+
+    /**
+     * Serialize object to byte array
+     * @param obj Object to serialize
+     * @return Byte array containing the object
+     */
+    private static byte[] serialize(Object obj) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ObjectOutputStream os = null;
+
+        try {
+            os = new ObjectOutputStream(out);
+            os.writeObject(obj);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return out.toByteArray();
     }
 }

@@ -21,13 +21,16 @@ import greycat.plugin.Job;
 import greycat.scheduler.NoopScheduler;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
+
 public class SparkeyDBStorageTest {
 
     final int valuesToInsert= 1000000;
     final long initialStamp = 1000;
 
     @Test
-    public void test(){
+    public void test() throws IOException {
         Graph graph = new GraphBuilder()
                 .withStorage(new SparkeyDBStorage("data/data.spl"))
                 .withScheduler(new NoopScheduler())
@@ -88,5 +91,34 @@ public class SparkeyDBStorageTest {
 
             }
         });
+        File directory = new File("data");
+        delete(directory);
+    }
+
+    private static void delete(File file) throws IOException {
+        if (file.isDirectory()) {
+            //directory is empty, then delete it
+            if (file.list().length == 0) {
+                file.delete();
+            } else {
+                //list all the directory contents
+                String files[] = file.list();
+                for (String temp : files) {
+                    //construct the file structure
+                    File fileDelete = new File(file, temp);
+
+                    //recursive delete
+                    delete(fileDelete);
+                }
+                //check the directory again, if empty then delete it
+                if (file.list().length == 0) {
+                    file.delete();
+                }
+            }
+
+        } else {
+            //if file, then delete it
+            file.delete();
+        }
     }
 }

@@ -63,6 +63,7 @@ public class NodeLoader extends Thread{
 
             if (!backupFile.exists()) {
                 System.err.println("File does not exist");
+                return;
             }
 
             _reader = Sparkey.open(backupFile);

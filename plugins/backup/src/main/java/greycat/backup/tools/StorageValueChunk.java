@@ -19,7 +19,12 @@ package greycat.backup.tools;
 import greycat.Constants;
 import greycat.Type;
 import greycat.struct.Buffer;
+import greycat.struct.LongArray;
 import greycat.utility.Base64;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 
 /**
  * @ignore ts
@@ -124,8 +129,24 @@ public class StorageValueChunk {
                 return Base64.decodeToDoubleWithBounds(buffer, begin, end);
             case Type.REMOVE:
                 return null;
+            default:
+                return deserialize(buffer.slice(begin,end));
         }
+    }
 
+    /**
+     * Deserialize an object
+     * @param data The byte array containing the object
+     * @return A java object containing the deserialized object
+     */
+    private static Object deserialize(byte[] data) {
+        try{
+            ByteArrayInputStream in = new ByteArrayInputStream(data);
+            ObjectInputStream is = new ObjectInputStream(in);
+            return is.readObject();
+        } catch(Exception e){
+            e.printStackTrace();
+        }
         return null;
     }
 
