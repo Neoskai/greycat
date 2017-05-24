@@ -16,20 +16,13 @@
 package greycat.base;
 
 import greycat.*;
-<<<<<<< HEAD
 import greycat.backup.NATSender;
 import greycat.chunk.StateChunk;
 import greycat.plugin.NodeStateCallback;
-=======
-import greycat.chunk.StateChunk;
-import greycat.chunk.WorldOrderChunk;
->>>>>>> upstream/master
 import greycat.struct.*;
 import greycat.plugin.NodeDeclaration;
 import greycat.plugin.NodeState;
-import greycat.plugin.NodeStateCallback;
 import greycat.plugin.Resolver;
-import greycat.struct.*;
 import greycat.struct.proxy.*;
 import greycat.utility.Tuple;
 
@@ -333,9 +326,11 @@ public class BaseNode implements Node {
      */
     @Override
     public Node setAt(int index, byte type, Object value) {
-        long eventId= eventCounts.get(_id);
-        _sender.processMessage(_world, _time, _id, index, eventId, type, value);
-        eventCounts.put(_id, ++eventId);
+        if(_sender.isConnected()){
+            long eventId= eventCounts.get(_id);
+            _sender.processMessage(_world, _time, _id, index, eventId, type, value);
+            eventCounts.put(_id, ++eventId);
+        }
 
         final NodeState unPhasedState = this._resolver.resolveState(this);
         boolean isDiff = (type != unPhasedState.typeAt(index));

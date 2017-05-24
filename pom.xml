@@ -101,16 +101,17 @@
         <module>plugins/rocksdb</module>
         <module>plugins/websocket</module>
         <module>plugins/ml</module>
-<<<<<<< HEAD
 
-        <module>plugins/aerospike</module>
-        <module>plugins/nsq-hook</module>
         <module>plugins/sparkey</module>
         <module>plugins/backup</module>
 
-=======
         <module>plugins/modeling</module>
->>>>>>> upstream/master
+
+        <!--
+        <module>plugins/aerospike</module>
+        <module>plugins/nsq-hook</module>
+        -->
+
         <!--
         <module>plugins/memory</module>
         -->

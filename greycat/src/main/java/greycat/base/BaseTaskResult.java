@@ -19,7 +19,6 @@ import greycat.*;
 import greycat.internal.CoreConstants;
 import greycat.internal.heap.HeapBuffer;
 import greycat.internal.task.TaskHelper;
-import greycat.plugin.Job;
 import greycat.struct.Buffer;
 import greycat.utility.*;
 

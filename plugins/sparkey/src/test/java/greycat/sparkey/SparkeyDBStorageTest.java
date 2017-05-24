@@ -29,7 +29,7 @@ public class SparkeyDBStorageTest {
     @Test
     public void test(){
         Graph graph = new GraphBuilder()
-                .withStorage(new SparkeyDBStorage("data.spl"))
+                .withStorage(new SparkeyDBStorage("data/data.spl"))
                 .withScheduler(new NoopScheduler())
                 .withMemorySize(2000000)
                 .build();

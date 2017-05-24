@@ -21,12 +21,12 @@ import greycat.Graph;
 import greycat.GraphBuilder;
 import greycat.Type;
 import greycat.struct.Buffer;
-import greycat.struct.LongArray;
 import greycat.utility.Base64;
 import io.nats.client.Connection;
 import io.nats.client.Nats;
 
 import java.io.IOException;
+
 
 /**
  * @ignore ts
@@ -36,11 +36,15 @@ public class NATSender {
     private Graph g = null;
     private Connection _producer;
 
+    private boolean _isConnected;
+
     public NATSender(){
         try {
             _producer = Nats.connect();
+            _isConnected = true;
         } catch (IOException e) {
-            e.printStackTrace();
+            _isConnected = false;
+            System.err.println(e);
         }
     }
 
@@ -153,9 +157,13 @@ public class NATSender {
             case Type.DOUBLE:
                 Base64.encodeDoubleToBuffer((double) obj, buffer);
                 break;
-            case Type.LONG_ARRAY:
-                break;
+            default:
+                buffer.writeAll((byte[]) obj);
         }
         return buffer;
+    }
+
+    public boolean isConnected(){
+        return _isConnected;
     }
 }
