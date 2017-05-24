@@ -17,6 +17,8 @@ package greycat.internal.task;
 
 public class CoreActionNames {
 
+    public static String TRAVERSE_TIMELINE = "traverseTimeline";
+
     public static String ADD_VAR_TO_RELATION = "addVarToRelation";
     public static String REMOVE_VAR_TO_RELATION = "removeVarToRelation";
 

@@ -16,6 +16,8 @@
 package greycatTest.internal.task;
 
 import greycat.Callback;
+import greycat.Task;
+import greycat.TaskContext;
 import greycat.TaskResult;
 import org.junit.Assert;
 import org.junit.Test;
@@ -29,18 +31,20 @@ public class TaskOutputTest extends AbstractActionTest {
     public void test() {
         initGraph();
         final boolean[] passed = {false};
-        newTask()
+        Task t = newTask()
                 .then(inject("input"))
                 .defineAsVar("myVar")
-                .print("{{myVar}}")
-                .execute(graph, new Callback<TaskResult>() {
-                    @Override
-                    public void on(TaskResult result) {
-                        passed[0] = true;
-                        Assert.assertEquals(result.output(), "input");
-                        result.free();
-                    }
-                });
+                .print("{{myVar}}");
+        TaskContext ctx = t.prepare(graph, null, new Callback<TaskResult>() {
+            @Override
+            public void on(TaskResult result) {
+                passed[0] = true;
+                Assert.assertEquals(result.output(), "input");
+                result.free();
+            }
+        });
+        ctx.silentSave();
+        t.executeUsing(ctx);
         Assert.assertTrue(passed[0]);
         removeGraph();
     }
@@ -49,11 +53,11 @@ public class TaskOutputTest extends AbstractActionTest {
     public void forEachTest() {
         initGraph();
         final boolean[] passed = {false};
-        newTask()
+        Task t = newTask()
                 .print("{")
                 .loop("1", "5", newTask().print("{{i}}"))
-                .print("}")
-                .execute(graph, new Callback<TaskResult>() {
+                .print("}");
+        TaskContext ctx=t.prepare(graph, null, new Callback<TaskResult>() {
                     @Override
                     public void on(TaskResult result) {
                         passed[0] = true;
@@ -61,6 +65,8 @@ public class TaskOutputTest extends AbstractActionTest {
                         result.free();
                     }
                 });
+        ctx.silentSave();
+        t.executeUsing(ctx);
         Assert.assertTrue(passed[0]);
         removeGraph();
     }

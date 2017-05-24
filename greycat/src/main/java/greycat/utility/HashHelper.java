@@ -71,6 +71,11 @@ public class HashHelper {
         */
     }
 
+    public static int intHash(int number, int max) {
+        int hash = number % max;
+        return hash < 0 ? hash * -1 : hash;
+    }
+
     public static long simpleTripleHash(byte p0, long p1, long p2, long p3, long max) {
         long hash = (((long) p0) ^ p1 ^ p2 ^ p3) % max;
         if (hash < 0) {

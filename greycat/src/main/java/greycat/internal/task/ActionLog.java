@@ -35,13 +35,12 @@ class ActionLog implements Action {
     }
 
     @Override
-    public void serialize(final Buffer builder) {
+    public final void serialize(final Buffer builder) {
         builder.writeString(CoreActionNames.LOG);
         builder.writeChar(Constants.TASK_PARAM_OPEN);
         TaskHelper.serializeString(_value, builder, true);
         builder.writeChar(Constants.TASK_PARAM_CLOSE);
     }
-
 
     @Override
     public final String name() {

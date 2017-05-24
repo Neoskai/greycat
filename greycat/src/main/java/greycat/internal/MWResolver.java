@@ -21,13 +21,9 @@ import greycat.plugin.NodeFactory;
 import greycat.plugin.NodeState;
 import greycat.plugin.Resolver;
 import greycat.plugin.Storage;
-import greycat.struct.BufferIterator;
-import greycat.struct.LongLongMap;
-import greycat.struct.StringIntMap;
-import greycat.utility.HashHelper;
+import greycat.struct.*;
+import greycat.utility.*;
 import greycat.base.BaseNode;
-import greycat.struct.Buffer;
-import greycat.utility.KeyHelper;
 
 final class MWResolver implements Resolver {
 
@@ -72,38 +68,39 @@ final class MWResolver implements Resolver {
         if (worldOrderChunk == null) {
             return -1;
         }
-        return (int) worldOrderChunk.extra();
+        return (int) worldOrderChunk.type();
     }
 
     @Override
     public final void initNode(final Node node, final long codeType) {
         final BaseNode casted = (BaseNode) node;
-        final StateChunk cacheEntry = (StateChunk) this._space.createAndMark(ChunkType.STATE_CHUNK, node.world(), node.time(), node.id());
-        //declare dirty now because potentially no insert could be done
-        this._space.notifyUpdate(cacheEntry.index());
-        //initiate superTime management
-        final TimeTreeChunk superTimeTree = (TimeTreeChunk) this._space.createAndMark(ChunkType.TIME_TREE_CHUNK, node.world(), Constants.NULL_LONG, node.id());
-        superTimeTree.insert(node.time());
-        //initiate time management
-        final TimeTreeChunk timeTree = (TimeTreeChunk) this._space.createAndMark(ChunkType.TIME_TREE_CHUNK, node.world(), node.time(), node.id());
-        timeTree.insert(node.time());
         //initiate universe management
         final WorldOrderChunk objectWorldOrder = (WorldOrderChunk) this._space.createAndMark(ChunkType.WORLD_ORDER_CHUNK, 0, 0, node.id());
-
         objectWorldOrder.put(node.world(), node.time());
+        //initialize type
         if (codeType != Constants.NULL_LONG) {
-            objectWorldOrder.setExtra(codeType);
+            objectWorldOrder.setType(codeType);
         }
-
+        final long time = node.time();
+        //initiate superTime management
+        final SuperTimeTreeChunk superTimeTree = (SuperTimeTreeChunk) this._space.createAndMark(ChunkType.SUPER_TIME_TREE_CHUNK, node.world(), 0, node.id());
+        //initiate time management
+        final TimeTreeChunk timeTree = (TimeTreeChunk) this._space.createAndMark(ChunkType.TIME_TREE_CHUNK, node.world(), time, node.id());
+        timeTree.insert(time);
+        final long subTreeCapacity = superTimeTree.subTreeCapacity();
+        superTimeTree.insert(time, subTreeCapacity);
+        timeTree.setCapacity(subTreeCapacity);
+        final StateChunk cacheEntry = (StateChunk) this._space.createAndMark(ChunkType.STATE_CHUNK, node.world(), time, node.id());
+        //declare dirty now because potentially no insert will occur
+        this._space.notifyUpdate(cacheEntry.index());
+        //initialize local pointer
         casted._index_stateChunk = cacheEntry.index();
         casted._index_timeTree = timeTree.index();
         casted._index_superTimeTree = superTimeTree.index();
         casted._index_worldOrder = objectWorldOrder.index();
-
         casted._world_magic = -1;
         casted._super_time_magic = -1;
         casted._time_magic = -1;
-
         //monitor the node object
         //this._tracker.monitor(node);
         //last step call the user code
@@ -111,12 +108,12 @@ final class MWResolver implements Resolver {
     }
 
     @Override
-    public final void initWorld(long parentWorld, long childWorld) {
+    public final void initWorld(final long parentWorld, final long childWorld) {
         globalWorldOrderChunk.put(childWorld, parentWorld);
     }
 
     @Override
-    public final void freeNode(Node node) {
+    public final void freeNode(final Node node) {
         final BaseNode casted = (BaseNode) node;
         casted.cacheLock();
         if (!casted._dead) {
@@ -137,7 +134,7 @@ final class MWResolver implements Resolver {
     }
 
     @Override
-    public final void externalUnlock(Node node) {
+    public final void externalUnlock(final Node node) {
         final BaseNode casted = (BaseNode) node;
         final WorldOrderChunk worldOrderChunk = (WorldOrderChunk) this._space.get(casted._index_worldOrder);
         worldOrderChunk.externalUnlock();
@@ -146,19 +143,16 @@ final class MWResolver implements Resolver {
     @Override
     public final void setTimeSensitivity(final Node node, final long deltaTime, final long offset) {
         final BaseNode casted = (BaseNode) node;
-        final TimeTreeChunk superTimeTree = (TimeTreeChunk) this._space.get(casted._index_superTimeTree);
-        superTimeTree.setExtra(deltaTime);
-        superTimeTree.setExtra2(offset);
+        final SuperTimeTreeChunk superTimeTree = (SuperTimeTreeChunk) this._space.get(casted._index_superTimeTree);
+        superTimeTree.setTimeSensitivity(deltaTime);
+        superTimeTree.setTimeSensitivityOffset(offset);
     }
 
     @Override
-    public long[] getTimeSensitivity(final Node node) {
+    public final Tuple<Long, Long> getTimeSensitivity(final Node node) {
         final BaseNode casted = (BaseNode) node;
-        final long[] result = new long[2];
-        final TimeTreeChunk superTimeTree = (TimeTreeChunk) this._space.get(casted._index_superTimeTree);
-        result[0] = superTimeTree.extra();
-        result[1] = superTimeTree.extra2();
-        return result;
+        final SuperTimeTreeChunk superTimeTree = (SuperTimeTreeChunk) this._space.get(casted._index_superTimeTree);
+        return new Tuple<Long, Long>(superTimeTree.timeSensitivity(), superTimeTree.timeSensitivityOffset());
     }
 
     @Override
@@ -170,15 +164,23 @@ final class MWResolver implements Resolver {
                 if (theNodeWorldOrder == null) {
                     callback.on(null);
                 } else {
-                    final long closestWorld = selfPointer.resolve_world(globalWorldOrderChunk, (WorldOrderChunk) theNodeWorldOrder, time, world);
-                    selfPointer._space.getOrLoadAndMark(ChunkType.TIME_TREE_CHUNK, closestWorld, Constants.NULL_LONG, id, new Callback<Chunk>() {
+                    final WorldOrderChunk castedWC = (WorldOrderChunk) theNodeWorldOrder;
+                    final long closestWorld = selfPointer.resolve_world(globalWorldOrderChunk, castedWC, time, world);
+                    selfPointer._space.getOrLoadAndMark(ChunkType.SUPER_TIME_TREE_CHUNK, closestWorld, 0, id, new Callback<Chunk>() {
                         @Override
                         public void on(final Chunk theNodeSuperTimeTree) {
                             if (theNodeSuperTimeTree == null) {
                                 selfPointer._space.unmark(theNodeWorldOrder.index());
                                 callback.on(null);
                             } else {
-                                final long closestSuperTime = ((TimeTreeChunk) theNodeSuperTimeTree).previousOrEqual(time);
+                                final SuperTimeTreeChunk castedSTT = (SuperTimeTreeChunk) theNodeSuperTimeTree;
+                                if (castedSTT.end() != 0 && time > castedSTT.end()) {
+                                    selfPointer._space.unmark(theNodeSuperTimeTree.index());
+                                    selfPointer._space.unmark(theNodeWorldOrder.index());
+                                    callback.on(null);
+                                    return;
+                                }
+                                final long closestSuperTime = castedSTT.previousOrEqual(time);
                                 if (closestSuperTime == Constants.NULL_LONG) {
                                     selfPointer._space.unmark(theNodeSuperTimeTree.index());
                                     selfPointer._space.unmark(theNodeWorldOrder.index());
@@ -211,7 +213,7 @@ final class MWResolver implements Resolver {
                                                         callback.on(null);
                                                     } else {
                                                         WorldOrderChunk castedNodeWorldOrder = (WorldOrderChunk) theNodeWorldOrder;
-                                                        int extraCode = (int) castedNodeWorldOrder.extra();
+                                                        int extraCode = (int) castedNodeWorldOrder.type();
                                                         NodeFactory resolvedFactory = null;
                                                         if (extraCode != -1) {
                                                             resolvedFactory = ((CoreGraph) selfPointer._graph).factoryByCode(extraCode);
@@ -234,7 +236,7 @@ final class MWResolver implements Resolver {
                                                             resolvedNode._time_magic = -1;
                                                         } else {
                                                             resolvedNode._world_magic = ((WorldOrderChunk) theNodeWorldOrder).magic();
-                                                            resolvedNode._super_time_magic = ((TimeTreeChunk) theNodeSuperTimeTree).magic();
+                                                            resolvedNode._super_time_magic = ((SuperTimeTreeChunk) theNodeSuperTimeTree).magic();
                                                             resolvedNode._time_magic = ((TimeTreeChunk) theNodeTimeTree).magic();
                                                         }
                                                         //selfPointer._tracker.monitor(resolvedNode);
@@ -258,7 +260,7 @@ final class MWResolver implements Resolver {
 
     @SuppressWarnings("Duplicates")
     @Override
-    public void lookupBatch(long[] worlds, long[] times, long[] ids, Callback<Node[]> callback) {
+    public void lookupBatch(final long[] worlds, final long[] times, final long[] ids, final Callback<Node[]> callback) {
         final int idsSize = ids.length;
         if (!(worlds.length == times.length && times.length == idsSize)) {
             throw new RuntimeException("Bad API usage");
@@ -291,9 +293,9 @@ final class MWResolver implements Resolver {
                         for (int i = 0; i < idsSize; i++) {
                             if (theNodeWorldOrders[i] != null) {
                                 isEmpty[0] = false;
-                                keys[i * Constants.KEY_SIZE] = ChunkType.TIME_TREE_CHUNK;
+                                keys[i * Constants.KEY_SIZE] = ChunkType.SUPER_TIME_TREE_CHUNK;
                                 keys[(i * Constants.KEY_SIZE) + 1] = selfPointer.resolve_world(globalWorldOrderChunk, (WorldOrderChunk) theNodeWorldOrders[i], times[i], worlds[i]);
-                                keys[(i * Constants.KEY_SIZE) + 2] = Constants.NULL_LONG;
+                                keys[(i * Constants.KEY_SIZE) + 2] = 0;
                             } else {
                                 keys[i * Constants.KEY_SIZE] = -1;
                             }
@@ -310,12 +312,13 @@ final class MWResolver implements Resolver {
                                         isEmpty[0] = true;
                                         for (int i = 0; i < idsSize; i++) {
                                             if (theNodeSuperTimeTrees[i] != null) {
-                                                final long closestSuperTime = ((TimeTreeChunk) theNodeSuperTimeTrees[i]).previousOrEqual(times[i]);
+                                                final long closestSuperTime = ((SuperTimeTreeChunk) theNodeSuperTimeTrees[i]).previousOrEqual(times[i]);
                                                 if (closestSuperTime == Constants.NULL_LONG) {
                                                     keys[i * Constants.KEY_SIZE] = -1; //skip
                                                 } else {
                                                     isEmpty[0] = false;
                                                     keys[(i * Constants.KEY_SIZE) + 2] = closestSuperTime;
+                                                    keys[i * Constants.KEY_SIZE] = ChunkType.TIME_TREE_CHUNK;
                                                 }
                                             } else {
                                                 keys[i * Constants.KEY_SIZE] = -1; //skip
@@ -357,7 +360,7 @@ final class MWResolver implements Resolver {
                                                                         for (int i = 0; i < idsSize; i++) {
                                                                             if (theObjectChunks[i] != null) {
                                                                                 WorldOrderChunk castedNodeWorldOrder = (WorldOrderChunk) theNodeWorldOrders[i];
-                                                                                int extraCode = (int) castedNodeWorldOrder.extra();
+                                                                                int extraCode = (int) castedNodeWorldOrder.type();
                                                                                 NodeFactory resolvedFactory = null;
                                                                                 if (extraCode != -1) {
                                                                                     resolvedFactory = ((CoreGraph) selfPointer._graph).factoryByCode(extraCode);
@@ -379,7 +382,7 @@ final class MWResolver implements Resolver {
                                                                                     resolvedNode._time_magic = -1;
                                                                                 } else {
                                                                                     resolvedNode._world_magic = ((WorldOrderChunk) theNodeWorldOrders[i]).magic();
-                                                                                    resolvedNode._super_time_magic = ((TimeTreeChunk) theNodeSuperTimeTrees[i]).magic();
+                                                                                    resolvedNode._super_time_magic = ((SuperTimeTreeChunk) theNodeSuperTimeTrees[i]).magic();
                                                                                     resolvedNode._time_magic = ((TimeTreeChunk) theNodeTimeTrees[i]).magic();
                                                                                 }
                                                                                 finalResult[i] = resolvedNode;
@@ -401,109 +404,6 @@ final class MWResolver implements Resolver {
                     }
                 }
             });
-        }
-    }
-
-    @Override
-    public void lookupTimes(long world, long from, long to, long id, Callback<Node[]> callback) {
-        final MWResolver selfPointer = this;
-        try {
-            selfPointer._space.getOrLoadAndMark(ChunkType.WORLD_ORDER_CHUNK, 0, 0, id, new Callback<Chunk>() {
-                @Override
-                public void on(final Chunk theNodeWorldOrder) {
-                    if (theNodeWorldOrder == null) {
-                        callback.on(null);
-                    } else {
-
-
-
-                        /*
-                        final long closestWorld = selfPointer.resolve_world(globalWorldOrderChunk, (WorldOrderChunk) theNodeWorldOrder, time, world);
-                        selfPointer._space.getOrLoadAndMark(ChunkType.TIME_TREE_CHUNK, closestWorld, Constants.NULL_LONG, id, new Callback<Chunk>() {
-                            @Override
-                            public void on(final Chunk theNodeSuperTimeTree) {
-                                if (theNodeSuperTimeTree == null) {
-                                    selfPointer._space.unmark(theNodeWorldOrder.index());
-                                    callback.on(null);
-                                } else {
-                                    final long closestSuperTime = ((TimeTreeChunk) theNodeSuperTimeTree).previousOrEqual(time);
-                                    if (closestSuperTime == Constants.NULL_LONG) {
-                                        selfPointer._space.unmark(theNodeSuperTimeTree.index());
-                                        selfPointer._space.unmark(theNodeWorldOrder.index());
-                                        callback.on(null);
-                                        return;
-                                    }
-                                    selfPointer._space.getOrLoadAndMark(ChunkType.TIME_TREE_CHUNK, closestWorld, closestSuperTime, id, new Callback<Chunk>() {
-                                        @Override
-                                        public void on(final Chunk theNodeTimeTree) {
-                                            if (theNodeTimeTree == null) {
-                                                selfPointer._space.unmark(theNodeSuperTimeTree.index());
-                                                selfPointer._space.unmark(theNodeWorldOrder.index());
-                                                callback.on(null);
-                                            } else {
-                                                final long closestTime = ((TimeTreeChunk) theNodeTimeTree).previousOrEqual(time);
-                                                if (closestTime == Constants.NULL_LONG) {
-                                                    selfPointer._space.unmark(theNodeTimeTree.index());
-                                                    selfPointer._space.unmark(theNodeSuperTimeTree.index());
-                                                    selfPointer._space.unmark(theNodeWorldOrder.index());
-                                                    callback.on(null);
-                                                    return;
-                                                }
-                                                selfPointer._space.getOrLoadAndMark(STATE_CHUNK, closestWorld, closestTime, id, new Callback<Chunk>() {
-                                                    @Override
-                                                    public void on(Chunk theObjectChunk) {
-                                                        if (theObjectChunk == null) {
-                                                            selfPointer._space.unmark(theNodeTimeTree.index());
-                                                            selfPointer._space.unmark(theNodeSuperTimeTree.index());
-                                                            selfPointer._space.unmark(theNodeWorldOrder.index());
-                                                            callback.on(null);
-                                                        } else {
-                                                            WorldOrderChunk castedNodeWorldOrder = (WorldOrderChunk) theNodeWorldOrder;
-                                                            long extraCode = castedNodeWorldOrder.extra();
-                                                            NodeFactory resolvedFactory = null;
-                                                            if (extraCode != Constants.NULL_LONG) {
-                                                                resolvedFactory = ((CoreGraph) selfPointer._graph).factoryByCode(extraCode);
-                                                            }
-                                                            BaseNode resolvedNode;
-                                                            if (resolvedFactory == null) {
-                                                                resolvedNode = new CoreNode(world, time, id, selfPointer._graph);
-                                                            } else {
-                                                                resolvedNode = (BaseNode) resolvedFactory.create(world, time, id, selfPointer._graph);
-                                                            }
-                                                            resolvedNode._dead = false;
-                                                            resolvedNode._index_stateChunk = theObjectChunk.index();
-                                                            resolvedNode._index_superTimeTree = theNodeSuperTimeTree.index();
-                                                            resolvedNode._index_timeTree = theNodeTimeTree.index();
-                                                            resolvedNode._index_worldOrder = theNodeWorldOrder.index();
-
-                                                            if (closestWorld == world && closestTime == time) {
-                                                                resolvedNode._world_magic = -1;
-                                                                resolvedNode._super_time_magic = -1;
-                                                                resolvedNode._time_magic = -1;
-                                                            } else {
-                                                                resolvedNode._world_magic = ((WorldOrderChunk) theNodeWorldOrder).magic();
-                                                                resolvedNode._super_time_magic = ((TimeTreeChunk) theNodeSuperTimeTree).magic();
-                                                                resolvedNode._time_magic = ((TimeTreeChunk) theNodeTimeTree).magic();
-                                                            }
-                                                            //selfPointer._tracker.monitor(resolvedNode);
-                                                            if (callback != null) {
-                                                                final Node casted = resolvedNode;
-                                                                callback.on((A) casted);
-                                                            }
-                                                        }
-                                                    }
-                                                });
-                                            }
-                                        }
-                                    });
-                                }
-                            }
-                        });*/
-                    }
-                }
-            });
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
@@ -530,7 +430,7 @@ final class MWResolver implements Resolver {
     }
 
     @Override
-    public final void lookupAll(final long world, final long time, final long ids[], final Callback<Node[]> callback) {
+    public final void lookupAll(final long world, final long reqTime, final long ids[], final Callback<Node[]> callback) {
         final MWResolver selfPointer = this;
         final int idsSize = ids.length;
         final Node[] finalResult = new Node[idsSize];
@@ -560,9 +460,10 @@ final class MWResolver implements Resolver {
                         for (int i = 0; i < idsSize; i++) {
                             if (theNodeWorldOrders[i] != null) {
                                 isEmpty[0] = false;
-                                keys[i * Constants.KEY_SIZE] = ChunkType.TIME_TREE_CHUNK;
-                                keys[(i * Constants.KEY_SIZE) + 1] = selfPointer.resolve_world(globalWorldOrderChunk, (WorldOrderChunk) theNodeWorldOrders[i], time, world);
-                                keys[(i * Constants.KEY_SIZE) + 2] = Constants.NULL_LONG;
+                                final WorldOrderChunk woc = (WorldOrderChunk) theNodeWorldOrders[i];
+                                keys[i * Constants.KEY_SIZE] = ChunkType.SUPER_TIME_TREE_CHUNK;
+                                keys[(i * Constants.KEY_SIZE) + 1] = selfPointer.resolve_world(globalWorldOrderChunk, (WorldOrderChunk) theNodeWorldOrders[i], reqTime, world);
+                                keys[(i * Constants.KEY_SIZE) + 2] = 0;
                             } else {
                                 keys[i * Constants.KEY_SIZE] = -1;
                             }
@@ -579,11 +480,13 @@ final class MWResolver implements Resolver {
                                         isEmpty[0] = true;
                                         for (int i = 0; i < idsSize; i++) {
                                             if (theNodeSuperTimeTrees[i] != null) {
-                                                final long closestSuperTime = ((TimeTreeChunk) theNodeSuperTimeTrees[i]).previousOrEqual(time);
+                                                final WorldOrderChunk woc = (WorldOrderChunk) theNodeWorldOrders[i];
+                                                final long closestSuperTime = ((SuperTimeTreeChunk) theNodeSuperTimeTrees[i]).previousOrEqual(reqTime);
                                                 if (closestSuperTime == Constants.NULL_LONG) {
                                                     keys[i * Constants.KEY_SIZE] = -1; //skip
                                                 } else {
                                                     isEmpty[0] = false;
+                                                    keys[i * Constants.KEY_SIZE] = ChunkType.TIME_TREE_CHUNK;
                                                     keys[(i * Constants.KEY_SIZE) + 2] = closestSuperTime;
                                                 }
                                             } else {
@@ -602,7 +505,7 @@ final class MWResolver implements Resolver {
                                                         isEmpty[0] = true;
                                                         for (int i = 0; i < idsSize; i++) {
                                                             if (theNodeTimeTrees[i] != null) {
-                                                                final long closestTime = ((TimeTreeChunk) theNodeTimeTrees[i]).previousOrEqual(time);
+                                                                final long closestTime = ((TimeTreeChunk) theNodeTimeTrees[i]).previousOrEqual(reqTime);
                                                                 if (closestTime == Constants.NULL_LONG) {
                                                                     keys[i * Constants.KEY_SIZE] = -1; //skip
                                                                 } else {
@@ -626,29 +529,29 @@ final class MWResolver implements Resolver {
                                                                         for (int i = 0; i < idsSize; i++) {
                                                                             if (theObjectChunks[i] != null) {
                                                                                 WorldOrderChunk castedNodeWorldOrder = (WorldOrderChunk) theNodeWorldOrders[i];
-                                                                                int extraCode = (int) castedNodeWorldOrder.extra();
+                                                                                int extraCode = (int) castedNodeWorldOrder.type();
                                                                                 NodeFactory resolvedFactory = null;
                                                                                 if (extraCode != -1) {
                                                                                     resolvedFactory = ((CoreGraph) selfPointer._graph).factoryByCode(extraCode);
                                                                                 }
                                                                                 BaseNode resolvedNode;
                                                                                 if (resolvedFactory == null) {
-                                                                                    resolvedNode = new BaseNode(world, time, ids[i], selfPointer._graph);
+                                                                                    resolvedNode = new BaseNode(world, reqTime, ids[i], selfPointer._graph);
                                                                                 } else {
-                                                                                    resolvedNode = (BaseNode) resolvedFactory.create(world, time, ids[i], selfPointer._graph);
+                                                                                    resolvedNode = (BaseNode) resolvedFactory.create(world, reqTime, ids[i], selfPointer._graph);
                                                                                 }
                                                                                 resolvedNode._dead = false;
                                                                                 resolvedNode._index_stateChunk = theObjectChunks[i].index();
                                                                                 resolvedNode._index_superTimeTree = theNodeSuperTimeTrees[i].index();
                                                                                 resolvedNode._index_timeTree = theNodeTimeTrees[i].index();
                                                                                 resolvedNode._index_worldOrder = theNodeWorldOrders[i].index();
-                                                                                if (theObjectChunks[i].world() == world && theObjectChunks[i].time() == time) {
+                                                                                if (theObjectChunks[i].world() == world && theObjectChunks[i].time() == reqTime) {
                                                                                     resolvedNode._world_magic = -1;
                                                                                     resolvedNode._super_time_magic = -1;
                                                                                     resolvedNode._time_magic = -1;
                                                                                 } else {
                                                                                     resolvedNode._world_magic = ((WorldOrderChunk) theNodeWorldOrders[i]).magic();
-                                                                                    resolvedNode._super_time_magic = ((TimeTreeChunk) theNodeSuperTimeTrees[i]).magic();
+                                                                                    resolvedNode._super_time_magic = ((SuperTimeTreeChunk) theNodeSuperTimeTrees[i]).magic();
                                                                                     resolvedNode._time_magic = ((TimeTreeChunk) theNodeTimeTrees[i]).magic();
                                                                                 }
                                                                                 finalResult[i] = resolvedNode;
@@ -674,9 +577,292 @@ final class MWResolver implements Resolver {
     }
 
     @Override
-    public void lookupAllTimes(long world, long from, long to, long[] ids, Callback<Node[]> callback) {
-        //TODO
-        throw new RuntimeException("NOT IMPLEMENTED YET");
+    public void lookupPTimes(long world, long[] times, long id, Callback<Node[]> callback) {
+
+    }
+
+    @Override
+    public final void lookupTimes(long world, long rfrom, long rto, long id, int limit, Callback<Node[]> callback) {
+        final MWResolver selfPointer = this;
+        _space.getOrLoadAndMark(ChunkType.WORLD_ORDER_CHUNK, 0, 0, id, new Callback<Chunk>() {
+            @Override
+            public void on(final Chunk resolved) {
+                if (resolved == null) {
+                    callback.on(new Node[0]);
+                    return;
+                }
+                final WorldOrderChunk objectWorldOrder = (WorldOrderChunk) resolved;
+                final long from;
+                final long to;
+                final boolean reversed;
+                if (rfrom > rto) {
+                    reversed = true;
+                    from = rto;
+                    to = rfrom;
+                } else {
+                    reversed = false;
+                    from = rfrom;
+                    to = rto;
+                }
+                //worlds collector
+                final LArray worldCollector = new LArray();
+                long currentWorld = world;
+                while (currentWorld != CoreConstants.NULL_LONG) {
+                    long divergenceTimepoint = objectWorldOrder.get(currentWorld);
+                    if (divergenceTimepoint != CoreConstants.NULL_LONG) {
+                        if (divergenceTimepoint <= from) {
+                            //take the first one before leaving
+                            worldCollector.add(currentWorld);
+                            break;
+                        } else if (divergenceTimepoint > to) {
+                            //next round, go to parent world
+                            currentWorld = selfPointer.globalWorldOrderChunk.get(currentWorld);
+                        } else {
+                            //that's fit, add to search
+                            worldCollector.add(currentWorld);
+                            //go to parent
+                            currentWorld = selfPointer.globalWorldOrderChunk.get(currentWorld);
+                        }
+                    } else {
+                        //go to parent
+                        currentWorld = selfPointer.globalWorldOrderChunk.get(currentWorld);
+                    }
+                }
+                if (worldCollector.size() == 0) {
+                    callback.on(new Node[0]);
+                    return;
+                }
+                final long[] call_keys = new long[worldCollector.size() * 3];
+                final byte[] call_types = new byte[worldCollector.size()];
+                for (int i = 0; i < worldCollector.size(); i++) {
+                    call_types[i] = ChunkType.SUPER_TIME_TREE_CHUNK;
+                    call_keys[i * Constants.KEY_SIZE] = worldCollector.get(i);
+                    call_keys[(i * Constants.KEY_SIZE) + 1] = 0;
+                    call_keys[(i * Constants.KEY_SIZE) + 2] = id;
+                }
+                getOrLoadAndMarkAll(call_types, call_keys, new Callback<Chunk[]>() {
+                    @Override
+                    public void on(final Chunk[] superTimeTrees) {
+                        if (superTimeTrees == null) {
+                            selfPointer._space.unmark(objectWorldOrder.index());
+                            callback.on(new Node[0]);
+                        } else {
+                            //time collector
+                            long[] call_keys2;
+                            byte[] call_types2;
+                            final LMap tempSuperTimeCollector = new LMap(true);
+                            if (reversed) {
+                                final int[] sumCapacity = {0};
+                                long previousDivergenceTime = to;
+                                for (int i = 0; i < worldCollector.size() && (limit == -1 || sumCapacity[0] <= limit); i++) {
+                                    final SuperTimeTreeChunk timeTree = (SuperTimeTreeChunk) superTimeTrees[i];
+                                    if (timeTree != null) {
+                                        long currentDivergenceTime = objectWorldOrder.get(worldCollector.get(i));
+                                        final long finalPreviousDivergenceTime = previousDivergenceTime;
+                                        int finalI = i;
+                                        timeTree.range(currentDivergenceTime, previousDivergenceTime, CoreConstants.END_OF_TIME, new SuperTreeWalker() {
+                                            @Override
+                                            public void elem(final long superTime, final long superCapacity) {
+                                                if (superTime != finalPreviousDivergenceTime) {
+                                                    tempSuperTimeCollector.put(superTime, finalI);
+                                                    sumCapacity[0] = sumCapacity[0] + ((int) superCapacity);
+                                                }
+                                            }
+                                        });
+                                        previousDivergenceTime = currentDivergenceTime;
+                                    }
+                                }
+                                call_keys2 = new long[tempSuperTimeCollector.size() * 3];
+                                call_types2 = new byte[tempSuperTimeCollector.size()];
+                                for (int i = 0; i < tempSuperTimeCollector.size(); i++) {
+                                    call_keys2[i * 3] = worldCollector.get((int) tempSuperTimeCollector.getValue(i));
+                                    call_keys2[i * 3 + 1] = tempSuperTimeCollector.getKey(i);
+                                    call_keys2[i * 3 + 2] = id;
+                                    call_types2[i] = ChunkType.TIME_TREE_CHUNK;
+                                }
+                            } else {
+                                final LMap tempSuperTimeCollectorCapacity = new LMap(true);
+                                long previousDivergenceTime = to;
+                                for (int i = 0; i < worldCollector.size(); i++) {
+                                    final SuperTimeTreeChunk timeTree = (SuperTimeTreeChunk) superTimeTrees[i];
+                                    if (timeTree != null) {
+                                        long currentDivergenceTime = objectWorldOrder.get(worldCollector.get(i));
+                                        final long finalPreviousDivergenceTime = previousDivergenceTime;
+                                        int finalI = i;
+                                        timeTree.range(currentDivergenceTime, previousDivergenceTime, CoreConstants.END_OF_TIME, new SuperTreeWalker() {
+                                            @Override
+                                            public void elem(final long superTime, final long superCapacity) {
+                                                if (superTime != finalPreviousDivergenceTime) {
+                                                    tempSuperTimeCollector.put(superTime, finalI);
+                                                    tempSuperTimeCollectorCapacity.put(superTime, superCapacity);
+                                                }
+                                            }
+                                        });
+                                        previousDivergenceTime = currentDivergenceTime;
+                                    }
+                                }
+                                int neededSubTrees = 0;
+                                int sumCapacity = 0;
+                                for (int i = tempSuperTimeCollectorCapacity.size() - 1; i >= 0; i--) {
+                                    sumCapacity = sumCapacity + ((int) tempSuperTimeCollectorCapacity.getValue(i));
+                                    neededSubTrees++;
+                                    if (limit != -1 && sumCapacity >= limit) {
+                                        break;
+                                    }
+                                }
+                                call_keys2 = new long[neededSubTrees * 3];
+                                call_types2 = new byte[neededSubTrees];
+                                int write_cursor = 0;
+                                for (int i = tempSuperTimeCollector.size() - neededSubTrees; i < tempSuperTimeCollector.size(); i++) {
+                                    call_keys2[write_cursor * 3] = worldCollector.get((int) tempSuperTimeCollector.getValue(i));
+                                    call_keys2[write_cursor * 3 + 1] = tempSuperTimeCollector.getKey(i);
+                                    call_keys2[write_cursor * 3 + 2] = id;
+                                    call_types2[write_cursor] = ChunkType.TIME_TREE_CHUNK;
+                                    write_cursor++;
+                                }
+                            }
+                            getOrLoadAndMarkAll(call_types2, call_keys2, new Callback<Chunk[]>() {
+                                @Override
+                                public void on(final Chunk[] timeTrees) {
+                                    if (timeTrees == null) {
+                                        final ChunkSpace space = selfPointer._space;
+                                        space.unmark(objectWorldOrder.index());
+                                        for (int i = 0; i < worldCollector.size(); i++) {
+                                            space.unmark(superTimeTrees[i].index());
+                                        }
+                                        callback.on(new Node[0]);
+                                    } else {
+                                        //time collector
+                                        final LMap timeCollector = new LMap(true);
+                                        long previousDivergenceTime = to;
+                                        for (int i = 0; i < call_types2.length; i++) {
+                                            final TimeTreeChunk timeTree = (TimeTreeChunk) timeTrees[i];
+                                            if (timeTree != null) {
+                                                long currentDivergenceTime = objectWorldOrder.get(call_keys2[i * 3]);
+                                                if (currentDivergenceTime < from) {
+                                                    currentDivergenceTime = from;
+                                                }
+                                                final long finalPreviousDivergenceTime = previousDivergenceTime;
+                                                int finalI = i;
+                                                timeTree.range(currentDivergenceTime, previousDivergenceTime, CoreConstants.END_OF_TIME, new TreeWalker() {
+                                                    @Override
+                                                    public void elem(long t) {
+                                                        if (t != finalPreviousDivergenceTime) {
+                                                            timeCollector.put(t, finalI);
+                                                        }
+                                                    }
+                                                });
+                                                if (i < call_types2.length - 1) {
+                                                    if (call_keys2[(i + 1) * 3] != call_keys2[i * 3]) {
+                                                        //world overriding semantic
+                                                        previousDivergenceTime = currentDivergenceTime;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        //filter with max now
+                                        int firmLimit;
+                                        if (limit == -1 || limit >= timeCollector.size()) {
+                                            firmLimit = timeCollector.size();
+                                        } else {
+                                            firmLimit = limit;
+                                        }
+                                        final int extraCode = (int) objectWorldOrder.type();
+                                        NodeFactory resolvedFactory = null;
+                                        if (extraCode != -1) {
+                                            resolvedFactory = ((CoreGraph) selfPointer._graph).factoryByCode(extraCode);
+                                        }
+                                        final BaseNode[] result = new BaseNode[firmLimit];
+                                        if (reversed) {
+                                            for (int i = 0; i < firmLimit; i++) {
+                                                final int reversedIndex = (int) timeCollector.getValue(i);
+                                                if (resolvedFactory == null) {
+                                                    result[i] = new BaseNode(call_keys2[reversedIndex * 3], timeCollector.getKey(i), id, selfPointer._graph);
+                                                } else {
+                                                    result[i] = (BaseNode) resolvedFactory.create(call_keys2[reversedIndex * 3], timeCollector.getKey(i), id, selfPointer._graph);
+                                                }
+                                                result[i]._dead = false;
+                                                final SuperTimeTreeChunk stc = (SuperTimeTreeChunk) superTimeTrees[(int) tempSuperTimeCollector.get(timeTrees[reversedIndex].time())];
+                                                final TimeTreeChunk ttc = (TimeTreeChunk) timeTrees[reversedIndex];
+                                                _space.mark(stc.index());
+                                                _space.mark(ttc.index());
+                                                _space.mark(objectWorldOrder.index());
+                                                result[i]._index_superTimeTree = stc.index();
+                                                result[i]._index_timeTree = ttc.index();
+                                                result[i]._index_worldOrder = objectWorldOrder.index();
+                                                if (call_keys2[reversedIndex * 3] == world) { //time is always precise here
+                                                    result[i]._world_magic = -1;
+                                                    result[i]._super_time_magic = -1;
+                                                    result[i]._time_magic = -1;
+                                                } else {
+                                                    result[i]._world_magic = objectWorldOrder.magic();
+                                                    result[i]._super_time_magic = stc.magic();
+                                                    result[i]._time_magic = ttc.magic();
+                                                }
+                                                //we need to marks
+                                            }
+                                        } else {
+                                            int nodeIndex = 0;
+                                            for (int i = timeCollector.size() - 1; i >= timeCollector.size() - firmLimit; i--) {
+                                                final int reversedIndex = (int) timeCollector.getValue(i);
+                                                if (resolvedFactory == null) {
+                                                    result[nodeIndex] = new BaseNode(call_keys2[reversedIndex * 3], timeCollector.getKey(i), id, selfPointer._graph);
+                                                } else {
+                                                    result[nodeIndex] = (BaseNode) resolvedFactory.create(call_keys2[reversedIndex * 3], timeCollector.getKey(i), id, selfPointer._graph);
+                                                }
+                                                result[nodeIndex]._dead = false;
+                                                final SuperTimeTreeChunk stc = (SuperTimeTreeChunk) superTimeTrees[(int) tempSuperTimeCollector.get(timeTrees[reversedIndex].time())];
+                                                final TimeTreeChunk ttc = (TimeTreeChunk) timeTrees[reversedIndex];
+                                                _space.mark(stc.index());
+                                                _space.mark(ttc.index());
+                                                _space.mark(objectWorldOrder.index());
+                                                result[nodeIndex]._index_superTimeTree = stc.index();
+                                                result[nodeIndex]._index_timeTree = ttc.index();
+                                                result[nodeIndex]._index_worldOrder = objectWorldOrder.index();
+                                                if (call_keys2[reversedIndex * 3] == world) { //time is always precise here
+                                                    result[nodeIndex]._world_magic = -1;
+                                                    result[nodeIndex]._super_time_magic = -1;
+                                                    result[nodeIndex]._time_magic = -1;
+                                                } else {
+                                                    result[nodeIndex]._world_magic = objectWorldOrder.magic();
+                                                    result[nodeIndex]._super_time_magic = stc.magic();
+                                                    result[nodeIndex]._time_magic = ttc.magic();
+                                                }
+                                                nodeIndex++;
+                                            }
+                                        }
+                                        long[] call_keys3 = new long[firmLimit * 3];
+                                        byte[] call_types3 = new byte[firmLimit];
+                                        for (int i = 0; i < firmLimit; i++) {
+                                            call_keys3[i * 3] = result[i].world();
+                                            call_keys3[i * 3 + 1] = result[i].time();
+                                            call_keys3[i * 3 + 2] = id;
+                                            call_types3[i] = ChunkType.STATE_CHUNK;
+                                        }
+                                        _space.unmark(objectWorldOrder.index());
+                                        for (int i = 0; i < timeTrees.length; i++) {
+                                            _space.unmark(timeTrees[i].index());
+                                        }
+                                        for (int i = 0; i < superTimeTrees.length; i++) {
+                                            _space.unmark(superTimeTrees[i].index());
+                                        }
+                                        getOrLoadAndMarkAll(call_types3, call_keys3, new Callback<Chunk[]>() {
+                                            @Override
+                                            public void on(Chunk[] stateChunks) {
+                                                for (int i = 0; i < firmLimit; i++) {
+                                                    result[i]._index_stateChunk = stateChunks[i].index();
+                                                }
+                                                callback.on(result);
+                                            }
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                    }
+                });
+            }
+        });
     }
 
     private long resolve_world(final LongLongMap globalWorldOrder, final LongLongMap nodeWorldOrder, final long timeToResolve, long originWorld) {
@@ -794,7 +980,6 @@ final class MWResolver implements Resolver {
     }
 
     /*
-
     @Override
     public NodeState newState(Node node, long world, long time) {
         //Retrieve Node needed chunks
@@ -1019,7 +1204,7 @@ final class MWResolver implements Resolver {
         } else {
             /* OPTIMIZATION #2: SAME DEPHASING */
             final WorldOrderChunk nodeWorldOrder = (WorldOrderChunk) this._space.get(castedNode._index_worldOrder);
-            TimeTreeChunk nodeSuperTimeTree = (TimeTreeChunk) this._space.get(castedNode._index_superTimeTree);
+            SuperTimeTreeChunk nodeSuperTimeTree = (SuperTimeTreeChunk) this._space.get(castedNode._index_superTimeTree);
             TimeTreeChunk nodeTimeTree = (TimeTreeChunk) this._space.get(castedNode._index_timeTree);
             if (nodeWorldOrder != null && nodeSuperTimeTree != null && nodeTimeTree != null) {
                 if (castedNode._world_magic == nodeWorldOrder.magic() && castedNode._super_time_magic == nodeSuperTimeTree.magic() && castedNode._time_magic == nodeTimeTree.magic()) {
@@ -1036,7 +1221,7 @@ final class MWResolver implements Resolver {
                     final long resolvedWorld = resolve_world(globalWorldOrderChunk, nodeWorldOrder, nodeTime, nodeWorld);
                     if (resolvedWorld != nodeSuperTimeTree.world()) {
                         //we have to update the superTree
-                        final TimeTreeChunk tempNodeSuperTimeTree = (TimeTreeChunk) this._space.getAndMark(ChunkType.TIME_TREE_CHUNK, resolvedWorld, CoreConstants.NULL_LONG, nodeId);
+                        final SuperTimeTreeChunk tempNodeSuperTimeTree = (SuperTimeTreeChunk) this._space.getAndMark(ChunkType.SUPER_TIME_TREE_CHUNK, resolvedWorld, 0, nodeId);
                         if (tempNodeSuperTimeTree != null) {
                             _space.unmark(nodeSuperTimeTree.index());
                             nodeSuperTimeTree = tempNodeSuperTimeTree;
@@ -1087,6 +1272,36 @@ final class MWResolver implements Resolver {
         return stateResult;
     }
 
+
+    @Override
+    public void end(Node node) {
+        final BaseNode castedNode = (BaseNode) node;
+        castedNode.cacheLock();
+        if (castedNode._dead) {
+            castedNode.cacheUnlock();
+            throw new RuntimeException(CoreConstants.DEAD_NODE_ERROR + " node id: " + node.id());
+        }
+        final WorldOrderChunk nodeWorldOrder = (WorldOrderChunk) this._space.get(castedNode._index_worldOrder);
+        if (nodeWorldOrder == null) {
+            castedNode.cacheUnlock();
+            return;
+        }
+        nodeWorldOrder.lock();
+        final long alignedTime = node.time();
+        final long nodeWorld = castedNode.world();
+        final SuperTimeTreeChunk superTimeTree = (SuperTimeTreeChunk) this._space.get(castedNode._index_superTimeTree);
+        if (superTimeTree.world() == nodeWorld) {
+            superTimeTree.setEnd(alignedTime);
+        } else {
+            SuperTimeTreeChunk newSuperTimeTree = (SuperTimeTreeChunk) this._space.createAndMark(ChunkType.SUPER_TIME_TREE_CHUNK, nodeWorld, 0, castedNode.id());
+            newSuperTimeTree.setEnd(alignedTime);
+            //insert into node world order
+            nodeWorldOrder.put(nodeWorld, alignedTime);
+            _space.unmark(newSuperTimeTree.index());
+        }
+        nodeWorldOrder.unlock();
+    }
+
     @Override
     public final NodeState alignState(final Node node) {
         final BaseNode castedNode = (BaseNode) node;
@@ -1125,22 +1340,20 @@ final class MWResolver implements Resolver {
         final long nodeWorld = node.world();
         long nodeTime = node.time();
         final long nodeId = node.id();
-
         //compute time sensitivity
-        final TimeTreeChunk superTimeTree = (TimeTreeChunk) this._space.get(castedNode._index_superTimeTree);
-        final long timeSensitivity = superTimeTree.extra();
+        final SuperTimeTreeChunk superTimeTree = (SuperTimeTreeChunk) this._space.get(castedNode._index_superTimeTree);
+        final long timeSensitivity = superTimeTree.timeSensitivity();
         if (timeSensitivity != 0 && timeSensitivity != Constants.NULL_LONG) {
             if (timeSensitivity < 0) {
                 nodeTime = previousTime;
             } else {
-                long timeSensitivityOffset = superTimeTree.extra2();
+                long timeSensitivityOffset = superTimeTree.timeSensitivityOffset();
                 if (timeSensitivityOffset == Constants.NULL_LONG) {
                     timeSensitivityOffset = 0;
                 }
                 nodeTime = nodeTime - (nodeTime % timeSensitivity) + timeSensitivityOffset;
             }
         }
-
         final StateChunk clonedState;
         if (nodeTime != previousTime || nodeWorld != previousWorld) {
             try {
@@ -1157,73 +1370,52 @@ final class MWResolver implements Resolver {
         } else {
             clonedState = previouStateChunk;
         }
-
         castedNode._world_magic = -1;
         castedNode._super_time_magic = -1;
         castedNode._time_magic = -1;
-
         if (previousWorld == nodeWorld || nodeWorldOrder.get(nodeWorld) != CoreConstants.NULL_LONG) {
             //final TimeTreeChunk superTimeTree = (TimeTreeChunk) this._space.get(castedNode._index_superTimeTree);
             final TimeTreeChunk timeTree = (TimeTreeChunk) this._space.get(castedNode._index_timeTree);
-            //manage super tree here
-            long superTreeSize = superTimeTree.size();
-            long threshold = CoreConstants.SCALE_1 * 2;
-            if (superTreeSize > threshold) {
-                threshold = CoreConstants.SCALE_2 * 2;
-            }
-            if (superTreeSize > threshold) {
-                threshold = CoreConstants.SCALE_3 * 2;
-            }
-            if (superTreeSize > threshold) {
-                threshold = CoreConstants.SCALE_4 * 2;
-            }
-            timeTree.insert(nodeTime);
-            if (timeTree.size() == threshold) {
-                final long[] medianPoint = {-1};
-                //we iterate over the tree without boundaries for values, but with boundaries for number of collected times
-                timeTree.range(CoreConstants.BEGINNING_OF_TIME, CoreConstants.END_OF_TIME, timeTree.size() / 2, new TreeWalker() {
-                    @Override
-                    public void elem(long t) {
-                        medianPoint[0] = t;
-                    }
-                });
-                TimeTreeChunk rightTree = (TimeTreeChunk) this._space.createAndMark(ChunkType.TIME_TREE_CHUNK, nodeWorld, medianPoint[0], nodeId);
-                //TODO second iterate that can be avoided, however we need the median point to create the right tree
-                //we iterate over the tree without boundaries for values, but with boundaries for number of collected times
-                final TimeTreeChunk finalRightTree = rightTree;
-                //rang iterate readVar the end of the tree
-                timeTree.range(CoreConstants.BEGINNING_OF_TIME, CoreConstants.END_OF_TIME, timeTree.size() / 2, new TreeWalker() {
-                    @Override
-                    public void elem(long t) {
-                        finalRightTree.unsafe_insert(t);
-                    }
-                });
-                _space.notifyUpdate(finalRightTree.index());
-                superTimeTree.insert(medianPoint[0]);
-                //remove times insert in the right tree
-                timeTree.clearAt(medianPoint[0]);
-                //ok ,now manage marks
-                if (nodeTime < medianPoint[0]) {
-                    _space.unmark(rightTree.index());
+            final long subTreeCapacity = timeTree.capacity();
+            if (timeTree.size() < subTreeCapacity) {
+                //easy, just insert the new timeslot
+                timeTree.insert(nodeTime);
+                if (superTimeTree.lastKey() == timeTree.time()) {
+                    superTimeTree.setLastValue(timeTree.size());
                 } else {
-                    castedNode._index_timeTree = finalRightTree.index();
-                    _space.unmark(timeTree.index());
+                    throw new RuntimeException("GreyCat internal error");
+                }
+            } else {
+                //are we the last last one?
+                if (superTimeTree.lastKey() == timeTree.time()) {
+                    TimeTreeChunk newTimeTree = (TimeTreeChunk) this._space.createAndMark(ChunkType.TIME_TREE_CHUNK, nodeWorld, nodeTime, nodeId);
+                    long allowedSubTreeCapacity = superTimeTree.subTreeCapacity();
+                    newTimeTree.insert(nodeTime);
+                    newTimeTree.setCapacity(allowedSubTreeCapacity);
+                    superTimeTree.insert(nodeTime, allowedSubTreeCapacity);
+                    _space.unmark(castedNode._index_timeTree);
+                    castedNode._index_timeTree = newTimeTree.index();
+                } else {
+                    //insertion in past, oversize tree
+                    timeTree.insert(nodeTime);
+                    timeTree.setCapacity(subTreeCapacity + 1);
+                    superTimeTree.insert(timeTree.time(), subTreeCapacity + 1);
                 }
             }
         } else {
             //create a new node superTimeTree
-            TimeTreeChunk newSuperTimeTree = (TimeTreeChunk) this._space.createAndMark(ChunkType.TIME_TREE_CHUNK, nodeWorld, CoreConstants.NULL_LONG, nodeId);
-            newSuperTimeTree.insert(nodeTime);
+            SuperTimeTreeChunk newSuperTimeTree = (SuperTimeTreeChunk) this._space.createAndMark(ChunkType.SUPER_TIME_TREE_CHUNK, nodeWorld, 0, nodeId);
+            long subTreeCapacity = superTimeTree.subTreeCapacity();
+            newSuperTimeTree.insert(nodeTime, subTreeCapacity);
             //create a new node timeTree
             TimeTreeChunk newTimeTree = (TimeTreeChunk) this._space.createAndMark(ChunkType.TIME_TREE_CHUNK, nodeWorld, nodeTime, nodeId);
             newTimeTree.insert(nodeTime);
+            newTimeTree.setCapacity(subTreeCapacity);
             //insert into node world order
             nodeWorldOrder.put(nodeWorld, nodeTime);
             //let's store the new state if necessary
-
             _space.unmark(castedNode._index_timeTree);
             _space.unmark(castedNode._index_superTimeTree);
-
             castedNode._index_timeTree = newTimeTree.index();
             castedNode._index_superTimeTree = newSuperTimeTree.index();
         }
@@ -1236,6 +1428,7 @@ final class MWResolver implements Resolver {
     @Override
     public NodeState newState(Node node, long world, long time) {
         final BaseNode castedNode = (BaseNode) node;
+
         NodeState resolved;
         castedNode.cacheLock();
 
@@ -1267,6 +1460,10 @@ final class MWResolver implements Resolver {
 
     @Override
     public void resolveTimepoints(final Node node, final long beginningOfSearch, final long endOfSearch, final Callback<long[]> callback) {
+        internal_resolveTimepoints(node, beginningOfSearch, endOfSearch, callback);
+    }
+
+    private void internal_resolveTimepoints(final Node node, final long beginningOfSearch, final long endOfSearch, final Callback<long[]> callback) {
         final MWResolver selfPointer = this;
         _space.getOrLoadAndMark(ChunkType.WORLD_ORDER_CHUNK, 0, 0, node.id(), new Callback<Chunk>() {
             @Override
@@ -1317,15 +1514,16 @@ final class MWResolver implements Resolver {
         });
     }
 
+
     private void resolveTimepointsFromWorlds(final WorldOrderChunk objectWorldOrder, final Node node, final long beginningOfSearch, final long endOfSearch, final long[] collectedWorlds, final int collectedWorldsSize, final Callback<long[]> callback) {
         final MWResolver selfPointer = this;
         final long[] timeTreeKeys = new long[collectedWorldsSize * 3];
         final byte[] types = new byte[collectedWorldsSize];
         for (int i = 0; i < collectedWorldsSize; i++) {
             timeTreeKeys[i * 3] = collectedWorlds[i];
-            timeTreeKeys[i * 3 + 1] = CoreConstants.NULL_LONG;
+            timeTreeKeys[i * 3 + 1] = 0;
             timeTreeKeys[i * 3 + 2] = node.id();
-            types[i] = ChunkType.TIME_TREE_CHUNK;
+            types[i] = ChunkType.SUPER_TIME_TREE_CHUNK;
         }
         getOrLoadAndMarkAll(types, timeTreeKeys, new Callback<Chunk[]>() {
             @Override
@@ -1342,16 +1540,16 @@ final class MWResolver implements Resolver {
 
                     long previousDivergenceTime = endOfSearch;
                     for (int i = 0; i < collectedWorldsSize; i++) {
-                        final TimeTreeChunk timeTree = (TimeTreeChunk) superTimeTrees[i];
+                        final SuperTimeTreeChunk timeTree = (SuperTimeTreeChunk) superTimeTrees[i];
                         if (timeTree != null) {
                             long currentDivergenceTime = objectWorldOrder.get(collectedWorlds[i]);
                             //if (currentDivergenceTime < beginningOfSearch) {
                             //    currentDivergenceTime = beginningOfSearch;
                             //}
                             final long finalPreviousDivergenceTime = previousDivergenceTime;
-                            timeTree.range(currentDivergenceTime, previousDivergenceTime, CoreConstants.END_OF_TIME, new TreeWalker() {
+                            timeTree.range(currentDivergenceTime, previousDivergenceTime, CoreConstants.END_OF_TIME, new SuperTreeWalker() {
                                 @Override
-                                public void elem(long t) {
+                                public void elem(long t, long capacity) {
                                     if (t != finalPreviousDivergenceTime) {
                                         collectedSuperTimes[0][insert_index[0]] = t;
                                         collectedSuperTimesAssociatedWorlds[0][insert_index[0]] = timeTree.world();

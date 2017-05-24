@@ -9,8 +9,12 @@ For any questions please contact us via our Gitter:
 [![Build Status](https://travis-ci.org/datathings/greycat.svg?branch=master)](https://travis-ci.org/datathings/greycat)
 
 # Changelog
+- Version 8 (~end of Mai 2017)
+    - Backend API change: new mini-batch trees
+    - New Traverse in Times API
+    - Data Compression using Time Offset strategy
 
-- Version 7 (planned for 28/04/2017)
+- Version 7 (15/05/2017)
     - fix bug in global dictionary
     - add option in builder to desactivate global dictionary and introspection ability
     - fix potential NPE into dephased struct proxy for EGraph

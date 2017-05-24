@@ -15,13 +15,12 @@
     limitations under the License.
 
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.datathings</groupId>
     <artifactId>greycat-parent</artifactId>
     <packaging>pom</packaging>
-    <version>7-SNAPSHOT</version>
+    <version>8-SNAPSHOT</version>
     <name>greycat-parent</name>
 
     <url>https://github.com/datathings/greycat</url>
@@ -102,12 +101,16 @@
         <module>plugins/rocksdb</module>
         <module>plugins/websocket</module>
         <module>plugins/ml</module>
+<<<<<<< HEAD
 
         <module>plugins/aerospike</module>
         <module>plugins/nsq-hook</module>
         <module>plugins/sparkey</module>
         <module>plugins/backup</module>
 
+=======
+        <module>plugins/modeling</module>
+>>>>>>> upstream/master
         <!--
         <module>plugins/memory</module>
         -->

@@ -15,6 +15,8 @@
  */
 package greycat;
 
+import greycat.utility.Tuple;
+
 /**
  * Node is the base element contained in the {@link Graph}.<br>
  * They belong to a world and time, have attributes (e.g. primitives, relations, and indexes).
@@ -219,6 +221,11 @@ public interface Node extends Container {
 
     Node setTimeSensitivity(long deltaTime, long offset);
 
-    long[] timeSensitivity();
+    Tuple<Long,Long> timeSensitivity();
+
+    /**
+     * This method end the lifespan of this node. All request after this time will reply null.
+     */
+    void end();
 
 }

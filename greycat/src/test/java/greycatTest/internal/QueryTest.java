@@ -23,6 +23,7 @@ import greycat.plugin.*;
 import greycat.struct.Buffer;
 import greycat.TaskHook;
 import greycat.utility.HashHelper;
+import greycat.utility.Tuple;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -89,6 +90,11 @@ public class QueryTest implements Resolver, Graph {
     }
 
     @Override
+    public void end(Node node) {
+
+    }
+
+    @Override
     public Node newNode(long world, long time) {
         return null;
     }
@@ -122,9 +128,10 @@ public class QueryTest implements Resolver, Graph {
     }
 
     @Override
-    public void lookupTimes(long world, long from, long to, long id, Callback<Node[]> callback) {
+    public void lookupPTimes(long world, long[] times, long id, Callback<Node[]> callback) {
 
     }
+
 
     @Override
     public void lookupAll(long world, long time, long[] ids, Callback<Node[]> callback) {
@@ -132,7 +139,7 @@ public class QueryTest implements Resolver, Graph {
     }
 
     @Override
-    public void lookupAllTimes(long world, long from, long to, long[] ids, Callback<Node[]> callback) {
+    public void lookupTimes(long world, long rfrom, long rto, long id, int limit, Callback<Node[]> callback) {
 
     }
 
@@ -226,7 +233,7 @@ public class QueryTest implements Resolver, Graph {
 
     @Override
     public Query newQuery() {
-        return new CoreQuery(this,this);
+        return new CoreQuery(this, this);
     }
 
     @Override
@@ -305,8 +312,8 @@ public class QueryTest implements Resolver, Graph {
     }
 
     @Override
-    public long[] getTimeSensitivity(Node node) {
-        return new long[0];
+    public Tuple<Long, Long> getTimeSensitivity(Node node) {
+        return new Tuple<Long, Long>(0L, 0L);
     }
 
 }

@@ -155,6 +155,10 @@ public class CoreActions {
         return new ActionTimeSensitivity(delta, offset);
     }
 
+    public static Action traverseTimeline(String start, String end, String limit) {
+        return new ActionTraverseTimeline(start, end, limit);
+    }
+
     /**
      * Forces the value of an attribute for all nodes present in the current result.
      * If value is similar to the previously stored one, nodes will still be modified and their timeline will be affected.

@@ -36,58 +36,32 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
     private int[] _back_meta;
     private long[] _k;
     private boolean[] _colors;
-    private boolean[] _diff;
-
-    private volatile long _magic;
-    private volatile int _size = 0;
 
     private long _hash;
     private boolean _inSync;
 
-    //extra temporal element
-    private volatile long _extra;
-    private volatile long _extra2;
-    private volatile long _extra3;
+    private volatile long _capacity;
+    private volatile long _magic;
+    private volatile int _size;
 
     HeapTimeTreeChunk(final HeapChunkSpace p_space, final long p_index) {
         _space = p_space;
         _index = p_index;
         _magic = 0;
         _hash = 0;
-        _extra = 0;
-        _extra2 = 0;
-        _extra3 = 0;
+        _capacity = 0;
+        _size = 0;
         _inSync = true;
     }
 
     @Override
-    public final long extra() {
-        return _extra;
+    public final long capacity() {
+        return _capacity;
     }
 
     @Override
-    public final void setExtra(long extraValue) {
-        _extra = extraValue;
-    }
-
-    @Override
-    public final long extra2() {
-        return _extra2;
-    }
-
-    @Override
-    public final void setExtra2(long extraValue) {
-        _extra2 = extraValue;
-    }
-
-    @Override
-    public final long extra3() {
-        return _extra3;
-    }
-
-    @Override
-    public final void setExtra3(long extraValue) {
-        _extra3 = extraValue;
+    public final void setCapacity(long v) {
+        _capacity = v;
     }
 
     @Override
@@ -140,57 +114,43 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
     @Override
     public synchronized final void save(Buffer buffer) {
         final long beginIndex = buffer.writeIndex();
-        if (_extra != CoreConstants.NULL_LONG && _extra != 0) {
-            Base64.encodeLongToBuffer(_extra, buffer);
-            buffer.write(CoreConstants.CHUNK_SEP);
-        }
-        if (_extra2 != CoreConstants.NULL_LONG && _extra2 != 0) {
-            Base64.encodeLongToBuffer(_extra2, buffer);
-            buffer.write(CoreConstants.CHUNK_SEP);
-        }
         Base64.encodeIntToBuffer(_size, buffer);
+        buffer.write(CoreConstants.CHUNK_SEP);
+        Base64.encodeLongToBuffer(_capacity, buffer);
+        buffer.write(CoreConstants.CHUNK_SEP);
         for (int i = 0; i < _size; i++) {
-            buffer.write(CoreConstants.CHUNK_VAL_SEP);
             Base64.encodeLongToBuffer(this._k[i], buffer);
+            buffer.write(CoreConstants.CHUNK_VAL_SEP);
         }
         _hash = HashHelper.hashBuffer(buffer, beginIndex, buffer.writeIndex());
-        if (_diff != null) {
-            CoreConstants.fillBooleanArray(_diff, false);
-        }
     }
 
     @Override
-    public synchronized final void saveDiff(Buffer buffer) {
+    public final synchronized void saveDiff(Buffer buffer) {
         if (_hash == Constants.EMPTY_HASH) {
             final long beginIndex = buffer.writeIndex();
-            if (_extra != CoreConstants.NULL_LONG && _extra != 0) {
-                Base64.encodeLongToBuffer(_extra, buffer);
-                buffer.write(CoreConstants.CHUNK_SEP);
-            }
-            if (_extra2 != CoreConstants.NULL_LONG && _extra2 != 0) {
-                Base64.encodeLongToBuffer(_extra2, buffer);
-                buffer.write(CoreConstants.CHUNK_SEP);
-            }
+            Base64.encodeLongToBuffer(_capacity, buffer);
+            buffer.write(CoreConstants.CHUNK_SEP);
             Base64.encodeIntToBuffer(_size, buffer);
             for (int i = 0; i < _size; i++) {
-                if (_diff[i]) {
+                /*if (_diff[i]) {
                     buffer.write(CoreConstants.CHUNK_VAL_SEP);
                     Base64.encodeLongToBuffer(this._k[i], buffer);
-                }
+                }*/
             }
             _hash = HashHelper.hashBuffer(buffer, beginIndex, buffer.writeIndex());
-            CoreConstants.fillBooleanArray(_diff, false);
+            // CoreConstants.fillBooleanArray(_diff, false);
         }
     }
 
     @Override
-    public synchronized final void load(final Buffer buffer) {
+    public final synchronized void load(final Buffer buffer) {
         internal_load(buffer, true);
         //TODO reset _dirty
     }
 
     @Override
-    public synchronized void loadDiff(final Buffer buffer) {
+    public final synchronized void loadDiff(final Buffer buffer) {
         if (internal_load(buffer, false) && _hash != Constants.EMPTY_HASH) {
             _hash = Constants.EMPTY_HASH;
             if (_space != null) {
@@ -212,39 +172,31 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
         long cursor = 0;
         long previous = 0;
         long payloadSize = buffer.length();
-        boolean isFirst = true;
-        boolean isFirstExtra = true;
+        int extraCursor = 0;
         while (cursor < payloadSize) {
             final byte current = buffer.read(cursor);
             switch (current) {
                 case Constants.CHUNK_SEP:
-                    if (isFirstExtra) {
-                        _extra = Base64.decodeToLongWithBounds(buffer, previous, cursor);
-                        previous = cursor + 1;
-                        isFirstExtra = false;
-                    } else {
-                        _extra2 = Base64.decodeToLongWithBounds(buffer, previous, cursor);
-                        previous = cursor + 1;
+                    switch (extraCursor) {
+                        case 0:
+                            final int treeSize = Base64.decodeToIntWithBounds(buffer, previous, cursor);
+                            final int closePowerOfTwo = (int) Math.pow(2, Math.ceil(Math.log(treeSize) / Math.log(2)));
+                            reallocate(closePowerOfTwo);
+                            break;
+                        case 1:
+                            _capacity = Base64.decodeToLongWithBounds(buffer, previous, cursor);
+                            break;
                     }
+                    previous = cursor + 1;
                     break;
                 case Constants.CHUNK_VAL_SEP:
-                    if (isFirst) {
-                        final int treeSize = Base64.decodeToIntWithBounds(buffer, previous, cursor);
-                        final int closePowerOfTwo = (int) Math.pow(2, Math.ceil(Math.log(treeSize) / Math.log(2)));
-                        reallocate(closePowerOfTwo);
-                        previous = cursor + 1;
-                        isFirst = false;
-                    } else {
-                        boolean insertResult = internal_insert(Base64.decodeToLongWithBounds(buffer, previous, cursor), initial);
-                        isDirty = isDirty || insertResult;
-                        previous = cursor + 1;
-                    }
+                    boolean insertResult = internal_insert(Base64.decodeToLongWithBounds(buffer, previous, cursor), initial);
+                    isDirty = isDirty || insertResult;
+                    previous = cursor + 1;
                     break;
             }
             cursor++;
         }
-        boolean insertResult = internal_insert(Base64.decodeToLongWithBounds(buffer, previous, cursor), initial);
-        isDirty = isDirty || insertResult;
         return isDirty;
     }
 
@@ -308,36 +260,8 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
     }
 
     @Override
-    public synchronized final void unsafe_insert(final long p_key) {
-        internal_insert(p_key, false);
-    }
-
-    @Override
     public final byte chunkType() {
         return ChunkType.TIME_TREE_CHUNK;
-    }
-
-    @Override
-    public synchronized final void clearAt(long max) {
-        //TODO save clear element too, to for the incremental storage
-        //lock and load fromVar main memory
-        long[] previousValue = _k;
-        //reset the state
-        _k = new long[_k.length];
-        _back_meta = new int[_k.length * META_SIZE];
-        _colors = new boolean[_k.length];
-        _diff = new boolean[_k.length];
-        CoreConstants.fillBooleanArray(_diff, false);
-        _root = -1;
-        int _previousSize = _size;
-        _size = 0;
-        for (int i = 0; i < _previousSize; i++) {
-            if (previousValue[i] != CoreConstants.NULL_LONG && previousValue[i] < max) {
-                internal_insert(previousValue[i], false);
-            }
-        }
-        //dirty
-        internal_set_dirty();
     }
 
     private void reallocate(int newCapacity) {
@@ -350,9 +274,9 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
         }
         boolean[] new_back_diff = new boolean[newCapacity];
         CoreConstants.fillBooleanArray(new_back_diff, false);
-        if (_diff != null) {
+      /*  if (_diff != null) {
             System.arraycopy(_diff, 0, new_back_diff, 0, _size);
-        }
+        }*/
         boolean[] new_back_colors = new boolean[newCapacity];
         if (_colors != null) {
             System.arraycopy(_colors, 0, new_back_colors, 0, _size);
@@ -370,7 +294,7 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
         _back_meta = new_back_meta;
         _k = new_back_kv;
         _colors = new_back_colors;
-        _diff = new_back_diff;
+        // _diff = new_back_diff;
     }
 
     private long key(int p_currentIndex) {
@@ -382,22 +306,10 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
 
     private void setKey(int p_currentIndex, long p_paramIndex, boolean initial) {
         _k[p_currentIndex] = p_paramIndex;
-        if (!initial) {
+       /* if (!initial) {
             _diff[p_currentIndex] = true;
-        }
+        }*/
     }
-
-    /*
-    protected final long value(int p_currentIndex) {
-        if (p_currentIndex == -1) {
-            return -1;
-        }
-        return _k[(p_currentIndex) + 1];
-    }
-
-    private void setValue(int p_currentIndex, long p_paramIndex) {
-        _k[(p_currentIndex) + 1] = p_paramIndex;
-    }*/
 
     private int left(int p_currentIndex) {
         if (p_currentIndex == -1) {
@@ -607,91 +519,46 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
     }
 
     private void rotateLeft(int n) {
-        int r = right(n);
-        replaceNode(n, r);
-        setRight(n, left(r));
-        if (left(r) != -1) {
-            setParent(left(r), n);
+        int child = right(n);
+        setRight(n, left(child));
+        if (left(child) != -1) {
+            setParent(left(child), n);
         }
-        setLeft(r, n);
-        setParent(n, r);
+        setParent(child, parent(n));
+        if (n == _root) {
+            _root = child;
+        } else {
+            if (n == left(parent(n))) {
+                setLeft(parent(n), child);
+            } else {
+                setRight(parent(n), child);
+            }
+        }
+        setLeft(child, n);
+        setParent(n, child);
     }
 
     private void rotateRight(int n) {
-        int l = left(n);
-        replaceNode(n, l);
-        setLeft(n, right(l));
-        if (right(l) != -1) {
-            setParent(right(l), n);
+        int child = left(n);
+        setLeft(n, right(child));
+        if (right(child) != -1) {
+            setParent(right(child), n);
         }
-        setRight(l, n);
-        setParent(n, l);
-    }
-
-    private void replaceNode(int oldn, int newn) {
-        if (parent(oldn) == -1) {
-            _root = newn;
+        setParent(child, parent(n));
+        if (n == _root) {
+            _root = child;
         } else {
-            if (oldn == left(parent(oldn))) {
-                setLeft(parent(oldn), newn);
+            if (n == left(parent(n))) {
+                setLeft(parent(n), child);
             } else {
-                setRight(parent(oldn), newn);
+                setRight(parent(n), child);
             }
         }
-        if (newn != -1) {
-            setParent(newn, parent(oldn));
-        }
+        setRight(child, n);
+        setParent(n, child);
     }
 
-    private void insertCase1(int n) {
-        if (parent(n) == -1) {
-            setColor(n, true);
-        } else {
-            insertCase2(n);
-        }
-    }
-
-    private void insertCase2(int n) {
-        if (!color(parent(n))) {
-            insertCase3(n);
-        }
-    }
-
-    private void insertCase3(int n) {
-        if (!color(uncle(n))) {
-            setColor(parent(n), true);
-            setColor(uncle(n), true);
-            setColor(grandParent(n), false);
-            insertCase1(grandParent(n));
-        } else {
-            insertCase4(n);
-        }
-    }
-
-    private void insertCase4(int n_n) {
-        int n = n_n;
-        if (n == right(parent(n)) && parent(n) == left(grandParent(n))) {
-            rotateLeft(parent(n));
-            n = left(n);
-        } else {
-            if (n == left(parent(n)) && parent(n) == right(grandParent(n))) {
-                rotateRight(parent(n));
-                n = right(n);
-            }
-        }
-        insertCase5(n);
-    }
-
-    private void insertCase5(int n) {
-        setColor(parent(n), true);
-        setColor(grandParent(n), false);
-        if (n == left(parent(n)) && parent(n) == left(grandParent(n))) {
-            rotateRight(grandParent(n));
-        } else {
-            rotateLeft(grandParent(n));
-        }
-    }
-
+    @SuppressWarnings("Duplicates")
     private boolean internal_insert(long p_key, boolean initial) {
         if (_k == null || _k.length == _size) {
             int length = _size;
@@ -704,49 +571,77 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
         }
         int newIndex = _size;
         if (newIndex == 0) {
+            _root = newIndex;
             setKey(newIndex, p_key, initial);
-            setColor(newIndex, false);
             setLeft(newIndex, -1);
             setRight(newIndex, -1);
+            setColor(newIndex, true);
             setParent(newIndex, -1);
-            _root = newIndex;
-            _size = 1;
         } else {
-            int n = _root;
-            while (true) {
-                if (p_key == key(n)) {
+            int father = -1;
+            int leaf = _root;
+            boolean left = false;
+            while (leaf != -1) {
+                father = leaf;
+                if(_k[father] == p_key){
                     return false;
-                } else if (p_key < key(n)) {
-                    if (left(n) == -1) {
-                        setKey(newIndex, p_key, initial);
-                        setColor(newIndex, false);
-                        setLeft(newIndex, -1);
-                        setRight(newIndex, -1);
-                        setParent(newIndex, -1);
-                        setLeft(n, newIndex);
-                        _size++;
-                        break;
-                    } else {
-                        n = left(n);
-                    }
+                }
+                if (key(father) < p_key) {
+                    leaf = right(father);
+                    left = false;
                 } else {
-                    if (right(n) == -1) {
-                        setKey(newIndex, p_key, initial);
-                        setColor(newIndex, false);
-                        setLeft(newIndex, -1);
-                        setRight(newIndex, -1);
-                        setParent(newIndex, -1);
-                        setRight(n, newIndex);
-                        _size++;
-                        break;
+                    leaf = left(father);
+                    left = true;
+                }
+            }
+            setColor(newIndex, false);
+            setKey(newIndex, p_key, initial);
+            setLeft(newIndex, -1);
+            setRight(newIndex, -1);
+            setParent(newIndex, father);
+            if (left) {
+                setLeft(father, newIndex);
+            } else {
+                setRight(father, newIndex);
+            }
+
+            int nodeStudy = newIndex;
+            while (father != -1 && !color(father)) {
+                int greatFather = parent(father);
+                int uncle = uncle(nodeStudy);
+                if (!color(uncle)) {
+                    setColor(father, true);
+                    setColor(uncle, true);
+                    setColor(greatFather, false);
+                    nodeStudy = greatFather;
+                    father = parent(nodeStudy);
+                } else {
+                    if (father == left(greatFather)) {
+                        if (nodeStudy == right(father)) {
+                            nodeStudy = father;
+                            father = greatFather;
+                            greatFather = parent(father);
+                            rotateLeft(nodeStudy);
+                        }
+                        setColor(father, true);
+                        setColor(greatFather, false);
+                        rotateRight(greatFather);
                     } else {
-                        n = right(n);
+                        if (nodeStudy == left(father)) {
+                            nodeStudy = father;
+                            father = greatFather;
+                            greatFather = parent(father);
+                            rotateRight(nodeStudy);
+                        }
+                        setColor(father, true);
+                        setColor(greatFather, false);
+                        rotateLeft(greatFather);
                     }
                 }
             }
-            setParent(newIndex, n);
+            setColor(_root, true);
         }
-        insertCase1(newIndex);
+        _size++;
         return true;
     }
 
@@ -757,99 +652,5 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
             _space.notifyUpdate(_index);
         }
     }
-
-     /*
-    public void delete(long key) {
-        TreeNode n = lookup(key);
-        if (n == null) {
-            return;
-        } else {
-            _size--;
-            if (n.getLeft() != null && n.getRight() != null) {
-                // Copy domainKey/value fromVar predecessor and done delete it instead
-                TreeNode pred = n.getLeft();
-                while (pred.getRight() != null) {
-                    pred = pred.getRight();
-                }
-                n.key = pred.key;
-                n = pred;
-            }
-            TreeNode child;
-            if (n.getRight() == null) {
-                child = n.getLeft();
-            } else {
-                child = n.getRight();
-            }
-            if (nodeColor(n) == true) {
-                n.color = nodeColor(child);
-                deleteCase1(n);
-            }
-            replaceNode(n, child);
-        }
-    }
-
-    private void deleteCase1(TreeNode n) {
-        if (n.getParent() == null) {
-            return;
-        } else {
-            deleteCase2(n);
-        }
-    }
-
-    private void deleteCase2(TreeNode n) {
-        if (nodeColor(n.sibling()) == false) {
-            n.getParent().color = false;
-            n.sibling().color = true;
-            if (n == n.getParent().getLeft()) {
-                rotateLeft(n.getParent());
-            } else {
-                rotateRight(n.getParent());
-            }
-        }
-        deleteCase3(n);
-    }
-
-    private void deleteCase3(TreeNode n) {
-        if (nodeColor(n.getParent()) == true && nodeColor(n.sibling()) == true && nodeColor(n.sibling().getLeft()) == true && nodeColor(n.sibling().getRight()) == true) {
-            n.sibling().color = false;
-            deleteCase1(n.getParent());
-        } else {
-            deleteCase4(n);
-        }
-    }
-
-    private void deleteCase4(TreeNode n) {
-        if (nodeColor(n.getParent()) == false && nodeColor(n.sibling()) == true && nodeColor(n.sibling().getLeft()) == true && nodeColor(n.sibling().getRight()) == true) {
-            n.sibling().color = false;
-            n.getParent().color = true;
-        } else {
-            deleteCase5(n);
-        }
-    }
-
-    private void deleteCase5(TreeNode n) {
-        if (n == n.getParent().getLeft() && nodeColor(n.sibling()) == true && nodeColor(n.sibling().getLeft()) == false && nodeColor(n.sibling().getRight()) == true) {
-            n.sibling().color = false;
-            n.sibling().getLeft().color = true;
-            rotateRight(n.sibling());
-        } else if (n == n.getParent().getRight() && nodeColor(n.sibling()) == true && nodeColor(n.sibling().getRight()) == false && nodeColor(n.sibling().getLeft()) == true) {
-            n.sibling().color = false;
-            n.sibling().getRight().color = true;
-            rotateLeft(n.sibling());
-        }
-        deleteCase6(n);
-    }
-
-    private void deleteCase6(TreeNode n) {
-        n.sibling().color = nodeColor(n.getParent());
-        n.getParent().color = true;
-        if (n == n.getParent().getLeft()) {
-            n.sibling().getRight().color = true;
-            rotateLeft(n.getParent());
-        } else {
-            n.sibling().getLeft().color = true;
-            rotateRight(n.getParent());
-        }
-    }*/
 
 }

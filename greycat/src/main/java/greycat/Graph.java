@@ -101,19 +101,7 @@ public interface Graph {
      * @param id       The unique identifier of the {@link Node} ({@link Node#id()}) researched.
      * @param callback The task to be called when the {@link Node} is retrieved.
      */
-    void lookupTimes(long world, long from, long to, long id, Callback<Node[]> callback);
-
-    /**
-     * Asynchronous lookup of a nodes.<br>
-     * Based on the tuple &lt;World, Time, Node_ID&gt; this method seeks a {@link Node} in the Graph and returns it to the callback.
-     *
-     * @param world    The world identifier in which the Node must be searched.
-     * @param from     The time at which the range extract should start.
-     * @param to       The time at which the range extract should end.
-     * @param ids      The unique identifier of {@link Node} array ({@link Node#id()}) researched.
-     * @param callback The task to be called when the {@link Node} is retrieved.
-     */
-    void lookupAllTimes(long world, long from, long to, long[] ids, Callback<Node[]> callback);
+    void lookupTimes(long world, long from, long to, long id, int limit, Callback<Node[]> callback);
 
     /**
      * Creates a spin-off world from the world given as parameter.<br>

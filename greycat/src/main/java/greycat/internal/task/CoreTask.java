@@ -36,7 +36,7 @@ public class CoreTask implements Task {
     public Action[] actions = new Action[insertCapacity];
     public int insertCursor = 0;
     TaskHook[] _hooks = null;
-    
+
     @Override
     public final Task addHook(final TaskHook p_hook) {
         if (_hooks == null) {
@@ -152,6 +152,11 @@ public class CoreTask implements Task {
     @Override
     public final Task pipeTo(Task subTask, String... vars) {
         return then(new CF_PipeTo(subTask, vars));
+    }
+
+    @Override
+    public Task traverseTimeline(String start, String end, String limit) {
+        return then(CoreActions.traverseTimeline(start, end, limit));
     }
 
     @Override
@@ -647,7 +652,7 @@ public class CoreTask implements Task {
                 .setFactory(new ActionFactory() {
                     @Override
                     public Action create(Object[] params) {
-                        return new ActionTimepoints((String)params[0], (String)params[1]);
+                        return new ActionTimepoints((String) params[0], (String) params[1]);
                     }
                 });
         registry.getOrCreateDeclaration(CoreActionNames.DEFINE_AS_GLOBAL_VAR)
@@ -726,6 +731,16 @@ public class CoreTask implements Task {
                             return new ActionAddRemoveVarToRelation(true, (String) params[0], (String) params[1]);
                         }
 
+                    }
+                });
+        registry.getOrCreateDeclaration(CoreActionNames.TRAVERSE_TIMELINE)
+                .setParams(Type.STRING, Type.STRING, Type.STRING)
+                .setDescription("Extract timeline is current nodes into result.")
+                .setFactory(new ActionFactory() {
+                    @Override
+                    public Action create(Object[] params) {
+                        final String[] varrags = (String[]) params[3];
+                        return new ActionTraverseTimeline((String) params[0], (String) params[1], (String) params[2]);
                     }
                 });
         registry.getOrCreateDeclaration(CoreActionNames.REMOVE_VAR_TO_RELATION)

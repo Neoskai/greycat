@@ -35,6 +35,8 @@ public class Constants {
 
     public static final long NULL_LONG = 0x001FFFFFFFFFFFFFl;
 
+    public static final int NULL_INT = 0x7FFFFFFF;
+
     // Limit limit local index to LONG limit - prefix size
     public static final long KEY_PREFIX_MASK = 0x0000001FFFFFFFFFl;
 

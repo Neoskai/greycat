@@ -41,7 +41,7 @@ final class HeapWorldOrderChunk implements WorldOrderChunk {
     private volatile int _externalLock;
 
     private volatile long _magic;
-    private volatile long _extra;
+    private volatile long _type;
 
     private volatile int _size;
     private int _capacity;
@@ -93,7 +93,7 @@ final class HeapWorldOrderChunk implements WorldOrderChunk {
         _space = p_space;
         _lock = 0;
         _magic = 0;
-        _extra = CoreConstants.NULL_LONG;
+        _type = CoreConstants.NULL_LONG;
         _size = 0;
         _capacity = 0;
         _kv = null;
@@ -120,13 +120,13 @@ final class HeapWorldOrderChunk implements WorldOrderChunk {
     }
 
     @Override
-    public final long extra() {
-        return this._extra;
+    public final long type() {
+        return this._type;
     }
 
     @Override
-    public final void setExtra(final long extraValue) {
-        this._extra = extraValue;
+    public final void setType(final long v) {
+        this._type = v;
     }
 
     /**
@@ -319,6 +319,10 @@ final class HeapWorldOrderChunk implements WorldOrderChunk {
     @Override
     public synchronized void loadDiff(Buffer buffer) {
         internal_load(false, buffer);
+        _chunkHash = Constants.EMPTY_HASH;
+        if (_space != null) {
+            _space.notifyUpdate(_index);
+        }
     }
 
     @Override
@@ -330,21 +334,30 @@ final class HeapWorldOrderChunk implements WorldOrderChunk {
         if (buffer != null && buffer.length() > 0) {
             long cursor = 0;
             long bufferSize = buffer.length();
-            boolean initDone = false;
             long previousStart = 0;
             long loopKey = CoreConstants.NULL_LONG;
+            int extraCursor = 0;
             while (cursor < bufferSize) {
                 final byte current = buffer.read(cursor);
                 switch (current) {
                     case Constants.CHUNK_SEP:
-                        _extra = Base64.decodeToLongWithBounds(buffer, previousStart, cursor);
+                        switch (extraCursor) {
+                            case 0:
+                                final int mapSize = Base64.decodeToIntWithBounds(buffer, previousStart, cursor);
+                                final int closePowerOfTwo = (int) Math.pow(2, Math.ceil(Math.log(mapSize) / Math.log(2)));
+                                resize(closePowerOfTwo);
+                                break;
+                            case 1:
+                                if (previousStart != cursor) {
+                                    _type = Base64.decodeToLongWithBounds(buffer, previousStart, cursor);
+                                }
+                                break;
+                        }
+                        extraCursor++;
                         previousStart = cursor + 1;
                         break;
                     case Constants.CHUNK_VAL_SEP:
-                        if (!initDone) {
-                            resize(Base64.decodeToIntWithBounds(buffer, previousStart, cursor));
-                            initDone = true;
-                        } else if (loopKey == CoreConstants.NULL_LONG) {
+                        if (loopKey == CoreConstants.NULL_LONG) {
                             loopKey = Base64.decodeToLongWithBounds(buffer, previousStart, cursor);
                         } else {
                             long loopValue = Base64.decodeToLongWithBounds(buffer, previousStart, cursor);
@@ -356,14 +369,6 @@ final class HeapWorldOrderChunk implements WorldOrderChunk {
                         break;
                 }
                 cursor++;
-            }
-            if (!initDone) {
-                resize((int) Base64.decodeToLongWithBounds(buffer, 0, cursor));
-            } else {
-                if (loopKey != CoreConstants.NULL_LONG) {
-                    long loopValue = Base64.decodeToLongWithBounds(buffer, previousStart, cursor);
-                    internal_put(loopKey, loopValue, !initial);
-                }
             }
         }
     }
@@ -391,28 +396,33 @@ final class HeapWorldOrderChunk implements WorldOrderChunk {
     @Override
     public final synchronized void save(final Buffer buffer) {
         final long beginIndex = buffer.writeIndex();
-        if (_extra != CoreConstants.NULL_LONG) {
-            Base64.encodeLongToBuffer(_extra, buffer);
-            buffer.write(CoreConstants.CHUNK_SEP);
-        }
         Base64.encodeIntToBuffer(_size, buffer);
+        buffer.write(CoreConstants.CHUNK_SEP);
+        if (_type != Constants.NULL_LONG) {
+            Base64.encodeLongToBuffer(_type, buffer);
+        }
+        buffer.write(CoreConstants.CHUNK_SEP);
         for (int i = 0; i < _size; i++) {
-            buffer.write(CoreConstants.CHUNK_VAL_SEP);
             Base64.encodeLongToBuffer(_kv[i * 2], buffer);
             buffer.write(CoreConstants.CHUNK_VAL_SEP);
             Base64.encodeLongToBuffer(_kv[i * 2 + 1], buffer);
+            buffer.write(CoreConstants.CHUNK_VAL_SEP);
         }
         _chunkHash = HashHelper.hashBuffer(buffer, beginIndex, buffer.writeIndex());
     }
 
     @Override
     public final synchronized void saveDiff(Buffer buffer) {
+        throw new RuntimeException("Not implemented yet!");
+        /*
         if (_chunkHash == Constants.EMPTY_HASH) {
             final long beginIndex = buffer.writeIndex();
-            if (_extra != CoreConstants.NULL_LONG) {
-                Base64.encodeLongToBuffer(_extra, buffer);
-                buffer.write(CoreConstants.CHUNK_SEP);
-            }
+            Base64.encodeIntToBuffer(_size, buffer);
+            buffer.write(CoreConstants.CHUNK_SEP);
+            Base64.encodeLongToBuffer(_offset, buffer);
+            buffer.write(CoreConstants.CHUNK_SEP);
+            Base64.encodeLongToBuffer(_type, buffer);
+            buffer.write(CoreConstants.CHUNK_SEP);
             Base64.encodeIntToBuffer(_size, buffer);
             for (int i = 0; i < _size; i++) {
                 if (_diff[i]) {
@@ -424,6 +434,7 @@ final class HeapWorldOrderChunk implements WorldOrderChunk {
             }
             _chunkHash = HashHelper.hashBuffer(buffer, beginIndex, buffer.writeIndex());
         }
+        */
     }
 
 }

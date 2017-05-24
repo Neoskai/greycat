@@ -366,6 +366,12 @@ public class HeapChunkSpace implements ChunkSpace {
             case ChunkType.TIME_TREE_CHUNK:
                 toInsert = new HeapTimeTreeChunk(this, currentVictimIndex);
                 break;
+            case ChunkType.SUPER_TIME_TREE_CHUNK:
+                toInsert = new HeapSuperTimeTreeChunk(this, currentVictimIndex);
+                break;
+            case ChunkType.TIME_TREE_DVALUE_CHUNK:
+                toInsert = new HeapTimeTreeDValueChunk(this, currentVictimIndex);
+                break;
             case ChunkType.GEN_CHUNK:
                 toInsert = new HeapGenChunk(this, id, currentVictimIndex);
                 break;
@@ -622,6 +628,9 @@ public class HeapChunkSpace implements ChunkSpace {
                     switch (_chunkTypes.get(i)) {
                         case ChunkType.STATE_CHUNK:
                             System.out.println("STATE(" + _chunkWorlds.get(i) + "," + _chunkTimes.get(i) + "," + _chunkIds.get(i) + ")->marks->" + _chunkMarks.get(i));
+                            break;
+                        case ChunkType.SUPER_TIME_TREE_CHUNK:
+                            System.out.println("SUPER_TIME_TREE(" + _chunkWorlds.get(i) + "," + _chunkTimes.get(i) + "," + _chunkIds.get(i) + ")->marks->" + _chunkMarks.get(i));
                             break;
                         case ChunkType.TIME_TREE_CHUNK:
                             System.out.println("TIME_TREE(" + _chunkWorlds.get(i) + "," + _chunkTimes.get(i) + "," + _chunkIds.get(i) + ")->marks->" + _chunkMarks.get(i));

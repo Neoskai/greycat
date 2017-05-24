@@ -21,6 +21,7 @@ import greycat.Graph;
 import greycat.GraphBuilder;
 import greycat.Type;
 import greycat.struct.Buffer;
+import greycat.struct.LongArray;
 import greycat.utility.Base64;
 import io.nats.client.Connection;
 import io.nats.client.Nats;
@@ -151,6 +152,8 @@ public class NATSender {
                 break;
             case Type.DOUBLE:
                 Base64.encodeDoubleToBuffer((double) obj, buffer);
+                break;
+            case Type.LONG_ARRAY:
                 break;
         }
         return buffer;

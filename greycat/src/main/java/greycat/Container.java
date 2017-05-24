@@ -50,6 +50,10 @@ public interface Container {
 
     LongLongMap getLongLongMap(String name);
 
+    IntIntMap getIntIntMap(String name);
+
+    IntStringMap getIntStringMap(String name);
+
     LongLongArrayMap getLongLongArrayMap(String name);
 
     /**

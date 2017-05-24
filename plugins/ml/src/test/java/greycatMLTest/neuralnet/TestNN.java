@@ -53,7 +53,7 @@ public class TestNN {
                 net.setRandom(1234, 0.1);
 
                 net.addLayer(Layers.LINEAR_LAYER, input, output, Activations.LINEAR, null);
-                net.setLearner(Optimisers.GRADIENT_DESCENT, new double[]{learningrate, regularisation}, 1);
+                net.setOptimizer(Optimisers.GRADIENT_DESCENT, new double[]{learningrate, regularisation}, 1);
                 net.setTrainLoss(Losses.SUM_OF_SQUARES);
 
 
@@ -73,7 +73,7 @@ public class TestNN {
                     }
 
                     if (i % 100 == 0) {
-                        DMatrix err = net.learn(inputSet, outputSet,true);
+                        DMatrix[] err = net.learn(inputSet, outputSet,true);
                         //System.out.println("Step " + i + " error: " + Losses.sumOfLosses(err));
                     }
                     else {

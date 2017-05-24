@@ -168,7 +168,7 @@ public class CoreGraph implements Graph {
             this._space.mark(casted._index_worldOrder);
             //Create the cloned node
             final WorldOrderChunk worldOrderChunk = (WorldOrderChunk) this._space.get(casted._index_worldOrder);
-            final NodeFactory resolvedFactory = factoryByCode((int) worldOrderChunk.extra());
+            final NodeFactory resolvedFactory = factoryByCode((int) worldOrderChunk.type());
             BaseNode newNode;
             if (resolvedFactory == null) {
                 newNode = new BaseNode(origin.world(), origin.time(), origin.id(), this);
@@ -259,19 +259,11 @@ public class CoreGraph implements Graph {
     }
 
     @Override
-    public final void lookupTimes(long world, long from, long to, long id, Callback<Node[]> callback) {
+    public final void lookupTimes(long world, long from, long to, long id, int limit, Callback<Node[]> callback) {
         if (!_isConnected.get()) {
             throw new RuntimeException(CoreConstants.DISCONNECTED_ERROR);
         }
-        this._resolver.lookupTimes(world, from, to, id, callback);
-    }
-
-    @Override
-    public final void lookupAllTimes(long world, long from, long to, long[] ids, Callback<Node[]> callback) {
-        if (!_isConnected.get()) {
-            throw new RuntimeException(CoreConstants.DISCONNECTED_ERROR);
-        }
-        this._resolver.lookupAllTimes(world, from, to, ids, callback);
+        this._resolver.lookupTimes(world, from, to, id, limit, callback);
     }
 
     @Override

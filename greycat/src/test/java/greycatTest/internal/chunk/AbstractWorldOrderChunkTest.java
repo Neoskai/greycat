@@ -33,6 +33,7 @@ public abstract class AbstractWorldOrderChunkTest {
     }
 
     //@Test
+    /*
     public void incrementalSave() {
         ChunkSpace space = factory.newSpace(100,-1, null, false);
         WorldOrderChunk map = (WorldOrderChunk) space.createAndMark(ChunkType.WORLD_ORDER_CHUNK, 0, 0, 1);
@@ -58,13 +59,12 @@ public abstract class AbstractWorldOrderChunkTest {
 
         space.free(map);
         space.freeAll();
-
-    }
+    }*/
 
 
     @Test
     public void simpleTest() {
-        ChunkSpace space = factory.newSpace(100,-1, null, false);
+        ChunkSpace space = factory.newSpace(100, -1, null, false);
         WorldOrderChunk map = (WorldOrderChunk) space.createAndMark(ChunkType.WORLD_ORDER_CHUNK, 0, 0, 0);
         //mass insert
         for (long i = 0; i < 10; i++) {
@@ -80,7 +80,7 @@ public abstract class AbstractWorldOrderChunkTest {
 
     @Test
     public void orderTest() {
-        ChunkSpace space = factory.newSpace(100,-1, null, false);
+        ChunkSpace space = factory.newSpace(100, -1, null, false);
         WorldOrderChunk map = (WorldOrderChunk) space.createAndMark(ChunkType.WORLD_ORDER_CHUNK, 0, 0, 0);
         //mass insert
         for (long i = 0; i < 10000; i++) {
@@ -96,16 +96,16 @@ public abstract class AbstractWorldOrderChunkTest {
 
     @Test
     public void saveLoadTest() {
-        ChunkSpace space = factory.newSpace(100,-1, null, false);
+        ChunkSpace space = factory.newSpace(100, -1, null, false);
         WorldOrderChunk map = (WorldOrderChunk) space.createAndMark(ChunkType.WORLD_ORDER_CHUNK, 0, 0, 1);
         //mass insert
         for (long i = 0; i < 10000; i++) {
             map.put(i, i * 3);
         }
-        Assert.assertTrue(map.extra() == CoreConstants.NULL_LONG);
-        map.setExtra(1000000);
+        Assert.assertTrue(map.type() == CoreConstants.NULL_LONG);
+        map.setType(1000000);
         Assert.assertTrue(map.size() == 10000);
-        Assert.assertTrue(map.extra() == 1000000);
+        Assert.assertTrue(map.type() == 1000000);
         Buffer buffer = factory.newBuffer();
         map.save(buffer);
         WorldOrderChunk map2 = (WorldOrderChunk) space.createAndMark(ChunkType.WORLD_ORDER_CHUNK, 0, 0, 2);
@@ -113,7 +113,7 @@ public abstract class AbstractWorldOrderChunkTest {
         for (long i = 0; i < 10000; i++) {
             Assert.assertTrue(map2.get(i) == i * 3);
         }
-        Assert.assertTrue(map2.extra() == 1000000);
+        Assert.assertTrue(map2.type() == 1000000);
         Buffer buffer2 = factory.newBuffer();
         map2.save(buffer2);
         Assert.assertTrue(compareBuffers(buffer, buffer2));

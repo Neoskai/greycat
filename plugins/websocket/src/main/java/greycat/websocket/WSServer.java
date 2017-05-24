@@ -37,17 +37,19 @@ import java.util.*;
 
 public class WSServer implements WebSocketConnectionCallback, Callback<Buffer> {
 
-    private final Graph graph;
+    protected final Graph graph;
     private final int port;
     private Undertow server;
 
     private Set<WebSocketChannel> peers;
-    private Map<String, HttpHandler> handlers = new HashMap<String, HttpHandler>();
+    protected Map<String, HttpHandler> handlers;
 
     public WSServer(Graph p_graph, int p_port) {
         this.graph = p_graph;
         this.port = p_port;
         peers = new HashSet<WebSocketChannel>();
+        handlers = new HashMap<String, HttpHandler>();
+        handlers.put(PREFIX, Handlers.websocket(this));
     }
 
     public WSServer addHandler(String prefix, HttpHandler httpHandler) {
@@ -62,7 +64,6 @@ public class WSServer implements WebSocketConnectionCallback, Callback<Buffer> {
         for (String name : handlers.keySet()) {
             pathHandler.addPrefixPath(name, handlers.get(name));
         }
-        pathHandler.addPrefixPath(PREFIX, Handlers.websocket(this));
         this.server = Undertow.builder().addHttpListener(port, "0.0.0.0", pathHandler).build();
         server.start();
         this.graph.storage().listen(this);//stop

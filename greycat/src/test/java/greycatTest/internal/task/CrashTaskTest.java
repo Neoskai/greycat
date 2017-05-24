@@ -15,12 +15,9 @@
  */
 package greycatTest.internal.task;
 
-import greycat.ActionFunction;
+import greycat.*;
 import org.junit.Assert;
 import org.junit.Test;
-import greycat.Callback;
-import greycat.TaskContext;
-import greycat.TaskResult;
 
 import static greycat.internal.task.CoreActions.inject;
 import static greycat.Tasks.newTask;
@@ -31,7 +28,7 @@ public class CrashTaskTest extends AbstractActionTest {
     public void test() {
         initGraph();
         final boolean[] passed = {false};
-        newTask()
+        Task t = newTask()
                 .then(inject("input"))
                 .thenDo(new ActionFunction() {
                     @Override
@@ -40,14 +37,16 @@ public class CrashTaskTest extends AbstractActionTest {
                         String a = null;
                         a.toString();
                     }
-                })
-                .execute(graph, new Callback<TaskResult>() {
-                    @Override
-                    public void on(TaskResult result) {
-                        passed[0] = true;
-                        Assert.assertNotNull(result.exception());
-                    }
                 });
+        TaskContext ctx = t.prepare(graph, null, new Callback<TaskResult>() {
+            @Override
+            public void on(TaskResult result) {
+                passed[0] = true;
+                Assert.assertNotNull(result.exception());
+            }
+        });
+        ctx.silentSave();//hide the exception
+        t.executeUsing(ctx);
         Assert.assertTrue(passed[0]);
         removeGraph();
     }

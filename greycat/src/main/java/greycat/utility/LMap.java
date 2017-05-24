@@ -136,6 +136,10 @@ public class LMap {
         return key(index);
     }
 
+    public final long getValue(int index) {
+        return value(index);
+    }
+
     public final int size() {
         return mapSize;
     }

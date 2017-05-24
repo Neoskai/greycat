@@ -48,22 +48,21 @@ public class ActionCloneNodesTest extends AbstractActionTest {
                     Assert.assertEquals(initialNodes.size(), clones.size());
 
                     //Assert no leak
-                    Assert.assertEquals((long)ctx.variable("initialSpace").get(0), ctx.graph().space().available());
-
+                    Assert.assertEquals(initialSpace[0], ctx.graph().space().available());
 
                     //check != ids
-                     for(int i = 0; i < initialNodes.size(); i++){
-                         Assert.assertNotEquals(initialNodes.get(i).id(), clones.get(i).id());
-                     }
+                    for (int i = 0; i < initialNodes.size(); i++) {
+                        Assert.assertNotEquals(initialNodes.get(i).id(), clones.get(i).id());
+                    }
 
                     //check == 'name'
-                    for(int i = 0; i < initialNodes.size(); i++){
+                    for (int i = 0; i < initialNodes.size(); i++) {
                         Assert.assertEquals(initialNodes.get(i).get("name"), clones.get(i).get("name"));
                     }
 
                     //check == 'children'
-                    for(int i = 0; i < initialNodes.size(); i++){
-                            Assert.assertEquals(initialNodes.get(i).get("children"), clones.get(i).get("children"));
+                    for (int i = 0; i < initialNodes.size(); i++) {
+                        Assert.assertEquals(initialNodes.get(i).get("children"), clones.get(i).get("children"));
                     }
                     ctx.continueTask();
                 })

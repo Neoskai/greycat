@@ -32,6 +32,9 @@ public class PCA {
     private int _processType;
     private double _percentToRetain;
     private int _bestDim;
+    SVDDecompose _svdDecompose;
+    public static double EPS = 1e-30;
+    private static DMatrix _matrixV;
 
     public int get_bestDim() {
         return _bestDim;
@@ -68,11 +71,7 @@ public class PCA {
         return clone(_sigma);
     }
 
-    SVDDecompose _svdDecompose;
 
-    public static double EPS = 1e-30;
-
-    private static DMatrix _matrixV;
 
     public static int NOPROCESS = 0;
     public static int CENTER_ON_AVG = 1;
@@ -109,7 +108,7 @@ public class PCA {
         return result;
     }
 
-    public DMatrix convertSpace(VolatileDMatrix initial) {
+    public DMatrix convertSpace(DMatrix initial) {
         if (_processType == NORMALIZE) {
             normalizeData(initial);
         }
@@ -239,7 +238,7 @@ public class PCA {
     }
 
 
-    public int retainDynamic(double[] svector) {
+    private int retainDynamic(double[] svector) {
         double d = 0;
         for (int i = 0; i < svector.length; i++) {
             d += svector[i] * svector[i];
@@ -260,7 +259,7 @@ public class PCA {
             _information[i] = integrator * 100 / d;
             previoust = t;
             t = svector[i] * svector[i] / (svector[i - 1] * svector[i - 1]);
-            System.out.println(i + " , " + svector[i] + " , " + t / previoust + " , " + _information[i] + "%");
+//            System.out.println(i + " , " + svector[i] + " , " + t / previoust + " , " + _information[i] + "%");
             p = integrator * 100 / d;
             if (t / previoust < 0.85 && xi == 0 && i != 1 && p >= 85 && tag) {
                 tag = false;
@@ -274,10 +273,14 @@ public class PCA {
             _percentToRetain = integrator * 100 / d;
             xi = svector.length;
         }
-        System.out.println(svector.length + " , " + svector[svector.length - 1] + " , " + t / previoust + " , " + integrator * 100 / d + "%");
-        System.out.println("");
+//        System.out.println(svector.length + " , " + svector[svector.length - 1] + " , " + t / previoust + " , " + integrator * 100 / d + "%");
+//        System.out.println("");
         _bestDim = xi;
         return xi;
+    }
+
+    public double getPercentRetained(){
+        return _percentToRetain;
     }
 
 
@@ -317,20 +320,20 @@ public class PCA {
 //        }
 
 
+
         _svdDecompose = MatrixOps.defaultEngine().decomposeSVD(_data, false);
 
         double[] singularValues = _svdDecompose.getS();
+        retainDynamic(singularValues);
 
 
-        System.out.println("Singular values");
-        for (int i = 0; i < singularValues.length; i++) {
-            System.out.println(singularValues[i]);
-        }
-        System.out.println("");
-
-
-        System.out.println("Need to retain: " + retainDynamic(singularValues) + " / " + data.columns() + " dimensions");
-        System.out.println("Energy retained: " + _percentToRetain + " %");
+//        System.out.println("Singular values");
+//        for (int i = 0; i < singularValues.length; i++) {
+//            System.out.println(singularValues[i]);
+//        }
+//        System.out.println("");
+//        System.out.println("Need to retain: " + retainDynamic(singularValues) + " / " + data.columns() + " dimensions");
+//        System.out.println("Energy retained: " + _percentToRetain + " %");
     }
 
 

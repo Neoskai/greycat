@@ -15,14 +15,9 @@
  */
 package greycatTest.internal.task;
 
-import greycat.ActionFunction;
+import greycat.*;
 import org.junit.Assert;
 import org.junit.Test;
-import greycat.Callback;
-import greycat.Constants;
-import greycat.Node;
-import greycat.TaskContext;
-import greycat.TaskResult;
 
 import static greycat.internal.task.CoreActions.*;
 import static greycat.Tasks.newTask;
@@ -56,19 +51,21 @@ public class ActionTravelInTimeTest extends AbstractActionTest {
                 }))
                 .execute(graph, null);
 
-
         removeGraph();
     }
 
     @Test
     public void testTravelInTime2() {
         initGraph();
-        newTask().travelInTime("42").print("{{time}}").execute(graph, new Callback<TaskResult>() {
+        Task t = newTask().travelInTime("42").print("{{time}}");
+        TaskContext ctx = t.prepare(graph, null, new Callback<TaskResult>() {
             @Override
             public void on(TaskResult result) {
                 Assert.assertEquals("42",result.output());
             }
         });
+        ctx.silentSave();
+        t.executeUsing(ctx);
         removeGraph();
     }
 

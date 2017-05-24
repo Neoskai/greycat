@@ -42,10 +42,10 @@ public class DFSTest {
             long initcache = graph.space().available();
 
             Node n2 = graph.newNode(0, 0);
-            n2.set("name",Type.STRING, "n2");
+            n2.set("name", Type.STRING, "n2");
 
             Node n3 = graph.newNode(0, 0);
-            n3.set("name",Type.STRING, "n3");
+            n3.set("name", Type.STRING, "n3");
 
             n1.addToRelation("left", n2);
             n1.addToRelation("right", n3);
@@ -138,7 +138,12 @@ public class DFSTest {
                     public void on(Action previous, Action next, TaskContext context) {
                         System.out.println(next);
                     }
-                })*/.executeWith(n1.graph(), initialResult, result -> Assert.assertEquals(result.toString(), "{\"result\":[\"2\",\"4\",\"5\",\"7\"]}"));
+                })*/.executeWith(n1.graph(), initialResult, new Callback<TaskResult>() {
+                    @Override
+                    public void on(TaskResult result) {
+                        Assert.assertEquals(result.toString(), "{\"result\":[\"2\",\"4\",\"5\",\"7\"]}");
+                    }
+                });
 
             }
 

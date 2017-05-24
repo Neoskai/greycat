@@ -89,7 +89,7 @@ public interface ChunkSpace {
     void free(final Chunk chunk);
 
     /**
-     * Notifies that the chunk at this intex has been updated
+     * Notifies that the chunk at this index has been updated
      *
      * @param index the index of the chunk updated
      */
@@ -146,5 +146,7 @@ public interface ChunkSpace {
     void addInterceptorFirst(Interceptor it);
 
     void addInterceptorLast(Interceptor it);
+
+    void printMarked();
 
 }

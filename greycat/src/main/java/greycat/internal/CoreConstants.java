@@ -73,11 +73,8 @@ public class CoreConstants extends Constants {
     /**
      * SuperTimeTree
      */
-    public static final long SCALE_1 = 1000;
-    public static final long SCALE_2 = 10000;
-    public static final long SCALE_3 = 100000;
-    public static final long SCALE_4 = 1000000;
 
+    public static final long[] TREE_SCALES = {1000, 10000, 100000, 1000000};
 
     /**
      * Error messages

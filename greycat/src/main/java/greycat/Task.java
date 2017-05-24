@@ -198,6 +198,8 @@ public interface Task {
      * @return this task to chain
      */
     Task pipeTo(Task subTask, String... vars);
+    
+    Task traverseTimeline(String start, String end, String limit);
 
     /**
      * Parses a string to build the current task.

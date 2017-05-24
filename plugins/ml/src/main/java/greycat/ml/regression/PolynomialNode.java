@@ -101,26 +101,28 @@ public class PolynomialNode extends BaseMLNode implements RegressionNode {
     public final void learn(double value, Callback<Boolean> callback) {
         NodeState previousState = unphasedState(); //past state, not cloned
 
+        final long dephasing = timeDephasing();
         long timeOrigin = previousState.time();
-        long nodeTime = time();
+        long nodeTime = timeOrigin + dephasing;
+
         double precision = previousState.getWithDefault(PRECISION, PRECISION_DEF);
         DoubleArray weight = (DoubleArray) previousState.get(INTERNAL_WEIGHT_KEY);
 
         //Initial feed for the very first time, the weight is set directly with the first value that arrives
         if (weight == null) {
-            weight= (DoubleArray) previousState.getOrCreate(INTERNAL_WEIGHT_KEY, Type.DOUBLE_ARRAY);
+            weight = (DoubleArray) previousState.getOrCreate(INTERNAL_WEIGHT_KEY, Type.DOUBLE_ARRAY);
             weight.init(1);
             weight.set(0, value);
             previousState.set(INTERNAL_WEIGHT_KEY, Type.DOUBLE_ARRAY, weight);
             previousState.set(INTERNAL_NB_PAST_KEY, Type.INT, 1);
             previousState.set(INTERNAL_STEP_KEY, Type.LONG, 0l);
             previousState.set(INTERNAL_LAST_TIME_KEY, Type.LONG, 0l);
-            DoubleArray timebuffer=((DoubleArray) previousState.getOrCreate(INTERNAL_TIME_BUFFER, Type.DOUBLE_ARRAY));
+            DoubleArray timebuffer = ((DoubleArray) previousState.getOrCreate(INTERNAL_TIME_BUFFER, Type.DOUBLE_ARRAY));
             timebuffer.init(1);
-            timebuffer.set(0,0);
-            DoubleArray valuebuffer=(DoubleArray)previousState.getOrCreate(INTERNAL_VALUES_BUFFER, Type.DOUBLE_ARRAY);
+            timebuffer.set(0, 0);
+            DoubleArray valuebuffer = (DoubleArray) previousState.getOrCreate(INTERNAL_VALUES_BUFFER, Type.DOUBLE_ARRAY);
             valuebuffer.init(1);
-            valuebuffer.set(0,value);
+            valuebuffer.set(0, value);
             if (callback != null) {
                 callback.on(true);
             }
@@ -134,16 +136,16 @@ public class PolynomialNode extends BaseMLNode implements RegressionNode {
             long lastTime = nodeTime - timeOrigin;
             if (stp == null || stp == 0) {
                 if (lastTime == 0) {
-                    weight= (DoubleArray) previousState.getOrCreate(INTERNAL_WEIGHT_KEY, Type.DOUBLE_ARRAY);
+                    weight = (DoubleArray) previousState.getOrCreate(INTERNAL_WEIGHT_KEY, Type.DOUBLE_ARRAY);
                     weight.init(1);
                     weight.set(0, value);
                     previousState.set(INTERNAL_WEIGHT_KEY, Type.DOUBLE_ARRAY, weight);
-                    DoubleArray timebuffer=((DoubleArray) previousState.getOrCreate(INTERNAL_TIME_BUFFER, Type.DOUBLE_ARRAY));
+                    DoubleArray timebuffer = ((DoubleArray) previousState.getOrCreate(INTERNAL_TIME_BUFFER, Type.DOUBLE_ARRAY));
                     timebuffer.init(1);
-                    timebuffer.set(0,0);
-                    DoubleArray valuebuffer=(DoubleArray)previousState.getOrCreate(INTERNAL_VALUES_BUFFER, Type.DOUBLE_ARRAY);
+                    timebuffer.set(0, 0);
+                    DoubleArray valuebuffer = (DoubleArray) previousState.getOrCreate(INTERNAL_VALUES_BUFFER, Type.DOUBLE_ARRAY);
                     valuebuffer.init(1);
-                    valuebuffer.set(0,value);
+                    valuebuffer.set(0, value);
                     if (callback != null) {
                         callback.on(true);
                     }
@@ -158,7 +160,8 @@ public class PolynomialNode extends BaseMLNode implements RegressionNode {
             int deg = weight.size() - 1;
             Integer num = (Integer) previousState.get(INTERNAL_NB_PAST_KEY);
 
-            double t = (nodeTime - timeOrigin);
+            double t = timeDephasing();
+            ;
             t = t / stp;
             double maxError = maxErr(precision, deg);
 
@@ -213,23 +216,23 @@ public class PolynomialNode extends BaseMLNode implements RegressionNode {
             maxError = maxErr(precision, 0);
             if (Math.abs(nvalues[1] - nvalues[0]) <= maxError) {
                 // Here it's a degree 0
-                weight = (DoubleArray)phasedState.getOrCreate(INTERNAL_WEIGHT_KEY, Type.DOUBLE_ARRAY);
+                weight = (DoubleArray) phasedState.getOrCreate(INTERNAL_WEIGHT_KEY, Type.DOUBLE_ARRAY);
                 weight.init(1);
-                weight.set(0,nvalues[0]);
+                weight.set(0, nvalues[0]);
             } else {
                 //Here it's a degree 1
-                weight = (DoubleArray)phasedState.getOrCreate(INTERNAL_WEIGHT_KEY, Type.DOUBLE_ARRAY);
+                weight = (DoubleArray) phasedState.getOrCreate(INTERNAL_WEIGHT_KEY, Type.DOUBLE_ARRAY);
                 weight.init(2);
-                weight.set(0,nvalues[0]);
-                weight.set(1,nvalues[1] - nvalues[0]);
+                weight.set(0, nvalues[0]);
+                weight.set(1, nvalues[1] - nvalues[0]);
             }
 
             previousState.set(INTERNAL_TIME_BUFFER, Type.DOUBLE_ARRAY, null);
             previousState.set(INTERNAL_VALUES_BUFFER, Type.DOUBLE_ARRAY, null);
             //create and set the phase set
-            DoubleArray timeBuffer= (DoubleArray) phasedState.getOrCreate(INTERNAL_TIME_BUFFER, Type.DOUBLE_ARRAY);
+            DoubleArray timeBuffer = (DoubleArray) phasedState.getOrCreate(INTERNAL_TIME_BUFFER, Type.DOUBLE_ARRAY);
             timeBuffer.initWith(ntimes);
-            DoubleArray valueBuffer=(DoubleArray)phasedState.getOrCreate(INTERNAL_VALUES_BUFFER, Type.DOUBLE_ARRAY);
+            DoubleArray valueBuffer = (DoubleArray) phasedState.getOrCreate(INTERNAL_VALUES_BUFFER, Type.DOUBLE_ARRAY);
             valueBuffer.initWith(nvalues);
 
 
@@ -252,10 +255,10 @@ public class PolynomialNode extends BaseMLNode implements RegressionNode {
     }
 
     private static double[] updateBuffer(NodeState state, double t, int maxdeg, String key) {
-        DoubleArray tsa= (DoubleArray) state.get(key);
-        double[] ts=null;
-        if(tsa!=null){
-            ts=tsa.extract();
+        DoubleArray tsa = (DoubleArray) state.get(key);
+        double[] ts = null;
+        if (tsa != null) {
+            ts = tsa.extract();
         }
         if (ts == null) {
             ts = new double[1];
@@ -282,13 +285,13 @@ public class PolynomialNode extends BaseMLNode implements RegressionNode {
 
     @Override
     public final void extrapolate(Callback<Double> callback) {
-        long time = time();
+        //long time = time();
         NodeState state = unphasedState();
-        long timeOrigin = state.time();
-        DoubleArray dw=(DoubleArray) state.get(INTERNAL_WEIGHT_KEY);
-        double[] weight=null;
-        if(dw!=null){
-            weight=dw.extract();
+        //long timeOrigin = state.time();
+        DoubleArray dw = (DoubleArray) state.get(INTERNAL_WEIGHT_KEY);
+        double[] weight = null;
+        if (dw != null) {
+            weight = dw.extract();
         }
         if (weight == null) {
             if (callback != null) {
@@ -303,7 +306,7 @@ public class PolynomialNode extends BaseMLNode implements RegressionNode {
             }
             return;
         }
-        double t = (time - timeOrigin);
+        double t = timeDephasing();// (time - timeOrigin);
         Long lastTime = (Long) state.get(INTERNAL_LAST_TIME_KEY);
         if (t > lastTime) {
             t = (double) lastTime;

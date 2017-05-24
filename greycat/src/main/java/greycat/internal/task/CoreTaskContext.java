@@ -116,6 +116,13 @@ class CoreTaskContext implements TaskContext {
         for (int i = 0; i < globalKeys.length; i++) {
             collected.put(globalKeys[i], _globalVariables.get(globalKeys[i]));
         }
+        if(_localVariables != null) {
+            String[] localKeys = _localVariables.keySet().toArray(new String[_localVariables.size()]);
+            for (int i = 0; i < localKeys.length; i++) {
+                collected.put(localKeys[i], _localVariables.get(localKeys[i]));
+            }
+        }
+
         //recursive_collect(this, collected);
         //flatResult
         String[] collectedKeys = collected.keySet().toArray(new String[collected.size()]);
@@ -534,12 +541,18 @@ class CoreTaskContext implements TaskContext {
                     _result = new BaseTaskResult(null, false);
                 }
                 _result.setException(e);
+                if (_silent == null) {
+                    e.printStackTrace();
+                }
             }
             if (_output != null) {
                 if (_result == null) {
                     _result = new BaseTaskResult(null, false);
                 }
                 _result.setOutput(_output.toString());
+                if (_silent == null) {
+                    System.out.println(_result.output());
+                }
             }
             if (_silent != null) {
                 if (_result == null) {
@@ -890,6 +903,10 @@ class CoreTaskContext implements TaskContext {
                     .setIndex(step)
                     .setTotal(total)
                     .setComment(comment));
+        } else {
+            if(_parent != null) {
+                _parent.reportProgress(step, total, comment);
+            }
         }
     }
 

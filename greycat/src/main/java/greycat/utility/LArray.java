@@ -23,7 +23,7 @@ public class LArray {
     private int capacity = Constants.MAP_INITIAL_CAPACITY;
     private long[] backend = new long[capacity];
 
-    public int size(){
+    public int size() {
         return index;
     }
 
@@ -47,6 +47,10 @@ public class LArray {
             System.arraycopy(backend, 0, new_back, 0, index);
             return new_back;
         }
+    }
+
+    public final long get(int index) {
+        return backend[index];
     }
 
 }
