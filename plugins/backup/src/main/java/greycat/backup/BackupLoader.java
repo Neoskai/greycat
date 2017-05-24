@@ -50,14 +50,12 @@ public class BackupLoader {
     private HashMap<Long, StartingPoint> _nodes;
     private Map<Integer, Map<Long, FileKey>> _fileMap;
 
-    private List<String> _fileList;
-
     public BackupLoader(String folderPath){
         this(folderPath,
                 new GraphBuilder()
-                .withStorage(new RocksDBStorage("data"))
-                .withMemorySize(100000)
-                .build());
+                        .withStorage(new RocksDBStorage("data"))
+                        .withMemorySize(100000)
+                        .build());
     }
 
     public BackupLoader(String folderPath, Graph graphToUse){
@@ -66,7 +64,6 @@ public class BackupLoader {
 
         _fileMap = new HashMap<>();
         _nodes = new HashMap<>();
-        _fileList = new ArrayList<>();
     }
 
     /**
@@ -79,7 +76,9 @@ public class BackupLoader {
         long initialBench = System.currentTimeMillis();
 
         loadFiles(_folderPath);
+        System.out.println("Ended file loading");
         loadNodes();
+        System.out.println("Ended node loading");
 
         ExecutorService es = Executors.newFixedThreadPool(THREADPOOL);
         for (Long id: _nodes.keySet()){
@@ -95,6 +94,7 @@ public class BackupLoader {
                     _graph.save(null);
                 }
             });
+            System.out.println("Ended to load node: " + id);
         }
         es.shutdown();
         es.awaitTermination(10, TimeUnit.HOURS);
@@ -219,46 +219,52 @@ public class BackupLoader {
      */
     private void loadNodes(){
         try {
-            ExecutorService es = Executors.newFixedThreadPool(THREADPOOL);
-            es.execute(new Runnable() {
-                @Override
-                public void run() {
+            ExecutorService es = Executors.newFixedThreadPool(POOLSIZE);
+            // For each shard in this system
+            for(Integer key :_fileMap.keySet()){
+                //We load information about nodes in parallel
+                es.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        Map<Long, FileKey> map= _fileMap.get(key);
+                        for(Long keyBis: map.keySet()){
+                            String file = map.get(keyBis).getFilePath();
 
-                }
-            });
+                            try {
+                                File logFile = new File(file);
+                                SparkeyLogIterator logIterator = new SparkeyLogIterator(Sparkey.getLogFile(logFile));
+
+                                for (SparkeyReader.Entry entry : logIterator) {
+                                    if (entry.getType() == SparkeyReader.Type.PUT) {
+                                        Buffer buffer = _graph.newBuffer();
+                                        buffer.writeAll(entry.getKey());
+
+                                        StorageKeyChunk key = StorageKeyChunk.buildFromString(buffer);
+
+                                        String midPath = file.substring(file.indexOf("/shard"), file.length());
+                                        String numberMatch = CharMatcher.inRange('0', '9').retainFrom(midPath.substring(midPath.indexOf("/save"), midPath.indexOf("-")));
+                                        long fileNumber = Long.valueOf(numberMatch);
+
+                                        if(!_nodes.keySet().contains(key.id())){
+                                            StartingPoint start = new StartingPoint(fileNumber, key.eventId());
+                                            _nodes.put(key.id(), start);
+                                        }
+
+                                        buffer.free();
+                                    }
+                                }
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                });
+            }
+
             es.shutdown();
             es.awaitTermination(10, TimeUnit.HOURS);
         }catch (Exception e){
             e.printStackTrace();
-        }
-
-        for (String file : _fileList) {
-            try {
-                File logFile = new File(file);
-                SparkeyLogIterator logIterator = new SparkeyLogIterator(Sparkey.getLogFile(logFile));
-
-                for (SparkeyReader.Entry entry : logIterator) {
-                    if (entry.getType() == SparkeyReader.Type.PUT) {
-                        Buffer buffer = _graph.newBuffer();
-                        buffer.writeAll(entry.getKey());
-
-                        StorageKeyChunk key = StorageKeyChunk.buildFromString(buffer);
-
-                        String midPath = file.substring(file.indexOf("/shard"), file.length());
-                        String numberMatch = CharMatcher.inRange('0', '9').retainFrom(midPath.substring(midPath.indexOf("/save"), midPath.indexOf("-")));
-                        long fileNumber = Long.valueOf(numberMatch);
-
-                        if(!_nodes.keySet().contains(key.id())){
-                            StartingPoint start = new StartingPoint(fileNumber, key.eventId());
-                            _nodes.put(key.id(), start);
-                        }
-
-                        buffer.free();
-                    }
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
     }
 
@@ -312,9 +318,7 @@ public class BackupLoader {
                 initialMap.put(fileNumber, key);
 
                 _fileMap.put(shard, initialMap);
-                _fileList.add(file);
             }
-
         }
     }
 
