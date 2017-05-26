@@ -16,14 +16,11 @@
 package greycat.backup;
 
 import com.google.common.base.CharMatcher;
-import com.spotify.sparkey.Sparkey;
-import com.spotify.sparkey.SparkeyLogIterator;
 import greycat.Graph;
 import greycat.GraphBuilder;
 import greycat.backup.tools.FileKey;
 import greycat.rocksdb.RocksDBStorage;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -42,8 +39,6 @@ public class FastBackupLoader {
     private String _folderPath;
     private Map<Integer, Map<Long, FileKey>> _fileMap;
 
-    private Map<Long, Long> _startPoints;
-
     public FastBackupLoader(String folderPath){
         this(folderPath,
                 new GraphBuilder()
@@ -57,12 +52,10 @@ public class FastBackupLoader {
         _graph = graphToUse;
 
         _fileMap = new HashMap<>();
-        _startPoints = new HashMap<>();
     }
 
     public Graph backup() throws InterruptedException{
         _graph.connect(null);
-        long initialBench = System.currentTimeMillis();
 
         loadFiles(_folderPath);
 
@@ -73,6 +66,96 @@ public class FastBackupLoader {
                 @Override
                 public void run() {
                     ShardLoader loader = new ShardLoader(_fileMap.get(shardKey));
+                    loader.run(_graph);
+                }
+            });
+        }
+
+        es.shutdown();
+        es.awaitTermination(10, TimeUnit.HOURS);
+
+        _graph.disconnect(null);
+
+        return _graph;
+    }
+
+    /**
+     * Backup system on a given period
+     * @param initialStamp Starting timestamp to backup
+     * @param endStamp Ending timestamp to backup
+     * @return The graph recovered
+     * @throws InterruptedException
+     */
+    public Graph backupSequence(long initialStamp, long endStamp) throws InterruptedException {
+        _graph.connect(null);
+
+        loadFileFromSequence(_folderPath, initialStamp, endStamp);
+
+        ExecutorService es = Executors.newFixedThreadPool(POOLSIZE);
+        // For each shard
+        for(Integer shardKey :_fileMap.keySet()){
+            es.execute(new Runnable() {
+                @Override
+                public void run() {
+                    ShardLoader loader = new ShardLoader(_fileMap.get(shardKey));
+                    loader.run(_graph);
+                }
+            });
+        }
+
+        es.shutdown();
+        es.awaitTermination(10, TimeUnit.HOURS);
+
+        _graph.disconnect(null);
+        return _graph;
+    }
+
+    /**
+     * Backup one node from a given timelapse
+     * @param initialStamp The starting lapse to backup from
+     * @param endStamp The ending lapse to backup to
+     * @param nodeId List of all the nodes to recover
+     * @return The Graph with the node recovered on the given timelapse
+     * @throws InterruptedException
+     */
+    public Graph backupNodeSequence(long initialStamp, long endStamp, List<Long> nodeId) throws InterruptedException{
+        _graph.connect(null);
+
+        loadFileFromSequence(_folderPath, initialStamp, endStamp);
+
+        ExecutorService es = Executors.newFixedThreadPool(POOLSIZE);
+        // For each shard
+        for(Integer shardKey :_fileMap.keySet()){
+            es.execute(new Runnable() {
+                @Override
+                public void run() {
+                    ShardLoader loader = new ShardLoader(_fileMap.get(shardKey), nodeId);
+                    loader.run(_graph);
+                }
+            });
+        }
+
+        _graph.disconnect(null);
+        return _graph;
+    }
+
+    /**
+     * Method to backup only one node on an existing graph
+     * @param nodeId List of all the id of the nodes to recover
+     * @return The graph edited with the backup for this node executed
+     * @throws InterruptedException
+     */
+    public Graph nodeBackup(List<Long> nodeId) throws InterruptedException{
+        _graph.connect(null);
+
+        loadFiles(_folderPath);
+
+        ExecutorService es = Executors.newFixedThreadPool(POOLSIZE);
+        for(Integer shardKey :_fileMap.keySet()){
+            es.execute(new Runnable() {
+                @Override
+                public void run() {
+                    ShardLoader loader = new ShardLoader(_fileMap.get(shardKey), nodeId);
                     loader.run(_graph);
                 }
             });

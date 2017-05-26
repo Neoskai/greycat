@@ -18,7 +18,6 @@ package greycat.backup;
 import greycat.Callback;
 import greycat.Graph;
 import greycat.Node;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -31,8 +30,11 @@ public class FastLoaderTest {
     @Test
     public void totalBackup() throws IOException {
         try {
+            long initialBench = System.currentTimeMillis();
             FastBackupLoader loader = new FastBackupLoader("data");
             Graph g = loader.backup();
+
+            System.out.println("Backup took: " + ((System.currentTimeMillis()-initialBench)/1000) + " s");
 
             g.connect(new Callback<Boolean>() {
                 @Override

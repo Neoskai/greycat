@@ -15,13 +15,11 @@
  */
 package greycat.backup;
 
-import com.google.common.base.CharMatcher;
 import com.spotify.sparkey.Sparkey;
 import com.spotify.sparkey.SparkeyLogIterator;
 import com.spotify.sparkey.SparkeyReader;
 import greycat.*;
 import greycat.backup.tools.FileKey;
-import greycat.backup.tools.StartingPoint;
 import greycat.backup.tools.StorageKeyChunk;
 import greycat.backup.tools.StorageValueChunk;
 import greycat.base.BaseNode;
