@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package greycat.backup;
+package greycat.backup.loader;
 
 import greycat.Callback;
 import greycat.Graph;
