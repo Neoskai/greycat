@@ -13,71 +13,93 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package greycat.backup;
+package greycat.backup.loader;
 
 import com.google.common.base.CharMatcher;
+import com.spotify.sparkey.Sparkey;
+import com.spotify.sparkey.SparkeyLogIterator;
+import com.spotify.sparkey.SparkeyReader;
 import greycat.Graph;
 import greycat.GraphBuilder;
 import greycat.backup.tools.FileKey;
+import greycat.backup.tools.StartingPoint;
+import greycat.backup.tools.StorageKeyChunk;
 import greycat.rocksdb.RocksDBStorage;
-
+import greycat.struct.Buffer;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static greycat.Constants.POOLSIZE;
+import static greycat.Constants.THREADPOOL;
 
-public class FastBackupLoader {
-
+public class BackupLoader {
     private Graph _graph;
     private String _folderPath;
+
+    private HashMap<Long, StartingPoint> _nodes;
     private Map<Integer, Map<Long, FileKey>> _fileMap;
 
-    public FastBackupLoader(String folderPath){
+    public BackupLoader(String folderPath){
         this(folderPath,
                 new GraphBuilder()
                         .withStorage(new RocksDBStorage("data"))
-                        .withMemorySize(5000000)
+                        .withMemorySize(100000)
                         .build());
     }
 
-    public FastBackupLoader(String folderPath, Graph graphToUse){
+    public BackupLoader(String folderPath, Graph graphToUse){
         _folderPath = folderPath;
         _graph = graphToUse;
 
         _fileMap = new HashMap<>();
+        _nodes = new HashMap<>();
     }
 
     /**
-     * Launch a total backup on the internal graph
-     * @return The Graph totally backed up
-     * @throws InterruptedException
+     * Launches the backup of the graph
+     * @return The Graph resulting of the execution of the backup process
+     * @throws InterruptedException Error if something happened during backup
      */
-    public Graph backup() throws InterruptedException{
+    public Graph backup() throws InterruptedException {
         _graph.connect(null);
+        long initialBench = System.currentTimeMillis();
 
         loadFiles(_folderPath);
+        System.out.println("Ended file loading");
+        loadNodes();
+        System.out.println("Ended node loading");
 
-        ExecutorService es = Executors.newFixedThreadPool(POOLSIZE);
-        // For each shard
-        for(Integer shardKey :_fileMap.keySet()){
+        ExecutorService es = Executors.newFixedThreadPool(THREADPOOL);
+        for (Long id: _nodes.keySet()){
+            int currentPool = Math.toIntExact(id%POOLSIZE);
+            if( _fileMap.get(currentPool) == null || _nodes.get(id) == null){
+                continue;
+            }
             es.execute(new Runnable() {
                 @Override
                 public void run() {
-                    ShardLoader loader = new ShardLoader(_fileMap.get(shardKey));
+                    NodeLoader loader = new NodeLoader(id, _nodes.get(id), _fileMap.get(Math.toIntExact(id%POOLSIZE)));
                     loader.run(_graph);
+                    _graph.save(null);
                 }
             });
+            System.out.println("Ended to load node: " + id);
         }
-
         es.shutdown();
-        es.awaitTermination(24, TimeUnit.HOURS);
+        es.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+
+        System.out.println("Backup took: " + ((System.currentTimeMillis()-initialBench)/1000) + " s");
 
         _graph.disconnect(null);
 
@@ -94,22 +116,29 @@ public class FastBackupLoader {
     public Graph backupSequence(long initialStamp, long endStamp) throws InterruptedException {
         _graph.connect(null);
 
+        long initialBench = System.currentTimeMillis();
         loadFileFromSequence(_folderPath, initialStamp, endStamp);
+        loadNodes();
 
-        ExecutorService es = Executors.newFixedThreadPool(POOLSIZE);
-        // For each shard
-        for(Integer shardKey :_fileMap.keySet()){
+        ExecutorService es = Executors.newFixedThreadPool(THREADPOOL);
+        for (Long id: _nodes.keySet()){
+            int currentPool = Math.toIntExact(id%POOLSIZE);
+
+            if(_fileMap.get(currentPool) == null || _nodes.get(id) == null){
+                continue;
+            }
             es.execute(new Runnable() {
                 @Override
                 public void run() {
-                    ShardLoader loader = new ShardLoader(_fileMap.get(shardKey));
+                    NodeLoader loader = new NodeLoader(id, _nodes.get(id), _fileMap.get(currentPool));
                     loader.run(_graph);
                 }
             });
         }
-
         es.shutdown();
-        es.awaitTermination(24, TimeUnit.HOURS);
+        es.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+
+        System.out.println("Backup took: " + ((System.currentTimeMillis()-initialBench)/1000) + " s");
 
         _graph.disconnect(null);
         return _graph;
@@ -119,28 +148,32 @@ public class FastBackupLoader {
      * Backup one node from a given timelapse
      * @param initialStamp The starting lapse to backup from
      * @param endStamp The ending lapse to backup to
-     * @param nodeId List of all the nodes to recover
+     * @param nodeId The node to backup
      * @return The Graph with the node recovered on the given timelapse
      * @throws InterruptedException
      */
-    public Graph backupNodeSequence(long initialStamp, long endStamp, List<Long> nodeId) throws InterruptedException{
+    public Graph backupNodeSequence(long initialStamp, long endStamp, long nodeId) throws InterruptedException{
         _graph.connect(null);
 
+        long initialBench = System.currentTimeMillis();
         loadFileFromSequence(_folderPath, initialStamp, endStamp);
+        loadNodes();
 
-        ExecutorService es = Executors.newFixedThreadPool(POOLSIZE);
-        // For each shard
-        for(Integer shardKey :_fileMap.keySet()){
+        int currentPool = Math.toIntExact(nodeId%POOLSIZE);
+        if(! (_fileMap.get(currentPool) == null || _nodes.get(nodeId) == null) ){
+            ExecutorService es = Executors.newFixedThreadPool(THREADPOOL);
             es.execute(new Runnable() {
                 @Override
                 public void run() {
-                    ShardLoader loader = new ShardLoader(_fileMap.get(shardKey), nodeId);
+                    NodeLoader loader = new NodeLoader(nodeId, _nodes.get(nodeId), _fileMap.get(Math.toIntExact(nodeId%POOLSIZE)));
                     loader.run(_graph);
                 }
             });
+            es.shutdown();
+            es.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
         }
-        es.shutdown();
-        es.awaitTermination(24, TimeUnit.HOURS);
+
+        System.out.println("Backup took: " + ((System.currentTimeMillis()-initialBench)/1000) + " s");
 
         _graph.disconnect(null);
         return _graph;
@@ -148,32 +181,91 @@ public class FastBackupLoader {
 
     /**
      * Method to backup only one node on an existing graph
-     * @param nodeId List of all the id of the nodes to recover
+     * @param nodeId Id of the node to recover
      * @return The graph edited with the backup for this node executed
      * @throws InterruptedException
      */
-    public Graph nodeBackup(List<Long> nodeId) throws InterruptedException{
+    public Graph nodeBackup(long nodeId) throws InterruptedException{
         _graph.connect(null);
 
+        long initialBench = System.currentTimeMillis();
         loadFiles(_folderPath);
+        loadNodes();
 
-        ExecutorService es = Executors.newFixedThreadPool(POOLSIZE);
-        for(Integer shardKey :_fileMap.keySet()){
-            es.execute(new Runnable() {
-                @Override
-                public void run() {
-                    ShardLoader loader = new ShardLoader(_fileMap.get(shardKey), nodeId);
-                    loader.run(_graph);
-                }
-            });
+        int currentPool = Math.toIntExact(nodeId%POOLSIZE);
+        if(_fileMap.get(currentPool) == null || _nodes.get(nodeId) == null){
+            return _graph;
         }
 
+        ExecutorService es = Executors.newFixedThreadPool(THREADPOOL);
+        es.execute(new Runnable() {
+            @Override
+            public void run() {
+                NodeLoader loader = new NodeLoader(nodeId, _nodes.get(nodeId), _fileMap.get(Math.toIntExact(nodeId%POOLSIZE)));
+                loader.run(_graph);
+            }
+        });
         es.shutdown();
-        es.awaitTermination(24, TimeUnit.HOURS);
+        es.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
 
+        System.out.println("Backup took: " + ((System.currentTimeMillis()-initialBench)/1000) + " s");
         _graph.disconnect(null);
 
         return _graph;
+    }
+
+    /**
+     * Function that load the _nodes and their first occurence in the process
+     */
+    private void loadNodes(){
+        try {
+            ExecutorService es = Executors.newFixedThreadPool(POOLSIZE);
+            // For each shard in this system
+            for(Integer key :_fileMap.keySet()){
+                //We load information about nodes in parallel
+                es.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        Map<Long, FileKey> map= _fileMap.get(key);
+                        for(Long keyBis: map.keySet()){
+                            String file = map.get(keyBis).getFilePath();
+
+                            try {
+                                File logFile = new File(file);
+                                SparkeyLogIterator logIterator = new SparkeyLogIterator(Sparkey.getLogFile(logFile));
+
+                                for (SparkeyReader.Entry entry : logIterator) {
+                                    if (entry.getType() == SparkeyReader.Type.PUT) {
+                                        Buffer buffer = _graph.newBuffer();
+                                        buffer.writeAll(entry.getKey());
+
+                                        StorageKeyChunk key = StorageKeyChunk.buildFromString(buffer);
+
+                                        String midPath = file.substring(file.indexOf("/shard"), file.length());
+                                        String numberMatch = CharMatcher.inRange('0', '9').retainFrom(midPath.substring(midPath.indexOf("/save"), midPath.indexOf("-")));
+                                        long fileNumber = Long.valueOf(numberMatch);
+
+                                        if(!_nodes.keySet().contains(key.id())){
+                                            StartingPoint start = new StartingPoint(fileNumber, key.eventId());
+                                            _nodes.put(key.id(), start);
+                                        }
+
+                                        buffer.free();
+                                    }
+                                }
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                });
+            }
+
+            es.shutdown();
+            es.awaitTermination(7, TimeUnit.DAYS);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
     /**

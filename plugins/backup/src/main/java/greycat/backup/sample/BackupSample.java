@@ -18,7 +18,7 @@ package greycat.backup.sample;
 import greycat.Callback;
 import greycat.Graph;
 import greycat.GraphBuilder;
-import greycat.backup.BackupLoader;
+import greycat.backup.loader.BackupLoader;
 
 import java.io.File;
 import java.io.IOException;
@@ -45,36 +45,6 @@ public class BackupSample {
                 }
             });
             /*g.lookup(0, 1001, 1, new Callback<Node>() {
-                @Override
-                public void on(Node result) {
-                    assertTrue(result != null);
-                }
-            });
-            g.lookup(0, 1200, 1L, new Callback<Node>() {
-                @Override
-                public void on(Node result) {
-                    assertTrue(result != null);
-                }
-            });
-            g.lookup(0, 120000, 2, new Callback<Node>() {
-                @Override
-                public void on(Node result) {
-                    assertTrue(result != null);
-                }
-            });
-            g.lookup(0, 120000, 3, new Callback<Node>() {
-                @Override
-                public void on(Node result) {
-                    assertTrue(result != null);
-                }
-            });
-            g.lookup(0, 120000, 4, new Callback<Node>() {
-                @Override
-                public void on(Node result) {
-                    assertTrue(result != null);
-                }
-            });
-            g.lookup(0, 120000, 5, new Callback<Node>() {
                 @Override
                 public void on(Node result) {
                     assertTrue(result != null);
@@ -111,20 +81,6 @@ public class BackupSample {
                 public void on(Node result) {
                     assertTrue(result != null);
                 }
-            });
-
-            g.lookup(0, 1020, 0, new Callback<Node>() {
-                @Override
-                public void on(Node result) {
-                    assertEquals(null, result);
-                }
-            });
-
-            g.lookup(0, 1030, 2, new Callback<Node>() {
-                @Override
-                public void on(Node result) {
-                    assertEquals(null, result);
-                }
             });*/
 
             g.disconnect(null);
@@ -154,27 +110,6 @@ public class BackupSample {
                 public void on(Node result) {
                     assertEquals(null, result);
                 }
-            });
-
-            g.lookup(0, 1000, 0, new Callback<Node>() {
-                @Override
-                public void on(Node result) {
-                    assertEquals(result, null);
-                }
-            });
-
-            g.lookup(0, 1000, 2, new Callback<Node>() {
-                @Override
-                public void on(Node result) {
-                    assertEquals(result, null);
-                }
-            });
-
-            g.lookup(0, 975000, 5, new Callback<Node>() {
-                @Override
-                public void on(Node result) {
-                    assertTrue(result != null);
-                }
             });*/
 
             g.disconnect(null);
@@ -202,27 +137,6 @@ public class BackupSample {
                 @Override
                 public void on(Node result) {
                     assertEquals(null, result);
-                }
-            });
-
-            g.lookup(0, 1000, 0, new Callback<Node>() {
-                @Override
-                public void on(Node result) {
-                    assertEquals(result, null);
-                }
-            });
-
-            g.lookup(0, 1000, 2, new Callback<Node>() {
-                @Override
-                public void on(Node result) {
-                    assertEquals(result, null);
-                }
-            });
-
-            g.lookup(0, 975000, 5, new Callback<Node>() {
-                @Override
-                public void on(Node result) {
-                    assertTrue(result != null);
                 }
             });*/
 

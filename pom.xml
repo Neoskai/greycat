@@ -102,12 +102,12 @@
         <module>plugins/websocket</module>
         <module>plugins/ml</module>
 
-        <module>plugins/sparkey</module>
         <module>plugins/backup</module>
 
         <module>plugins/modeling</module>
 
         <!--
+        <module>plugins/sparkey</module>
         <module>plugins/aerospike</module>
         <module>plugins/nsq-hook</module>
         -->

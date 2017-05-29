@@ -29,7 +29,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 
-
 /**
  * @ignore ts
  */
@@ -119,11 +118,6 @@ public class NATSender {
     public void processMessage(long world, long time, long id, int index, long eventId, byte type, Object value){
         Buffer buffer = bufferizeMessage(world, time, id, index, eventId, type, value);
         sendMessage(buffer.data());
-
-        /* executor.submit(() -> {
-            Buffer buffer = bufferizeMessage(world, time, id, index, eventId, type, value);
-            sendMessage(buffer.data());
-        });*/
     }
 
     /**

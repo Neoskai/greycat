@@ -22,19 +22,6 @@
     <name>greycat</name>
     <version>8-SNAPSHOT</version>
 
-    <dependencies>
-        <dependency>
-            <groupId>com.github.brainlag</groupId>
-            <artifactId>nsq-client</artifactId>
-            <version>${nsq.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.nats</groupId>
-            <artifactId>jnats</artifactId>
-            <version>${nats.version}</version>
-        </dependency>
-    </dependencies>
-
     <parent>
         <artifactId>greycat-parent</artifactId>
         <groupId>com.datathings</groupId>
@@ -48,6 +35,19 @@
         <nats.version>1.0</nats.version>
         <header.path>${basedir}/../HEADER</header.path>
     </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.github.brainlag</groupId>
+            <artifactId>nsq-client</artifactId>
+            <version>${nsq.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.nats</groupId>
+            <artifactId>jnats</artifactId>
+            <version>${nats.version}</version>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>

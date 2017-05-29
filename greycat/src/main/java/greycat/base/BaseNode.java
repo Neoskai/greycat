@@ -58,7 +58,6 @@ public class BaseNode implements Node {
     public volatile boolean _dead = false;
     private volatile int _lock;
 
-    //private static NSQSender _sender = new NSQSender("localhost", 4150);
     /**
      * @ignore ts
      */

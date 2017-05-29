@@ -30,16 +30,8 @@ public class StartingPoint {
         return filenumber;
     }
 
-    public void setFilenumber(Long filenumber) {
-        this.filenumber = filenumber;
-    }
-
     public Long getStartingEvent() {
         return startingEvent;
-    }
-
-    public void setStartingEvent(Long startingEvent) {
-        this.startingEvent = startingEvent;
     }
 
     @Override

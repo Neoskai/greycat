@@ -18,6 +18,7 @@ package greycat.backup;
 import greycat.Callback;
 import greycat.Graph;
 import greycat.Node;
+import greycat.backup.fastloader.FastBackupLoader;
 import org.junit.Test;
 
 import java.io.File;

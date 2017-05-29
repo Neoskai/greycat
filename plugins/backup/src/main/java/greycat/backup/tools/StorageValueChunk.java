@@ -90,23 +90,8 @@ public class StorageValueChunk {
         return tuple;
     }
 
-    /**
-     * (INCOMPLETE) ONLY SUPPORT STRING OBJECTS
-     * Deserialize Object from a byte array
-     * @param bytes Object bytes
-     * @return Deserialized object
-     */
-    public static Object deserialize(byte[] bytes, byte type)  {
-        switch (type){
-            case Type.STRING :
-                return new String(bytes);
-        }
-
-        return null;
-    }
 
     /**
-     * (INCOMPLETE) ONLY SUPPORTS ALL PRIMITIVE TYPES
      * Rebuilds the object from the buffer, given the index of beginning and end of the object in the buffer
      * Object has to be written in Base64 format
      * @param buffer The complete buffer where the object is

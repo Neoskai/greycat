@@ -17,7 +17,6 @@ package greycat.backup.sample;
 
 import greycat.*;
 import greycat.struct.Relation;
-import greycat.websocket.WSServer;
 
 public class WorldSample {
 

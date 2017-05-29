@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package greycat.backup;
+package greycat.backup.fastloader;
 
 import com.spotify.sparkey.Sparkey;
 import com.spotify.sparkey.SparkeyLogIterator;
@@ -87,8 +87,12 @@ public class ShardLoader extends Thread{
                                     if(result == null) {
                                         Node newNode = new BaseNode(value.world(), value.time(), storageKey.id(), g);
                                         g.resolver().initNode(newNode, Constants.NULL_LONG);
-                                        newNode.setAt(value.index(), value.type(), value.value());
 
+                                        if (value.type() == Type.REMOVE) {
+                                            System.err.println("Can't remove attribute on newly created node. Passing...");
+                                        }else {
+                                            newNode.setAt(value.index(), value.type(), value.value());
+                                        }
                                         newNode.free();
                                     }
                                     else {
@@ -102,7 +106,7 @@ public class ShardLoader extends Thread{
                                     }
                                 }
                             });
-                            _backupStatus.put(storageKey.id(), (storageKey.eventId()+1));
+                            _backupStatus.put(storageKey.id(), (storageKey.eventId()+1)); // Increasing the current expected event by 1
                         }
 
                         buffer.free();
@@ -121,10 +125,6 @@ public class ShardLoader extends Thread{
      * @return True if needs to be backed up, false otherwise
      */
     private boolean isToBackup(Long nodeId){
-        if(_nodeFilter == null || _nodeFilter.size() == 0 || _nodeFilter.contains(nodeId)){
-            return true;
-        }
-
-        return false;
+        return _nodeFilter == null || _nodeFilter.size() == 0 || _nodeFilter.contains(nodeId);
     }
 }

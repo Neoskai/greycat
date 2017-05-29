@@ -18,8 +18,7 @@ package greycat.backup;
 import greycat.Callback;
 import greycat.Graph;
 import greycat.GraphBuilder;
-import greycat.Node;
-import greycat.rocksdb.RocksDBStorage;
+import greycat.backup.loader.BackupLoader;
 import org.junit.Ignore;
 import org.junit.Test;
 
