@@ -29,30 +29,30 @@ import java.util.Map;
 
 public class Model {
 
-    private final Map<String, Classifier> classifiers;
+    private final Map<String, Classifier> classifierMap;
 
     public Model() {
-        classifiers = new HashMap<>();
+        classifierMap = new HashMap<>();
     }
 
     public Classifier[] classifiers() {
-        return classifiers.values().toArray(new Classifier[classifiers.size()]);
+        return classifierMap.values().toArray(new Classifier[classifierMap.size()]);
     }
 
     public void addClassifier(Classifier classifier) {
-        classifiers.put(classifier.name(), classifier);
+        classifierMap.put(classifier.name(), classifier);
     }
 
     public Classifier get(String fqn) {
-        return classifiers.get(fqn);
+        return classifierMap.get(fqn);
     }
 
 
-    public static Model parse(File content, Model model) throws Exception {
-        return build(new ANTLRFileStream(content.getAbsolutePath()), model);
+    public void parse(File content) throws Exception {
+        build(new ANTLRFileStream(content.getAbsolutePath()));
     }
 
-    private static Model build(ANTLRInputStream in, Model model) {
+    private void build(ANTLRInputStream in) {
         BufferedTokenStream tokens = new CommonTokenStream(new GreyCatModelLexer(in));
         GreyCatModelParser parser = new GreyCatModelParser(tokens);
         GreyCatModelParser.ModelDclContext modelDclCtx = parser.modelDcl();
@@ -66,7 +66,7 @@ public class Model {
             if (enumDclCtx.IDENT() != null) {
                 fqn = enumDclCtx.IDENT().toString();
             }
-            final Enum enumClass = (Enum) getOrAddEnum(model, fqn);
+            final Enum enumClass = getOrCreateAndAddEnum(fqn);
             for (TerminalNode literal : enumDclCtx.enumLiteralsDcl().IDENT()) {
                 enumClass.addLiteral(literal.getText());
             }
@@ -81,16 +81,16 @@ public class Model {
             if (classDclCxt.IDENT() != null) {
                 classFqn = classDclCxt.IDENT().toString();
             }
-            final Class newClass = (Class) getOrAddClass(model, classFqn);
+            final Class newClass = getOrCreateAndAddClass(classFqn);
 
             // parents
             if (classDclCxt.parentDcl() != null) {
                 if (classDclCxt.parentDcl().TYPE_NAME() != null) {
-                    final Class newClassTT = (Class) getOrAddClass(model, classDclCxt.parentDcl().TYPE_NAME().toString());
+                    final Class newClassTT = getOrCreateAndAddClass(classDclCxt.parentDcl().TYPE_NAME().toString());
                     newClass.setParent(newClassTT);
                 }
                 if (classDclCxt.parentDcl().IDENT() != null) {
-                    final Class newClassTT = (Class) getOrAddClass(model, classDclCxt.parentDcl().IDENT().toString());
+                    final Class newClassTT = getOrCreateAndAddClass(classDclCxt.parentDcl().IDENT().toString());
                     newClass.setParent(newClassTT);
                 }
             }
@@ -141,9 +141,6 @@ public class Model {
                 Index idx = new Index(idxName);
                 for (TerminalNode idxDclIdent : indexDclCxt.IDENT()) {
                     Property indexedProperty = newClass.getProperty(idxDclIdent.getText());
-                    if (!(indexedProperty instanceof Attribute)) {
-                        throw new RuntimeException("index declaration invalid: " + idxDclIdent.getText() + " is not a valid attribute");
-                    }
                     Attribute att = (Attribute) indexedProperty;
                     idx.addAttribute(att);
                 }
@@ -154,29 +151,27 @@ public class Model {
 
             }
         }
-
-
-        return model;
     }
 
 
-    private static Classifier getOrAddClass(Model model, String fqn) {
-        Classifier previous = model.get(fqn);
+
+    private Class getOrCreateAndAddClass(String fqn) {
+        Class previous = (Class) this.get(fqn);
         if (previous != null) {
             return previous;
         }
         previous = new Class(fqn);
-        model.addClassifier(previous);
+        this.addClassifier(previous);
         return previous;
     }
 
-    private static Classifier getOrAddEnum(Model model, String fqn) {
-        Classifier previous = model.get(fqn);
+    private Enum getOrCreateAndAddEnum(String fqn) {
+        Enum previous = (Enum) this.get(fqn);
         if (previous != null) {
             return previous;
         }
         previous = new Enum(fqn);
-        model.addClassifier(previous);
+        this.addClassifier(previous);
         return previous;
     }
 

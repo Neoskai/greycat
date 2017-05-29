@@ -32,8 +32,8 @@ import java.io.File;
 public class GeneratorPlugin extends AbstractMojo {
 
     /**
-     * File containing the data structure, or the directory to navigate to get file(s).
-     * If there is several TYG files in the folder, they will be merged in one.
+     * File or directory containing the model definition.
+     * If there are several files in the directory they will be merged into one.
      *
      * File(s) should have the "{@value Generator#FILE_EXTENSION}".
      */
@@ -41,28 +41,26 @@ public class GeneratorPlugin extends AbstractMojo {
     private File srcFiles;
 
     /**
-     * Define if a deep scan is made or not, i.e., if we navigate only in the first level or if we navigate all the folder tree
+     * Defines if a sub directories should be considered or not
      */
     @Parameter(defaultValue = "false", alias = "deepScan")
     private boolean doDeepScan;
 
     /**
-     * GreyCat Plugin name
+     * GreyCat plugin name
      */
     @Parameter(defaultValue = "ModelingPlugin")
     private String pluginName;
 
     /**
      * Root package in which the Java classes are generated.
-     * They are translate into TypeScript namespace.
-     *
-     * TIP: keep it as simple as possible, one level should be enough
+     * They are translated into TypeScript namespaces.
      */
     @Parameter(defaultValue = "modeling")
     private String packageName;
 
     /**
-     * Folder in which the files are generated
+     * Folder in which the files should be generated
      */
     @Parameter(defaultValue = "${project.build.directory}/generated-sources/modeling")
     private File targetGen;
@@ -71,11 +69,14 @@ public class GeneratorPlugin extends AbstractMojo {
     private MavenProject project;
 
     /**
-     * Define with the Java classes are generated are not
+     * Defines if the Java classes are generated
      */
     @Parameter(defaultValue = "true")
     private boolean generateJava;
 
+    /**
+     * Defines if the JavaScript classes are generated
+     */
     @Parameter(defaultValue = "false")
     private boolean generateJS;
 

@@ -221,9 +221,18 @@ class NodeTypeGenerator {
 
             for (Index idx : classClassifier.indexes()) {
                 String idxName = idx.name();
+
+                // index constants
+                javaClass.addField()
+                        .setVisibility(Visibility.PUBLIC)
+                        .setFinal(true)
+                        .setName(idxName.toUpperCase())
+                        .setType(String.class)
+                        .setStringInitializer(idxName)
+                        .setStatic(true);
+
                 StringBuilder indexedProperties = new StringBuilder();
                 for (Property property : idx.attributes()) {
-//                    indexedProperties.append("\"" + property.name() + "\"");
                     indexedProperties.append(property.name().toUpperCase());
                     indexedProperties.append(",");
                 }
@@ -231,7 +240,7 @@ class NodeTypeGenerator {
                 String time = idx.isWithTime() ? "time()" : "greycat.Constants.BEGINNING_OF_TIME";
 
                 indexMethodBody.append(
-                        "\t\tthis.graph().index(world(), " + time + ",  \"" + idxName + "\" , new greycat.Callback<greycat.NodeIndex>() {\n" +
+                        "\t\tthis.graph().index(world(), " + time + "," + idxName.toUpperCase() + " , new greycat.Callback<greycat.NodeIndex>() {\n" +
                                 "\t\t\t@Override\n" +
                                 "\t\t\tpublic void on(greycat.NodeIndex indexNode) {\n" +
                                 "\t\t\t\tindexNode.removeFromIndex(self, " + indexedProperties + " );\n" +

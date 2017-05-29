@@ -56,8 +56,11 @@ export class WSClient implements greycat.plugin.Storage {
 
   connect(p_graph: greycat.Graph, callback: greycat.Callback<boolean>): void {
     this.graph = p_graph;
+    let self = this;
+
     if (this.ws == null) {
       let selfPointer = this;
+      let initialConnection = true;
       this.ws = new WebSocket(this.url);
 
       this.ws.onmessage = function (msg: MessageEvent) {
@@ -70,19 +73,22 @@ export class WSClient implements greycat.plugin.Storage {
 
       this.ws.onclose = function (event: CloseEvent) {
         console.log("Connection closed.", event);
-        if (this.readyState === WebSocket.CONNECTING) {
+        if (initialConnection) {
           callback(false);
         }
+        self.ws = null;
       };
 
       this.ws.onerror = function (event: ErrorEvent) {
-        console.error("An error occurred while connecting to server:", event);
-        if (this.readyState === WebSocket.CONNECTING) {
+        console.error("An error occurred while connecting to server:", event, this.readyState);
+        if (initialConnection) {
           callback(false);
         }
+        self.ws = null;
       };
 
       this.ws.onopen = function (event: Event) {
+        initialConnection = false;
         callback(true);
       };
     } else {
