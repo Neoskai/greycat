@@ -42,7 +42,7 @@ public class FastBackupLoader {
     public FastBackupLoader(String folderPath){
         this(folderPath,
                 new GraphBuilder()
-                        .withStorage(new RocksDBStorage("data"))
+                        //.withStorage(new RocksDBStorage("data"))
                         .withMemorySize(5000000)
                         .build());
     }
@@ -65,7 +65,7 @@ public class FastBackupLoader {
 
         loadFiles(_folderPath);
 
-        ExecutorService es = Executors.newFixedThreadPool(POOLSIZE);
+        ExecutorService es = Executors.newFixedThreadPool(4);
         // For each shard
         for(Integer shardKey :_fileMap.keySet()){
             es.execute(new Runnable() {
