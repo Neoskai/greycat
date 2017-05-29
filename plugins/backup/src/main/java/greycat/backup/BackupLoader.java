@@ -97,7 +97,7 @@ public class BackupLoader {
             System.out.println("Ended to load node: " + id);
         }
         es.shutdown();
-        es.awaitTermination(10, TimeUnit.HOURS);
+        es.awaitTermination(24, TimeUnit.HOURS);
 
         System.out.println("Backup took: " + ((System.currentTimeMillis()-initialBench)/1000) + " s");
 
@@ -136,7 +136,7 @@ public class BackupLoader {
             });
         }
         es.shutdown();
-        es.awaitTermination(10, TimeUnit.HOURS);
+        es.awaitTermination(24, TimeUnit.HOURS);
 
         System.out.println("Backup took: " + ((System.currentTimeMillis()-initialBench)/1000) + " s");
 
@@ -170,7 +170,7 @@ public class BackupLoader {
                 }
             });
             es.shutdown();
-            es.awaitTermination(10, TimeUnit.HOURS);
+            es.awaitTermination(24, TimeUnit.HOURS);
         }
 
         System.out.println("Backup took: " + ((System.currentTimeMillis()-initialBench)/1000) + " s");
@@ -206,7 +206,7 @@ public class BackupLoader {
             }
         });
         es.shutdown();
-        es.awaitTermination(10, TimeUnit.HOURS);
+        es.awaitTermination(24, TimeUnit.HOURS);
 
         System.out.println("Backup took: " + ((System.currentTimeMillis()-initialBench)/1000) + " s");
         _graph.disconnect(null);
@@ -262,7 +262,7 @@ public class BackupLoader {
             }
 
             es.shutdown();
-            es.awaitTermination(10, TimeUnit.HOURS);
+            es.awaitTermination(7, TimeUnit.DAYS);
         }catch (Exception e){
             e.printStackTrace();
         }

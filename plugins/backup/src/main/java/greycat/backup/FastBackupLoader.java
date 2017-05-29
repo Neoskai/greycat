@@ -43,7 +43,7 @@ public class FastBackupLoader {
         this(folderPath,
                 new GraphBuilder()
                         .withStorage(new RocksDBStorage("data"))
-                        .withMemorySize(100000)
+                        .withMemorySize(5000000)
                         .build());
     }
 
@@ -54,6 +54,11 @@ public class FastBackupLoader {
         _fileMap = new HashMap<>();
     }
 
+    /**
+     * Launch a total backup on the internal graph
+     * @return The Graph totally backed up
+     * @throws InterruptedException
+     */
     public Graph backup() throws InterruptedException{
         _graph.connect(null);
 
@@ -72,7 +77,7 @@ public class FastBackupLoader {
         }
 
         es.shutdown();
-        es.awaitTermination(10, TimeUnit.HOURS);
+        es.awaitTermination(24, TimeUnit.HOURS);
 
         _graph.disconnect(null);
 
@@ -104,7 +109,7 @@ public class FastBackupLoader {
         }
 
         es.shutdown();
-        es.awaitTermination(10, TimeUnit.HOURS);
+        es.awaitTermination(24, TimeUnit.HOURS);
 
         _graph.disconnect(null);
         return _graph;
@@ -134,6 +139,8 @@ public class FastBackupLoader {
                 }
             });
         }
+        es.shutdown();
+        es.awaitTermination(24, TimeUnit.HOURS);
 
         _graph.disconnect(null);
         return _graph;
@@ -162,7 +169,7 @@ public class FastBackupLoader {
         }
 
         es.shutdown();
-        es.awaitTermination(10, TimeUnit.HOURS);
+        es.awaitTermination(24, TimeUnit.HOURS);
 
         _graph.disconnect(null);
 
