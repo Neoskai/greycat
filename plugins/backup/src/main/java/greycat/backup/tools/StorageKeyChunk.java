@@ -78,20 +78,8 @@ public class StorageKeyChunk {
         String fullKey = new String(buffer.data());
         String[] keys = fullKey.split(";");
 
-        int index = 0;
-
-        while (index < keys.length) {
-            switch (index) {
-                case 0:
-                    tuple.id = Long.parseLong(keys[index]);
-                    index++;
-                    break;
-                case 1:
-                    tuple.eventId = Long.parseLong(keys[index]);
-                    index++;
-                    break;
-            }
-        }
+        tuple.id = Long.parseLong(keys[0]);
+        tuple.eventId = Long.parseLong(keys[1]);
 
         return tuple;
     }

@@ -72,10 +72,6 @@ public class ShardLoader extends Thread{
                         if(isToBackup(storageKey.id()) ){
                             _backupStatus.computeIfAbsent(storageKey.id(), k -> storageKey.eventId());
 
-                            if(storageKey.eventId() % SAVEPOINT == 0){
-                                g.save(null);
-                            }
-
                             if( _backupStatus.get(storageKey.id()) != storageKey.eventId()){
                                 System.out.println("Backing up event not in the right order. Expected: " + _backupStatus.get(storageKey.id()) + " received: " + storageKey.eventId());
                             }
@@ -106,6 +102,10 @@ public class ShardLoader extends Thread{
                                     }
                                 }
                             });
+
+                            if(storageKey.eventId() % SAVEPOINT == 0){
+                                g.save(null);
+                            }
                             _backupStatus.put(storageKey.id(), (storageKey.eventId()+1)); // Increasing the current expected event by 1
                         }
 
