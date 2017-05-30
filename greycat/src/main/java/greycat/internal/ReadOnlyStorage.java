@@ -79,5 +79,21 @@ public class ReadOnlyStorage implements Storage {
     public void unlock(Buffer previousLock, Callback<Boolean> callback) {
         wrapped.unlock(previousLock, callback);
     }
+
+    @Override
+    public long createBackup() {
+        //@Todo
+        return 0;
+    }
+
+    @Override
+    public void loadLatestBackup() {
+        //@Todo
+    }
+
+    @Override
+    public void loadBackup(long id) {
+        //@Todo
+    }
     
 }

@@ -59,6 +59,43 @@ public class RocksDBStorage implements Storage {
     }
 
     @Override
+    public long createBackup() {
+        try {
+            BackupEngine backupEngine = BackupEngine.open( Env.getDefault(), new BackupableDBOptions("tmp/rocksdb_backup"));
+            backupEngine.createNewBackup(_db);
+
+            System.out.println("Created backup: " + backupEngine.getBackupInfo());
+
+            BackupInfo info = backupEngine.getBackupInfo().get(backupEngine.getBackupInfo().size()-1);
+
+            return info.backupId();
+        } catch (RocksDBException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    @Override
+    public void loadLatestBackup() {
+        try {
+            BackupEngine backupEngine = BackupEngine.open( Env.getDefault(), new BackupableDBOptions("tmp/rocksdb_backup"));
+            backupEngine.restoreDbFromLatestBackup("tmp/rocksdb_backup", "tmp/rocksdb_backup", new RestoreOptions(true));
+        } catch (RocksDBException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void loadBackup(long id) {
+        try {
+            BackupEngine backupEngine = BackupEngine.open( Env.getDefault(), new BackupableDBOptions("tmp/rocksdb_backup"));
+            backupEngine.restoreDbFromBackup((int) id, "tmp/rocksdb_backup", "tmp/rocksdb_backup", new RestoreOptions(true));
+        } catch (RocksDBException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
     public void get(Buffer keys, Callback<Buffer> callback) {
         if (!_isConnected) {
             throw new RuntimeException(_connectedError);

@@ -99,4 +99,20 @@ public interface Storage {
      */
     void listen(Callback<Buffer> synCallback);
 
+    /**
+     * Creates a backup of the current database version
+     * @return The id of the newly created backup
+     */
+    long createBackup();
+
+    /**
+     * Loads the latest backup for this database
+     */
+    void loadLatestBackup();
+
+    /**
+     * Loads the backup with the given id
+     * @param id The id of the backup to load
+     */
+    void loadBackup(long id);
 }

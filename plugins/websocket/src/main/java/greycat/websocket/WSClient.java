@@ -410,4 +410,20 @@ public class WSClient implements Storage, TaskExecutor {
         }
         payloadBuf.free();
     }
+
+    @Override
+    public long createBackup() {
+        //@Todo
+        return 0;
+    }
+
+    @Override
+    public void loadLatestBackup() {
+        //@Todo
+    }
+
+    @Override
+    public void loadBackup(long id) {
+        //@Todo
+    }
 }

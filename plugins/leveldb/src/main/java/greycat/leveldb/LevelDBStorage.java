@@ -217,6 +217,23 @@ public class LevelDBStorage implements Storage {
     }
 
     @Override
+    public long createBackup() {
+        // @TODO
+        return 0;
+    }
+
+    @Override
+    public void loadLatestBackup() {
+        // @TODO
+    }
+
+    @Override
+    public void loadBackup(long id) {
+        // @TODO
+    }
+
+
+    @Override
     public void connect(Graph graph, Callback<Boolean> callback) {
         if (isConnected) {
             if (callback != null) {

@@ -165,4 +165,20 @@ public class MockStorage implements Storage {
         updates.add(synCallback);
     }
 
+    @Override
+    public long createBackup() {
+        //@Todo
+        return 0;
+    }
+
+    @Override
+    public void loadLatestBackup() {
+        //@Todo
+    }
+
+    @Override
+    public void loadBackup(long id) {
+        //@Todo
+    }
+
 }
