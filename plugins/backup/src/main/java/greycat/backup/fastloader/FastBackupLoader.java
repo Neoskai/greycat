@@ -16,6 +16,7 @@
 package greycat.backup.fastloader;
 
 import com.google.common.base.CharMatcher;
+import greycat.BackupOptions;
 import greycat.Graph;
 import greycat.GraphBuilder;
 import greycat.backup.tools.FileKey;
@@ -30,8 +31,6 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import static greycat.Constants.POOLSIZE;
 
 public class FastBackupLoader {
 
@@ -99,7 +98,7 @@ public class FastBackupLoader {
 
         loadFileFromSequence(_folderPath, initialStamp, endStamp);
 
-        ExecutorService es = Executors.newFixedThreadPool(POOLSIZE);
+        ExecutorService es = Executors.newFixedThreadPool(BackupOptions.poolSize());
         // For each shard
         for(Integer shardKey :_fileMap.keySet()){
             es.execute(new Runnable() {
@@ -134,7 +133,7 @@ public class FastBackupLoader {
 
         loadFileFromSequence(_folderPath, initialStamp, endStamp);
 
-        ExecutorService es = Executors.newFixedThreadPool(POOLSIZE);
+        ExecutorService es = Executors.newFixedThreadPool(BackupOptions.poolSize());
         // For each shard
         for(Integer shardKey :_fileMap.keySet()){
             es.execute(new Runnable() {
@@ -165,7 +164,7 @@ public class FastBackupLoader {
 
         loadFiles(_folderPath);
 
-        ExecutorService es = Executors.newFixedThreadPool(POOLSIZE);
+        ExecutorService es = Executors.newFixedThreadPool(BackupOptions.poolSize());
         for(Integer shardKey :_fileMap.keySet()){
             es.execute(new Runnable() {
                 @Override

@@ -19,6 +19,7 @@ import com.google.common.base.CharMatcher;
 import com.spotify.sparkey.Sparkey;
 import com.spotify.sparkey.SparkeyLogIterator;
 import com.spotify.sparkey.SparkeyReader;
+import greycat.BackupOptions;
 import greycat.Graph;
 import greycat.GraphBuilder;
 import greycat.backup.tools.FileKey;
@@ -39,9 +40,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import static greycat.Constants.POOLSIZE;
-import static greycat.Constants.THREADPOOL;
 
 public class BackupLoader {
     private Graph _graph;
@@ -80,16 +78,16 @@ public class BackupLoader {
         loadNodes();
         System.out.println("Ended node loading");
 
-        ExecutorService es = Executors.newFixedThreadPool(THREADPOOL);
+        ExecutorService es = Executors.newFixedThreadPool(BackupOptions.threadPool());
         for (Long id: _nodes.keySet()){
-            int currentPool = Math.toIntExact(id%POOLSIZE);
+            int currentPool = Math.toIntExact(id% BackupOptions.poolSize());
             if( _fileMap.get(currentPool) == null || _nodes.get(id) == null){
                 continue;
             }
             es.execute(new Runnable() {
                 @Override
                 public void run() {
-                    NodeLoader loader = new NodeLoader(id, _nodes.get(id), _fileMap.get(Math.toIntExact(id%POOLSIZE)));
+                    NodeLoader loader = new NodeLoader(id, _nodes.get(id), _fileMap.get(Math.toIntExact(id%BackupOptions.poolSize())));
                     loader.run(_graph);
                     _graph.save(null);
                 }
@@ -120,9 +118,9 @@ public class BackupLoader {
         loadFileFromSequence(_folderPath, initialStamp, endStamp);
         loadNodes();
 
-        ExecutorService es = Executors.newFixedThreadPool(THREADPOOL);
+        ExecutorService es = Executors.newFixedThreadPool(BackupOptions.threadPool());
         for (Long id: _nodes.keySet()){
-            int currentPool = Math.toIntExact(id%POOLSIZE);
+            int currentPool = Math.toIntExact(id%BackupOptions.poolSize());
 
             if(_fileMap.get(currentPool) == null || _nodes.get(id) == null){
                 continue;
@@ -159,13 +157,13 @@ public class BackupLoader {
         loadFileFromSequence(_folderPath, initialStamp, endStamp);
         loadNodes();
 
-        int currentPool = Math.toIntExact(nodeId%POOLSIZE);
+        int currentPool = Math.toIntExact(nodeId%BackupOptions.poolSize());
         if(! (_fileMap.get(currentPool) == null || _nodes.get(nodeId) == null) ){
-            ExecutorService es = Executors.newFixedThreadPool(THREADPOOL);
+            ExecutorService es = Executors.newFixedThreadPool(BackupOptions.threadPool());
             es.execute(new Runnable() {
                 @Override
                 public void run() {
-                    NodeLoader loader = new NodeLoader(nodeId, _nodes.get(nodeId), _fileMap.get(Math.toIntExact(nodeId%POOLSIZE)));
+                    NodeLoader loader = new NodeLoader(nodeId, _nodes.get(nodeId), _fileMap.get(Math.toIntExact(nodeId%BackupOptions.poolSize())));
                     loader.run(_graph);
                 }
             });
@@ -192,16 +190,16 @@ public class BackupLoader {
         loadFiles(_folderPath);
         loadNodes();
 
-        int currentPool = Math.toIntExact(nodeId%POOLSIZE);
+        int currentPool = Math.toIntExact(nodeId%BackupOptions.poolSize());
         if(_fileMap.get(currentPool) == null || _nodes.get(nodeId) == null){
             return _graph;
         }
 
-        ExecutorService es = Executors.newFixedThreadPool(THREADPOOL);
+        ExecutorService es = Executors.newFixedThreadPool(BackupOptions.threadPool());
         es.execute(new Runnable() {
             @Override
             public void run() {
-                NodeLoader loader = new NodeLoader(nodeId, _nodes.get(nodeId), _fileMap.get(Math.toIntExact(nodeId%POOLSIZE)));
+                NodeLoader loader = new NodeLoader(nodeId, _nodes.get(nodeId), _fileMap.get(Math.toIntExact(nodeId%BackupOptions.poolSize())));
                 loader.run(_graph);
             }
         });
@@ -219,7 +217,7 @@ public class BackupLoader {
      */
     private void loadNodes(){
         try {
-            ExecutorService es = Executors.newFixedThreadPool(POOLSIZE);
+            ExecutorService es = Executors.newFixedThreadPool(BackupOptions.poolSize());
             // For each shard in this system
             for(Integer key :_fileMap.keySet()){
                 //We load information about nodes in parallel

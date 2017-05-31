@@ -31,8 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static greycat.Constants.SAVEPOINT;
-
 public class ShardLoader extends Thread{
     private Map<Long,FileKey> _fileMap;
 
@@ -103,7 +101,7 @@ public class ShardLoader extends Thread{
                                 }
                             });
 
-                            if(storageKey.eventId() % SAVEPOINT == 0){
+                            if(storageKey.eventId() % BackupOptions.savePoint()== 0){
                                 g.save(null);
                             }
                             _backupStatus.put(storageKey.id(), (storageKey.eventId()+1)); // Increasing the current expected event by 1

@@ -28,8 +28,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
-import static greycat.Constants.SAVEPOINT;
-
 public class NodeLoader extends Thread{
     private long _nodeId;
     private SparkeyReader _reader;
@@ -87,7 +85,7 @@ public class NodeLoader extends Thread{
 
         while(!backupEnded){
             try {
-                if(eventId%SAVEPOINT == 0){
+                if(eventId%BackupOptions.savePoint() == 0){
                     g.save(null);
                 }
 

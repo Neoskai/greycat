@@ -19,11 +19,9 @@ package greycat.backup.tools;
 import greycat.Constants;
 import greycat.Type;
 import greycat.struct.Buffer;
-import greycat.struct.LongArray;
 import greycat.utility.Base64;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.ObjectInputStream;
 
 /**
