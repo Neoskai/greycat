@@ -269,19 +269,19 @@ public abstract class AbstractTimeTreeTest {
 
     }
 
-    /*
+/*
     @Test
     public void loadTest() {
-        ChunkSpace space = factory.newSpace(100, null);
+        ChunkSpace space = factory.newSpace(1000000, -1, null, false);
         TimeTreeChunk chunk = (TimeTreeChunk) space.createAndMark(ChunkType.TIME_TREE_CHUNK, 0, 0, 0);
-
         Buffer buffer = factory.newBuffer();
-        buffer.writeAll("W|////////9,q5RzhfA,q5RzwIe,q5Rz+x+,q5R0Nba,q5R0cE4,q5R0quU,q5R05Xs,q5R1IBK,q5R1Wqo,q5R1lUM".getBytes());
+        buffer.writeAll("Eu|fQ|qe75kLE:qe7+O1E:qe7+AOi:qe7+YTk:qe8DbUM:qe8+Dxg:qe8+M/y:qe8+LEK:qe8+T2k:qe8+SgS:qe8+HyW:qe8+Z7A:qe8+JSK:qe8+Cyy:qe89/fM:qe894TG:qe8+QAg:qe89osI:qe8+CVS:qe892m2:qe9lQqu:qe9lG3C:qe9k7Go:qe9k24k:qe9lM86:qe+BBso:qe+A+Cg:qe+A5bk:qe+BKXk:qe+A/1m:qe+A8yK:qe+AzLe:qe+A1OW:qe+OZTa:qe+Nwz8:qe+OJTA:qe+OGxC:qe+tg6g:qe+te3G:qe+tUKu:qe+tI48:qe+thf8:qe+s92k:qe+tVm4:qe+tWeA:qffIOY6:qffMhWm:qffQB8w:qffVBUc:qffVees:qfgTlQK:qfhrxBK:qfh5kRS:qfh/gB4:qfiFC/a:qfiMVwU:qfiRVC4:qfiVMJm:qfiWiJa:qfifhe+:qfiiDPk:qfikGBe:qfipkk4:qfirxdw:qfiw77+:qfi1kQI:qfi6Slm:qfjBY4C:qfjDvmw:qfjF9/0:qfjK6eY:qfjNg6e:qfjTukE:qfjZf9Y:qfjeHeu:qfjj3Xc:qfjpExI:qfjtip0:qfjxb/y:qfjzLly:qfj3qvo:qfj54AU:qfj82Ii:qfkBdIc:qfkEGtk:qfkFuUi:qfkIBTS:qfkIDKY:qfkJNHQ:qfkK9z+:qfkO2Tc:qfkTEug:qfkWKQu:qfkYdBS:qfkbH6y:qfkb8uy:qfkhYeU:qfkjlZK:qfkjkgm:qfkqX68:qfktGzI:qfkvTmS:qfk0ppe:qfk2OsM:qfk5r+g:qfk+clY:qflA9xo:qflFSgE:qflIqNC:qflNori:qflRaDY:qflV0iI:qflYTFg:qflcNY4:qflfOKs:qflhtwc:qflhOUQ:qflhcda:qflhyRw:qflhcYK:qflhR8y:qflhBne:qflrzGy:qfltBfG:qfl19Qi:qfl1oZI:qfl6h9s:qfl6xzG:qfl8vAO:qfmA9Yy:qfmFAZ6:qfmFMsq:qfmFGEy:qfmHDpC:qfmJMbQ:qfmLaLG:qfmOapA:qfmS8kI:qfmVDiI:qfmXpxS:qfmeS+u:qfmelAS:qfmhoto:qfmmnTs:qfmovwg:qfmpG2w:qfmp3oa:qfmqLea:qfmp6a+:qfmp6yg:qfmpoEu:".getBytes());
         chunk.load(buffer);
+
+        chunk.insert(1460076282850L);
 
         space.free(chunk);
         space.freeAll();
-    }
-*/
+    }*/
 
 }

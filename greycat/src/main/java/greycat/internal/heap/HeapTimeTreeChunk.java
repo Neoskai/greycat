@@ -319,7 +319,8 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
     }
 
     private void setLeft(int p_currentIndex, int p_paramIndex) {
-        _back_meta[p_currentIndex * META_SIZE] = p_paramIndex;
+            _back_meta[p_currentIndex * META_SIZE] = p_paramIndex;
+
     }
 
     private int right(int p_currentIndex) {
@@ -330,7 +331,7 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
     }
 
     private void setRight(int p_currentIndex, int p_paramIndex) {
-        _back_meta[(p_currentIndex * META_SIZE) + 1] = p_paramIndex;
+            _back_meta[(p_currentIndex * META_SIZE) + 1] = p_paramIndex;
     }
 
     private int parent(int p_currentIndex) {
@@ -341,7 +342,7 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
     }
 
     private void setParent(int p_currentIndex, int p_paramIndex) {
-        _back_meta[(p_currentIndex * META_SIZE) + 2] = p_paramIndex;
+            _back_meta[(p_currentIndex * META_SIZE) + 2] = p_paramIndex;
     }
 
     private boolean color(int p_currentIndex) {
@@ -352,9 +353,11 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
     }
 
     private void setColor(int p_currentIndex, boolean p_paramIndex) {
-        _colors[p_currentIndex] = p_paramIndex;
+            _colors[p_currentIndex] = p_paramIndex;
+
     }
 
+    /*
     private int grandParent(int p_currentIndex) {
         if (p_currentIndex == -1) {
             return -1;
@@ -364,10 +367,10 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
         } else {
             return -1;
         }
-    }
+    }*/
 
     private int sibling(int p_currentIndex) {
-        if (parent(p_currentIndex) == -1) {
+        if (p_currentIndex == -1 && parent(p_currentIndex) == -1) {
             return -1;
         } else {
             if (p_currentIndex == left(parent(p_currentIndex))) {
@@ -379,7 +382,7 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
     }
 
     private int uncle(int p_currentIndex) {
-        if (parent(p_currentIndex) != -1) {
+        if (p_currentIndex != -1 && parent(p_currentIndex) != -1) {
             return sibling(parent(p_currentIndex));
         } else {
             return -1;
@@ -453,8 +456,7 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
             }
         }
         return n;
-    }
-    */
+    }*/
 
 
     private int internal_previousOrEqual_index(long p_key) {
@@ -536,6 +538,7 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
         }
         setLeft(child, n);
         setParent(n, child);
+
     }
 
     private void rotateRight(int n) {
@@ -556,6 +559,7 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
         }
         setRight(child, n);
         setParent(n, child);
+
     }
 
     @SuppressWarnings("Duplicates")
@@ -583,7 +587,7 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
             boolean left = false;
             while (leaf != -1) {
                 father = leaf;
-                if(_k[father] == p_key){
+                if (_k[father] == p_key) {
                     return false;
                 }
                 if (key(father) < p_key) {
@@ -619,9 +623,9 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
                     if (father == left(greatFather)) {
                         if (nodeStudy == right(father)) {
                             nodeStudy = father;
-                            father = greatFather;
-                            greatFather = parent(father);
                             rotateLeft(nodeStudy);
+                            father = parent(nodeStudy);
+                            greatFather = parent(father);
                         }
                         setColor(father, true);
                         setColor(greatFather, false);
@@ -629,9 +633,9 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
                     } else {
                         if (nodeStudy == left(father)) {
                             nodeStudy = father;
-                            father = greatFather;
-                            greatFather = parent(father);
                             rotateRight(nodeStudy);
+                            father = parent(nodeStudy);
+                            greatFather = parent(father);
                         }
                         setColor(father, true);
                         setColor(greatFather, false);
@@ -652,5 +656,6 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
             _space.notifyUpdate(_index);
         }
     }
+
 
 }

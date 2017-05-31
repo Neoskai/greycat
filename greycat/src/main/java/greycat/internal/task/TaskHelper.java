@@ -44,7 +44,6 @@ public class TaskHelper {
         if (toFLat instanceof BaseNode) {
             return new Node[]{(Node) toFLat};
         }
-
         if (toFLat instanceof Object[]) {
             Object[] resAsArray = (Object[]) toFLat;
             Node[] nodes = new Node[0];
@@ -95,31 +94,22 @@ public class TaskHelper {
             builder.writeString("\"");
         }
         boolean escapteActivated = false;
-        boolean previousIsEscape = false;
+        //boolean previousIsEscape = false;
         if (param != null) {
             for (int i = 0; i < param.length(); i++) {
                 final char current = param.charAt(i);
-                if (current == '\r' || current == '\n') {
+                if ((singleQuote && current == '\'') || (!singleQuote && current == '\"') || current == '\\') {
                     if (!escapteActivated) {
                         escapteActivated = true;
                         builder.writeString(param.substring(0, i));
                     }
-                    //simply ignore the '\r'
-                } else if ((singleQuote && current == '\'') || (!singleQuote && current == '\"')) {
-                    if (!escapteActivated) {
-                        escapteActivated = true;
-                        builder.writeString(param.substring(0, i));
-                    }
-                    if (!previousIsEscape) {
-                        builder.writeChar('\\');
-                    }
+                    builder.writeChar('\\');
                     builder.writeChar(param.charAt(i));
                 } else {
                     if (escapteActivated) {
                         builder.writeChar(param.charAt(i));
                     }
                 }
-                previousIsEscape = (current == '\\');
             }
         }
         if (!escapteActivated) {

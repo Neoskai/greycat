@@ -642,9 +642,9 @@ class HeapTimeTreeDValueChunk implements TimeTreeDValueChunk {
                     if (father == left(greatFather)) {
                         if (nodeStudy == right(father)) {
                             nodeStudy = father;
-                            father = greatFather;
-                            greatFather = parent(father);
                             rotateLeft(nodeStudy);
+                            father = parent(nodeStudy);
+                            greatFather = parent(father);
                         }
                         setColor(father, true);
                         setColor(greatFather, false);
@@ -652,9 +652,9 @@ class HeapTimeTreeDValueChunk implements TimeTreeDValueChunk {
                     } else {
                         if (nodeStudy == left(father)) {
                             nodeStudy = father;
-                            father = greatFather;
-                            greatFather = parent(father);
                             rotateRight(nodeStudy);
+                            father = parent(nodeStudy);
+                            greatFather = parent(father);
                         }
                         setColor(father, true);
                         setColor(greatFather, false);

@@ -27,13 +27,15 @@ import org.junit.Test;
 public class HiddenClone {
 
     @Test
-    public void test(){
+    public void test() {
         Graph g = GraphBuilder.newBuilder().withScheduler(new NoopScheduler()).build();
         g.connect(null);
-        Node n = g.newNode(0,0);
-        n.set("name", Type.STRING,"hello");
-        Node clone = ((BaseNode)n).createClone();
-        Assert.assertEquals(clone.get("name"),n.get("name"));
+        Node n = g.newNode(0, 0);
+        n.set("name", Type.STRING, "hello");
+        Node clone = ((BaseNode) n).createClone();
+        Assert.assertEquals(clone.get("name"), n.get("name"));
+        clone.free();
+        n.free();
     }
 
 }

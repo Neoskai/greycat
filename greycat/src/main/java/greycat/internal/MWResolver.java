@@ -460,7 +460,6 @@ final class MWResolver implements Resolver {
                         for (int i = 0; i < idsSize; i++) {
                             if (theNodeWorldOrders[i] != null) {
                                 isEmpty[0] = false;
-                                final WorldOrderChunk woc = (WorldOrderChunk) theNodeWorldOrders[i];
                                 keys[i * Constants.KEY_SIZE] = ChunkType.SUPER_TIME_TREE_CHUNK;
                                 keys[(i * Constants.KEY_SIZE) + 1] = selfPointer.resolve_world(globalWorldOrderChunk, (WorldOrderChunk) theNodeWorldOrders[i], reqTime, world);
                                 keys[(i * Constants.KEY_SIZE) + 2] = 0;
@@ -480,7 +479,6 @@ final class MWResolver implements Resolver {
                                         isEmpty[0] = true;
                                         for (int i = 0; i < idsSize; i++) {
                                             if (theNodeSuperTimeTrees[i] != null) {
-                                                final WorldOrderChunk woc = (WorldOrderChunk) theNodeWorldOrders[i];
                                                 final long closestSuperTime = ((SuperTimeTreeChunk) theNodeSuperTimeTrees[i]).previousOrEqual(reqTime);
                                                 if (closestSuperTime == Constants.NULL_LONG) {
                                                     keys[i * Constants.KEY_SIZE] = -1; //skip
@@ -1300,6 +1298,7 @@ final class MWResolver implements Resolver {
             _space.unmark(newSuperTimeTree.index());
         }
         nodeWorldOrder.unlock();
+        castedNode.cacheUnlock();
     }
 
     @Override
@@ -1383,6 +1382,7 @@ final class MWResolver implements Resolver {
                 if (superTimeTree.lastKey() == timeTree.time()) {
                     superTimeTree.setLastValue(timeTree.size());
                 } else {
+                    castedNode.cacheUnlock();
                     throw new RuntimeException("GreyCat internal error");
                 }
             } else {

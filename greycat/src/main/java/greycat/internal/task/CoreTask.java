@@ -329,6 +329,25 @@ public class CoreTask implements Task {
         return this;
     }
 
+    private String readString(final CoreTaskReader reader, final int begin, final int end) {
+        StringBuilder buf = new StringBuilder();
+        boolean previousIsBS = false;
+        for (int i = begin; i < end; i++) {
+            char loopChar = reader.charAt(i);
+            if(previousIsBS){
+                buf.append(loopChar);
+                previousIsBS = false;
+            } else {
+                if(loopChar == '\\'){
+                    previousIsBS = true;
+                } else {
+                    buf.append(loopChar);
+                }
+            }
+        }
+        return buf.toString();
+    }
+
     private void sub_parse(final CoreTaskReader reader, final Graph graph, final Map<Integer, Task> contextTasks) {
         final ActionRegistry registry = graph.actionRegistry();
         int cursor = 0;
@@ -337,6 +356,7 @@ public class CoreTask implements Task {
         String actionName = null;
         boolean isClosed = false;
         boolean isEscaped = false;
+        boolean needPostProcessing = false;
         //Param storage
         int paramsCapacity = 0;
         String[] params = null;
@@ -354,6 +374,7 @@ public class CoreTask implements Task {
                     while (cursor < flatSize) {
                         char loopChar = reader.charAt(cursor);
                         if (loopChar == '\\') {
+                            needPostProcessing = true;
                             previousBackS = true;
                         } else if (current == loopChar && !previousBackS) {
                             break;
@@ -370,6 +391,7 @@ public class CoreTask implements Task {
                     }
                     actionName = null;
                     isEscaped = false;
+                    needPostProcessing = false;
                     previous = cursor + 1;
                     paramsCapacity = 0;
                     params = null;
@@ -384,6 +406,7 @@ public class CoreTask implements Task {
                     subTaskMode = true;
                     actionName = null;
                     isEscaped = false;
+                    needPostProcessing = false;
                     previous = cursor + 1;
                     paramsCapacity = 0;
                     params = null;
@@ -400,10 +423,14 @@ public class CoreTask implements Task {
                         lastParamExtracted = previousTaskId;
                         previousTaskId = null;
                     } else {
-                        if (isEscaped) {
-                            lastParamExtracted = reader.extract(previous + 1, cursor - 1);
+                        if (needPostProcessing) {
+                            lastParamExtracted = readString(reader, previous + 1, cursor - 1);
                         } else {
-                            lastParamExtracted = reader.extract(previous, cursor);
+                            if (isEscaped) {
+                                lastParamExtracted = reader.extract(previous + 1, cursor - 1);
+                            } else {
+                                lastParamExtracted = reader.extract(previous, cursor);
+                            }
                         }
                     }
                     if (lastParamExtracted.length() > 0) {
@@ -441,10 +468,14 @@ public class CoreTask implements Task {
                         paramExtracted = previousTaskId;
                         previousTaskId = null;
                     } else {
-                        if (isEscaped) {
-                            paramExtracted = reader.extract(previous + 1, cursor - 1);
+                        if (needPostProcessing) {
+                            paramExtracted = readString(reader, previous + 1, cursor - 1);
                         } else {
-                            paramExtracted = reader.extract(previous, cursor);
+                            if (isEscaped) {
+                                paramExtracted = reader.extract(previous + 1, cursor - 1);
+                            } else {
+                                paramExtracted = reader.extract(previous, cursor);
+                            }
                         }
                     }
                     if (paramExtracted.length() > 0) {
@@ -465,6 +496,7 @@ public class CoreTask implements Task {
                     }
                     previous = cursor + 1;
                     isEscaped = false;
+                    needPostProcessing = false;
                     break;
                 case Constants.SUB_TASK_OPEN:
                     if (cursor > 0 && cursor + 1 < flatSize && reader.charAt(cursor + 1) != Constants.SUB_TASK_OPEN && reader.charAt(cursor - 1) != Constants.SUB_TASK_OPEN) {

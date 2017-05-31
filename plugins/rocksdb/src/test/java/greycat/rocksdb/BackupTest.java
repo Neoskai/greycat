@@ -15,7 +15,6 @@
  */
 package greycat.rocksdb;
 
-import com.sun.scenario.effect.impl.sw.java.JSWBlend_GREENPeer;
 import greycat.*;
 import greycat.scheduler.NoopScheduler;
 import org.junit.Test;

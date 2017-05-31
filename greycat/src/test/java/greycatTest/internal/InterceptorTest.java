@@ -25,7 +25,7 @@ import org.junit.Test;
 
 public class InterceptorTest {
 
-    @Test
+    //@Test
     public void intercept_chunk_read() {
         Graph g = GraphBuilder.newBuilder().withScheduler(new NoopScheduler()).build();
         g.connect(null);
