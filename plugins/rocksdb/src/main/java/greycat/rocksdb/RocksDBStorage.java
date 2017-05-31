@@ -61,10 +61,13 @@ public class RocksDBStorage implements Storage {
     @Override
     public long createBackup() {
         try {
-            BackupEngine backupEngine = BackupEngine.open( Env.getDefault(), new BackupableDBOptions("tmp/rocksdb_backup"));
-            backupEngine.createNewBackup(_db);
+            File backupFolder = new File(_storagePath + "/backup");
+            if(!backupFolder.exists()){
+                backupFolder.mkdir();
+            }
 
-            System.out.println("Created backup: " + backupEngine.getBackupInfo());
+            BackupEngine backupEngine = BackupEngine.open( Env.getDefault(), new BackupableDBOptions( _storagePath + "/backup"));
+            backupEngine.createNewBackup(_db);
 
             BackupInfo info = backupEngine.getBackupInfo().get(backupEngine.getBackupInfo().size()-1);
 
@@ -72,14 +75,14 @@ public class RocksDBStorage implements Storage {
         } catch (RocksDBException e) {
             e.printStackTrace();
         }
-        return 0;
+        return -1;
     }
 
     @Override
     public void loadLatestBackup() {
         try {
-            BackupEngine backupEngine = BackupEngine.open( Env.getDefault(), new BackupableDBOptions("tmp/rocksdb_backup"));
-            backupEngine.restoreDbFromLatestBackup("tmp/rocksdb_backup", "tmp/rocksdb_backup", new RestoreOptions(true));
+            BackupEngine backupEngine = BackupEngine.open( Env.getDefault(), new BackupableDBOptions(_storagePath + "/backup"));
+            backupEngine.restoreDbFromLatestBackup(_storagePath + "/data", _storagePath + "/data", new RestoreOptions(true));
         } catch (RocksDBException e) {
             e.printStackTrace();
         }
@@ -88,8 +91,8 @@ public class RocksDBStorage implements Storage {
     @Override
     public void loadBackup(long id) {
         try {
-            BackupEngine backupEngine = BackupEngine.open( Env.getDefault(), new BackupableDBOptions("tmp/rocksdb_backup"));
-            backupEngine.restoreDbFromBackup((int) id, "tmp/rocksdb_backup", "tmp/rocksdb_backup", new RestoreOptions(true));
+            BackupEngine backupEngine = BackupEngine.open( Env.getDefault(), new BackupableDBOptions(_storagePath + "/backup"));
+            backupEngine.restoreDbFromBackup((int) id, _storagePath + "/data", _storagePath + "/data", new RestoreOptions(true));
         } catch (RocksDBException e) {
             e.printStackTrace();
         }
