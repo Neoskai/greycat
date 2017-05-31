@@ -17,6 +17,7 @@ package greycat.internal;
 
 import greycat.Callback;
 import greycat.Graph;
+import greycat.struct.BackupEntry;
 import greycat.plugin.Storage;
 import greycat.struct.Buffer;
 
@@ -71,6 +72,24 @@ public class ReadOnlyStorage implements Storage {
     }
 
     @Override
+    public BackupEntry createBackup() {
+        // @TODO
+        return null;
+    }
+
+    @Override
+    public BackupEntry loadLatestBackup() {
+        // @TODO
+        return null;
+    }
+
+    @Override
+    public BackupEntry loadBackup(long id) {
+        // @TODO
+        return null;
+    }
+
+    @Override
     public void lock(Callback<Buffer> callback) {
         wrapped.lock(callback);
     }
@@ -80,20 +99,5 @@ public class ReadOnlyStorage implements Storage {
         wrapped.unlock(previousLock, callback);
     }
 
-    @Override
-    public long createBackup() {
-        //@Todo
-        return 0;
-    }
-
-    @Override
-    public void loadLatestBackup() {
-        //@Todo
-    }
-
-    @Override
-    public void loadBackup(long id) {
-        //@Todo
-    }
     
 }

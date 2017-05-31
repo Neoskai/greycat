@@ -17,6 +17,7 @@ package greycatTest.internal;
 
 import greycat.Constants;
 import greycat.Graph;
+import greycat.struct.BackupEntry;
 import greycat.internal.CoreConstants;
 import greycat.plugin.Storage;
 import greycat.struct.Buffer;
@@ -166,19 +167,21 @@ public class MockStorage implements Storage {
     }
 
     @Override
-    public long createBackup() {
-        //@Todo
-        return 0;
+    public BackupEntry createBackup() {
+        // @TODO
+        return null;
     }
 
     @Override
-    public void loadLatestBackup() {
-        //@Todo
+    public BackupEntry loadLatestBackup() {
+        // @TODO
+        return null;
     }
 
     @Override
-    public void loadBackup(long id) {
-        //@Todo
+    public BackupEntry loadBackup(long id) {
+        // @TODO
+        return null;
     }
 
 }

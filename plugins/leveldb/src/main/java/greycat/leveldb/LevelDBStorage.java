@@ -18,6 +18,7 @@ package greycat.leveldb;
 import greycat.Callback;
 import greycat.Constants;
 import greycat.Graph;
+import greycat.struct.BackupEntry;
 import greycat.plugin.Storage;
 import greycat.struct.Buffer;
 import greycat.struct.BufferIterator;
@@ -217,21 +218,22 @@ public class LevelDBStorage implements Storage {
     }
 
     @Override
-    public long createBackup() {
+    public BackupEntry createBackup() {
         // @TODO
-        return 0;
+        return null;
     }
 
     @Override
-    public void loadLatestBackup() {
+    public BackupEntry loadLatestBackup() {
         // @TODO
+        return null;
     }
 
     @Override
-    public void loadBackup(long id) {
+    public BackupEntry loadBackup(long id) {
         // @TODO
+        return null;
     }
-
 
     @Override
     public void connect(Graph graph, Callback<Boolean> callback) {

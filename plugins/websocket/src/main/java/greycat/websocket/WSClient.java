@@ -16,6 +16,7 @@
 package greycat.websocket;
 
 import greycat.*;
+import greycat.struct.BackupEntry;
 import greycat.base.BaseTaskResult;
 import greycat.internal.task.CoreProgressReport;
 import greycat.plugin.TaskExecutor;
@@ -412,18 +413,20 @@ public class WSClient implements Storage, TaskExecutor {
     }
 
     @Override
-    public long createBackup() {
-        //@Todo
-        return 0;
+    public BackupEntry createBackup() {
+        // @TODO
+        return null;
     }
 
     @Override
-    public void loadLatestBackup() {
-        //@Todo
+    public BackupEntry loadLatestBackup() {
+        // @TODO
+        return null;
     }
 
     @Override
-    public void loadBackup(long id) {
-        //@Todo
+    public BackupEntry loadBackup(long id) {
+        // @TODO
+        return null;
     }
 }

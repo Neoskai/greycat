@@ -360,17 +360,19 @@ export class WSClient implements greycat.plugin.Storage {
     this.ws.send(flatData);
   }
 
-  createBackup(): number{
+  createBackup(): greycat.struct.BackupEntry{
     // @TODO
-    return 0;
+    return null;
   }
 
-  loadBackup(id: number): void{
+  loadBackup(id: number): greycat.struct.BackupEntry{
     // @TODO
+    return null;
   }
 
-  loadLatestBackup(): void{
+  loadLatestBackup(): greycat.struct.BackupEntry{
     // @TODO
+    return null;
   }
 
 

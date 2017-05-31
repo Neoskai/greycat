@@ -16,9 +16,9 @@
 package greycat.plugin;
 
 import greycat.Graph;
+import greycat.struct.BackupEntry;
 import greycat.struct.Buffer;
 import greycat.Callback;
-import greycat.utility.Tuple;
 
 /**
  * Storage defines the interface any storage solution must comply with to be plugged to GreyCat.
@@ -103,16 +103,16 @@ public interface Storage {
      * Creates a backup of the current database version
      * @return The id of the newly created backup
      */
-    long createBackup();
+    BackupEntry createBackup();
 
     /**
      * Loads the latest backup for this database
      */
-    void loadLatestBackup();
+    BackupEntry loadLatestBackup();
 
     /**
      * Loads the backup with the given id
      * @param id The id of the backup to load
      */
-    void loadBackup(long id);
+    BackupEntry loadBackup(long id);
 }

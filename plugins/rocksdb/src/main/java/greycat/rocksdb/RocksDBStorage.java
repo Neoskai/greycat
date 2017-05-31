@@ -18,6 +18,7 @@ package greycat.rocksdb;
 import greycat.Callback;
 import greycat.Constants;
 import greycat.Graph;
+import greycat.struct.BackupEntry;
 import greycat.plugin.Storage;
 import greycat.struct.Buffer;
 import greycat.struct.BufferIterator;
@@ -28,7 +29,6 @@ import org.rocksdb.*;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class RocksDBStorage implements Storage {
 
@@ -59,7 +59,7 @@ public class RocksDBStorage implements Storage {
     }
 
     @Override
-    public long createBackup() {
+    public BackupEntry createBackup() {
         try {
             File backupFolder = new File(_storagePath + "/backup");
             if(!backupFolder.exists()){
@@ -70,32 +70,56 @@ public class RocksDBStorage implements Storage {
             backupEngine.createNewBackup(_db);
 
             BackupInfo info = backupEngine.getBackupInfo().get(backupEngine.getBackupInfo().size()-1);
+            BackupEntry entry = new BackupEntry();
 
-            return info.backupId();
+            entry.setId(info.backupId());
+            entry.setTimestamp(info.timestamp());
+
+            return entry;
         } catch (RocksDBException e) {
             e.printStackTrace();
         }
-        return -1;
+        return null;
     }
 
     @Override
-    public void loadLatestBackup() {
+    public BackupEntry loadLatestBackup() {
         try {
             BackupEngine backupEngine = BackupEngine.open( Env.getDefault(), new BackupableDBOptions(_storagePath + "/backup"));
             backupEngine.restoreDbFromLatestBackup(_storagePath + "/data", _storagePath + "/data", new RestoreOptions(true));
+
+            BackupInfo info = backupEngine.getBackupInfo().get(backupEngine.getBackupInfo().size()-1);
+            BackupEntry entry = new BackupEntry();
+
+            entry.setId(info.backupId());
+            entry.setTimestamp(info.timestamp());
+
+            return entry;
         } catch (RocksDBException e) {
             e.printStackTrace();
         }
+
+        return null;
     }
 
     @Override
-    public void loadBackup(long id) {
+    public BackupEntry loadBackup(long id) {
         try {
             BackupEngine backupEngine = BackupEngine.open( Env.getDefault(), new BackupableDBOptions(_storagePath + "/backup"));
             backupEngine.restoreDbFromBackup((int) id, _storagePath + "/data", _storagePath + "/data", new RestoreOptions(true));
+
+            BackupInfo info = backupEngine.getBackupInfo().get((int) id);
+            BackupEntry entry = new BackupEntry();
+
+            entry.setId(info.backupId());
+            entry.setTimestamp(info.timestamp());
+
+            return entry;
         } catch (RocksDBException e) {
             e.printStackTrace();
         }
+
+        return null;
     }
 
     @Override

@@ -16,6 +16,7 @@
 package greycat.rocksdb;
 
 import greycat.*;
+import greycat.struct.BackupEntry;
 import greycat.scheduler.NoopScheduler;
 import org.junit.Test;
 
@@ -63,8 +64,8 @@ public class BackupTest {
             }
         });
 
-        long id = graph.storage().createBackup();
-        assertNotEquals(-1, id);
+        BackupEntry entry = graph.storage().createBackup();
+        assertNotEquals(null, entry);
 
         graph.disconnect(null);
 
