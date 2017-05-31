@@ -97,6 +97,8 @@ public class RocksDBStorage implements Storage {
             return entry;
         } catch (RocksDBException e) {
             e.printStackTrace();
+        } catch (IllegalArgumentException arg){
+            System.err.println("No backup found");
         }
 
         return null;
@@ -117,6 +119,8 @@ public class RocksDBStorage implements Storage {
             return entry;
         } catch (RocksDBException e) {
             e.printStackTrace();
+        } catch (IllegalArgumentException arg){
+            System.err.println("No backup found");
         }
 
         return null;
