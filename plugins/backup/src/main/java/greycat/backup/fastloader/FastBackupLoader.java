@@ -37,11 +37,13 @@ public class FastBackupLoader {
     private Graph _graph;
     private String _folderPath;
     private Map<Integer, Map<Long, FileKey>> _fileMap;
+    
+    private int _poolSize;
 
     public FastBackupLoader(String folderPath){
         this(folderPath,
                 new GraphBuilder()
-                        //.withStorage(new RocksDBStorage("data"))
+                        .withStorage(new RocksDBStorage("data"))
                         .withMemorySize(5000000)
                         .build());
     }
@@ -51,6 +53,8 @@ public class FastBackupLoader {
         _graph = graphToUse;
 
         _fileMap = new HashMap<>();
+        
+        _poolSize = BackupOptions.poolSize();
     }
 
     /**
@@ -98,7 +102,7 @@ public class FastBackupLoader {
 
         loadFileFromSequence(_folderPath, initialStamp, endStamp);
 
-        ExecutorService es = Executors.newFixedThreadPool(BackupOptions.poolSize());
+        ExecutorService es = Executors.newFixedThreadPool(4);
         // For each shard
         for(Integer shardKey :_fileMap.keySet()){
             es.execute(new Runnable() {
@@ -133,7 +137,7 @@ public class FastBackupLoader {
 
         loadFileFromSequence(_folderPath, initialStamp, endStamp);
 
-        ExecutorService es = Executors.newFixedThreadPool(BackupOptions.poolSize());
+        ExecutorService es = Executors.newFixedThreadPool(_poolSize);
         // For each shard
         for(Integer shardKey :_fileMap.keySet()){
             es.execute(new Runnable() {
@@ -164,7 +168,7 @@ public class FastBackupLoader {
 
         loadFiles(_folderPath);
 
-        ExecutorService es = Executors.newFixedThreadPool(BackupOptions.poolSize());
+        ExecutorService es = Executors.newFixedThreadPool(_poolSize);
         for(Integer shardKey :_fileMap.keySet()){
             es.execute(new Runnable() {
                 @Override

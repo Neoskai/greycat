@@ -37,6 +37,8 @@ public class ShardLoader extends Thread{
     private List<Long> _nodeFilter; // Contains all the nodes to backup. If empty or null, backup all nodes
     private Map<Long, Long> _backupStatus; // For each node that we are backing up, contains the last event backed up
 
+    private int _savePoint;
+
     public ShardLoader(Map<Long,FileKey> fileMap){
         this(fileMap, null);
     }
@@ -45,6 +47,8 @@ public class ShardLoader extends Thread{
         _fileMap = fileMap;
         _nodeFilter = nodeFilter;
         _backupStatus = new HashMap<>();
+
+        _savePoint = BackupOptions.savePoint();
     }
 
     public void run(Graph g){
@@ -101,7 +105,7 @@ public class ShardLoader extends Thread{
                                 }
                             });
 
-                            if(storageKey.eventId() % BackupOptions.savePoint()== 0){
+                            if(storageKey.eventId() % _savePoint== 0){
                                 g.save(null);
                             }
                             _backupStatus.put(storageKey.id(), (storageKey.eventId()+1)); // Increasing the current expected event by 1

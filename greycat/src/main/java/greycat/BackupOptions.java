@@ -15,7 +15,6 @@
  */
 package greycat;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -28,16 +27,15 @@ public class BackupOptions {
     public static int poolSize(){
         Properties prop = new Properties();
         InputStream input;
-        try {
 
-            input = new FileInputStream("config.properties");
+        try {
+            input = BackupOptions.class.getClassLoader().getResourceAsStream("config.properties");
             prop.load(input);
 
             return Integer.parseInt(prop.getProperty("poolsize"));
 
-        } catch (IOException ex) {
-            System.err.println("No configuration files");
-
+        } catch (Exception ex) {
+            System.err.println("No configuration file");
         }
 
         return Constants.POOLSIZE;
@@ -46,15 +44,15 @@ public class BackupOptions {
     public static int threadPool(){
         Properties prop = new Properties();
         InputStream input;
-        try {
 
-            input = new FileInputStream("config.properties");
+        try {
+            input = BackupOptions.class.getClassLoader().getResourceAsStream("config.properties");
             prop.load(input);
 
             return Integer.parseInt(prop.getProperty("threadpool"));
 
-        } catch (IOException ex) {
-            System.err.println("No configuration files");
+        } catch (Exception ex) {
+            System.err.println("No configuration file");
         }
 
         return Constants.THREADPOOL;
@@ -63,15 +61,15 @@ public class BackupOptions {
     public static int savePoint(){
         Properties prop = new Properties();
         InputStream input;
-        try {
 
-            input = new FileInputStream("config.properties");
+        try {
+            input = BackupOptions.class.getClassLoader().getResourceAsStream("config.properties");
             prop.load(input);
 
             return Integer.parseInt(prop.getProperty("savepoint"));
 
-        } catch (IOException ex) {
-            System.err.println("No configuration files");
+        } catch (Exception ex) {
+            System.err.println("No configuration file");
         }
 
         return Constants.SAVEPOINT;
@@ -80,15 +78,15 @@ public class BackupOptions {
     public static int maxEntry(){
         Properties prop = new Properties();
         InputStream input;
-        try {
 
-            input = new FileInputStream("config.properties");
+        try {
+            input = BackupOptions.class.getClassLoader().getResourceAsStream("config.properties");
             prop.load(input);
 
             return Integer.parseInt(prop.getProperty("maxentry"));
 
         } catch (IOException ex) {
-            System.err.println("No configuration files");
+            System.err.println("No configuration file");
         }
 
         return Constants.MAXENTRY;
@@ -98,14 +96,13 @@ public class BackupOptions {
         Properties prop = new Properties();
         InputStream input;
         try {
-
-            input = new FileInputStream("config.properties");
+            input = BackupOptions.class.getClassLoader().getResourceAsStream("config.properties");
             prop.load(input);
 
             return Integer.parseInt(prop.getProperty("timelapse"));
 
-        } catch (IOException ex) {
-            System.err.println("No configuration files");
+        } catch (Exception ex) {
+            System.err.println("No configuration file");
         }
 
         return Constants.TIMELAPSEDURATION;

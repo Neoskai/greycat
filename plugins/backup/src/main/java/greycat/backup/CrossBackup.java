@@ -24,6 +24,7 @@ public class CrossBackup {
 
     public static Graph loadBackup(Graph g, String sparkeyPath){
         BackupEntry entry= g.storage().loadLatestBackup();
+
         FastBackupLoader loader = new FastBackupLoader(sparkeyPath, g);
 
         if(entry != null) {

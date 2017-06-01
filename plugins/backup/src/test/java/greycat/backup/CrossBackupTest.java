@@ -29,15 +29,18 @@ import static org.junit.Assert.assertNotEquals;
 
 public class CrossBackupTest {
 
-    @Ignore
     @Test
     public void backupTest(){
+        String rocksPath = getClass().getClassLoader().getResource("data").getFile();
+        String sparkeyPath = rocksPath+ "/logs";
+
+
         Graph graph = new GraphBuilder()
                 .withScheduler(new NoopScheduler())
-                .withStorage(new RocksDBStorage("db"))
+                .withStorage(new RocksDBStorage(rocksPath))
                 .build();
 
-        CrossBackup.loadBackup(graph, "db/logs");
+        CrossBackup.loadBackup(graph, sparkeyPath);
 
         graph.connect(null);
 
@@ -48,12 +51,12 @@ public class CrossBackupTest {
             }
         });
 
-        graph.lookup(0, 0, 701, new Callback<Node>() {
+        /*graph.lookup(0, 0, 401, new Callback<Node>() {
             @Override
             public void on(Node result) {
                 assertNotEquals(result,null);
             }
-        });
+        });*/
 
         graph.disconnect(null);
     }

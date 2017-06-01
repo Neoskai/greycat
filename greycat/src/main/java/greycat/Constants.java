@@ -20,11 +20,11 @@ package greycat;
  */
 public class Constants {
 
-    public static final int POOLSIZE = 100;
+    public static final int POOLSIZE = 5;
     public static final int THREADPOOL = 1000;
-    public static final int SAVEPOINT = 10000;
-    public static final int MAXENTRY = 500000; // Number of maximum entries before flushing file
-    public static final int TIMELAPSEDURATION = 360000; // Timelapse we should swap folder after (We should build a snapshot after each timelapse)
+    public static final int SAVEPOINT = 1000;
+    public static final int MAXENTRY = 10000; // Number of maximum entries before flushing file
+    public static final int TIMELAPSEDURATION = 60000; // Timelapse we should swap folder after (We should build a snapshot after each timelapse)
 
 
     public static final int KEY_SIZE = 4;
