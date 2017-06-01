@@ -344,7 +344,9 @@ class HeapDMatrix implements DMatrix {
                 current = buffer.read(cursor);
             }
         }
-        if (isFirst) {
+        if(previous == cursor) {
+            unsafe_init(0);
+        } else if (isFirst) {
             unsafe_init(Base64.decodeToIntWithBounds(buffer, previous, cursor));
         } else {
             unsafe_set(elemIndex, Base64.decodeToDoubleWithBounds(buffer, previous, cursor));

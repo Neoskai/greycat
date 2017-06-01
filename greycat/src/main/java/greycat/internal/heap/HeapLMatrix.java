@@ -357,7 +357,9 @@ class HeapLMatrix implements LMatrix {
                 current = buffer.read(cursor);
             }
         }
-        if (isFirst) {
+        if(previous == cursor) {
+            unsafe_init(0);
+        } else if (isFirst) {
             unsafe_init(Base64.decodeToIntWithBounds(buffer, previous, cursor));
         } else {
             unsafe_set(elemIndex, Base64.decodeToLongWithBounds(buffer, previous, cursor));

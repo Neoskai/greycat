@@ -44,6 +44,14 @@ public class L3GMap<T> {
         return (T) values[i];
     }
 
+    private static int abs(int index) {
+        if (index < 0) {
+            return -index;
+        } else {
+            return index;
+        }
+    }
+
     private void setValue(int i, T newValue) {
         values[i] = newValue;
     }
@@ -84,7 +92,7 @@ public class L3GMap<T> {
             Arrays.fill(new_next_hashes, 0, (newCapacity * 3), -1);
             next_hashs = new_next_hashes;
             for (int i = 0; i < mapSize; i++) {
-                int new_key_hash = (int) ((keys[i * GROUP] ^ keys[i * GROUP + 1] ^ keys[i * GROUP + 2]) % (newCapacity * 2));
+                int new_key_hash = abs((int) ((keys[i * GROUP] ^ keys[i * GROUP + 1] ^ keys[i * GROUP + 2]) % (newCapacity * 2)));
                 setNext(i, hash(new_key_hash, newCapacity));
                 setHash(new_key_hash, i, newCapacity);
             }
@@ -95,7 +103,7 @@ public class L3GMap<T> {
     public final boolean contains(final long k1, final long k2, final long k3) {
         boolean result = false;
         if (keys != null) {
-            final int hashIndex = (int) ((k1 ^ k2 ^ k3) % (capacity * 2));
+            final int hashIndex = abs((int) ((k1 ^ k2 ^ k3) % (capacity * 2)));
             int m = hash(hashIndex, capacity);
             while (m >= 0) {
                 if (k1 == keys[m * GROUP] && k2 == keys[m * GROUP + 1] && k3 == keys[m * GROUP + 2]) {
@@ -111,7 +119,7 @@ public class L3GMap<T> {
     public final T get(final long k1, final long k2, final long k3) {
         T result = null;
         if (keys != null) {
-            final int hashIndex = (int) ((k1 ^ k2 ^ k3) % (capacity * 2));
+            final int hashIndex = abs((int) ((k1 ^ k2 ^ k3) % (capacity * 2)));
             int m = hash(hashIndex, capacity);
             while (m >= 0) {
                 if (k1 == keys[m * GROUP] && k2 == keys[m * GROUP + 1] && k3 == keys[m * GROUP + 2]) {
@@ -217,14 +225,14 @@ public class L3GMap<T> {
             if (_withValue) {
                 setValue(0, insertValue);
             }
-            final int hashIndex = (int) ((k1 ^ k2 ^ k3) % (capacity * 2));
+            final int hashIndex = abs((int) ((k1 ^ k2 ^ k3) % (capacity * 2)));
             setHash(hashIndex, 0, capacity);
             setNext(0, -1);
             mapSize++;
             return true;
         } else {
             long hashCapacity = capacity * 2;
-            int insertKeyHash = (int) ((k1 ^ k2 ^ k3) % hashCapacity);
+            int insertKeyHash = abs((int) ((k1 ^ k2 ^ k3) % hashCapacity));
             int currentHash = hash(insertKeyHash, capacity);
             int m = currentHash;
             int found = -1;
@@ -240,14 +248,14 @@ public class L3GMap<T> {
                 if (lastIndex == capacity) {
                     reallocate(capacity * 2);
                     hashCapacity = capacity * 2;
-                    insertKeyHash = (int) ((k1 ^ k2 ^ k3) % hashCapacity);
+                    insertKeyHash = abs((int) ((k1 ^ k2 ^ k3) % hashCapacity));
                     currentHash = hash(insertKeyHash, capacity);
                 }
                 setKey(lastIndex, k1, k2, k3);
                 if (_withValue) {
                     setValue(lastIndex, insertValue);
                 }
-                setHash((int) ((k1 ^ k2 ^ k3) % (capacity * 2)), lastIndex, capacity);
+                setHash(insertKeyHash, lastIndex, capacity);
                 setNext(lastIndex, currentHash);
                 mapSize++;
                 return true;

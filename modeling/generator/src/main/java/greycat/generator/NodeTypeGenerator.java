@@ -242,13 +242,13 @@ class NodeTypeGenerator {
                     String refType = upperCaseFirstChar(prop.name());
                     remove.setName("remove" + refType);
                     remove.setReturnTypeVoid();
-                    remove.addParameter("greycat.Callback<Void>", "callback");
+                    remove.addParameter("greycat.Callback<Boolean>", "callback");
                     removeFromBodyBuilder.append(classClassifier.name() + " self = this;");
                     removeFromBodyBuilder.append("get" + refType + "(new greycat.Callback<" + refType + ">() {");
                     removeFromBodyBuilder.append("@Override\n");
                     removeFromBodyBuilder.append("public void on(" + refType + " result) {");
                     removeFromBodyBuilder.append("self.removeFromRelation(").append(prop.name().toUpperCase()).append(", result);");
-                    removeFromBodyBuilder.append("callback.on(null);");
+                    removeFromBodyBuilder.append("callback.on(true);");
                     removeFromBodyBuilder.append("}");
                     removeFromBodyBuilder.append("});");
                     remove.setBody(removeFromBodyBuilder.toString());
@@ -272,7 +272,21 @@ class NodeTypeGenerator {
         // indexes
         if (classClassifier.indexes().length > 0) {
             StringBuilder indexMethodBody = new StringBuilder();
-            indexMethodBody.append("\t\tfinal " + classClassifier.name() + " self = this;\n");
+            StringBuilder unindexMethodBody = new StringBuilder();
+
+            String deferPart = "\t\tfinal " + classClassifier.name() + " self = this;\n" +
+                    "\t\tgreycat.DeferCounter deferCounter = this.graph().newCounter(" + classClassifier.indexes().length + ");\n" +
+                    "\t\tdeferCounter.then(new greycat.plugin.Job() {\n" +
+                    "\t\t\t@Override\n" +
+                    "\t\t\tpublic void run() {\n" +
+                    "\t\t\t\tif (callback != null) {\n" +
+                    "\t\t\t\t\tcallback.on(true);\n" +
+                    "\t\t\t\t}\n" +
+                    "\t\t\t}\n" +
+                    "\t\t});\n";
+
+            indexMethodBody.append(deferPart);
+            unindexMethodBody.append(deferPart);
 
             for (Index idx : classClassifier.indexes()) {
                 String idxName = idx.name();
@@ -300,9 +314,17 @@ class NodeTypeGenerator {
                                 "\t\t\tpublic void on(greycat.NodeIndex indexNode) {\n" +
                                 "\t\t\t\tindexNode.removeFromIndex(self, " + indexedProperties + " );\n" +
                                 "\t\t\t\tindexNode.addToIndex(self," + indexedProperties + ");\n" +
-                                "\t\t\t\tif(callback!=null){\n" +
-                                "\t\t\t\t\tcallback.on(true);\n" +
-                                "\t\t\t\t}\n" +
+                                "\t\t\t\tdeferCounter.count();\n" +
+                                "\t\t\t}\n" +
+                                "\t\t});"
+                );
+
+                unindexMethodBody.append(
+                        "\t\tthis.graph().index(world(), " + time + "," + idxName.toUpperCase() + " , new greycat.Callback<greycat.NodeIndex>() {\n" +
+                                "\t\t\t@Override\n" +
+                                "\t\t\tpublic void on(greycat.NodeIndex indexNode) {\n" +
+                                "\t\t\t\tindexNode.removeFromIndex(self, " + indexedProperties + " );\n" +
+                                "\t\t\t\tdeferCounter.count();\n" +
                                 "\t\t\t}\n" +
                                 "\t\t});"
                 );
@@ -314,6 +336,15 @@ class NodeTypeGenerator {
                     .setFinal(true)
                     .setReturnTypeVoid()
                     .setBody(indexMethodBody.toString())
+                    .addParameter("Callback<Boolean>", "callback");
+            javaClass.addImport(Callback.class);
+
+            javaClass.addMethod()
+                    .setName("unindex" + classClassifier.name())
+                    .setVisibility(Visibility.PUBLIC)
+                    .setFinal(true)
+                    .setReturnTypeVoid()
+                    .setBody(unindexMethodBody.toString())
                     .addParameter("Callback<Boolean>", "callback");
             javaClass.addImport(Callback.class);
         }
