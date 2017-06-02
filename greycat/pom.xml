@@ -34,9 +34,15 @@
         <nsq.version>1.0.0.RC4</nsq.version>
         <nats.version>1.0</nats.version>
         <header.path>${basedir}/../HEADER</header.path>
+        <paho.version>1.0.2</paho.version>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.eclipse.paho</groupId>
+            <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
+            <version>${paho.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.github.brainlag</groupId>
             <artifactId>nsq-client</artifactId>

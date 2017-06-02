@@ -16,34 +16,42 @@
 
 package greycat.backup;
 
-import io.nats.client.Connection;
-import io.nats.client.Nats;
-
-import java.io.IOException;
+import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 /**
  * @ignore ts
  */
-public class NATSender extends AbstractSender{
+public class UTTSender extends AbstractSender{
 
-    private Connection _producer;
+    private MqttClient _producer;
 
-    public NATSender(){
+    // List of public Brokers here:
+    // https://github.com/mqtt/mqtt.github.io/wiki/public_brokers
+
+    public UTTSender(){
         try {
-            _producer = Nats.connect();
+            _producer = new MqttClient(
+                    "tcp://broker.mqttdashboard.com:1883", //URI
+                    MqttClient.generateClientId(), //ClientId
+                    new MemoryPersistence()); //Persistence
+
+            _producer.connect();
             _isConnected = true;
-        } catch (IOException e) {
+        } catch (MqttException e) {
             _isConnected = false;
             System.err.println(e);
         }
     }
 
     @Override
-    public boolean sendMessage(byte[] message){
+    public boolean sendMessage(byte[] message) {
         try {
-            _producer.publish("Greycat", message);
+            _producer.publish("Greycat", message, 2, false);
+
             return true;
-        } catch (IOException e) {
+        } catch (MqttException e) {
             e.printStackTrace();
         }
         return false;
