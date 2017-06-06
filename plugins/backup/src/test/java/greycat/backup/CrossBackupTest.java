@@ -22,7 +22,6 @@ import greycat.GraphBuilder;
 import greycat.Node;
 import greycat.rocksdb.RocksDBStorage;
 import greycat.scheduler.NoopScheduler;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertNotEquals;
@@ -44,19 +43,19 @@ public class CrossBackupTest {
 
         graph.connect(null);
 
-        graph.lookup(0, 0, 201, new Callback<Node>() {
+        graph.lookup(0, 1000, 201, new Callback<Node>() {
             @Override
             public void on(Node result) {
                 assertNotEquals(result,null);
             }
         });
 
-        /*graph.lookup(0, 0, 401, new Callback<Node>() {
+        graph.lookup(0, 1000, 401, new Callback<Node>() {
             @Override
             public void on(Node result) {
                 assertNotEquals(result,null);
             }
-        });*/
+        });
 
         graph.disconnect(null);
     }

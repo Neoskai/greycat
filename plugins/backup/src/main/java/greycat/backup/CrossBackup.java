@@ -29,7 +29,7 @@ public class CrossBackup {
 
         if(entry != null) {
             try {
-                return loader.backupSequence(entry.getTimestamp(), System.currentTimeMillis());
+                return loader.backupSequence(entry.getTimestamp()*1000, System.currentTimeMillis());
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
