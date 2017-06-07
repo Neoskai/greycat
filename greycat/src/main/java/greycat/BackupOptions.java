@@ -32,7 +32,7 @@ public class BackupOptions {
             input = BackupOptions.class.getClassLoader().getResourceAsStream("config.properties");
             prop.load(input);
 
-            return Integer.parseInt(prop.getProperty("poolsize"));
+            return Integer.parseInt(prop.getProperty("backup.poolsize"));
 
         } catch (Exception ex) {
             System.err.println("No configuration file");
@@ -49,7 +49,7 @@ public class BackupOptions {
             input = BackupOptions.class.getClassLoader().getResourceAsStream("config.properties");
             prop.load(input);
 
-            return Integer.parseInt(prop.getProperty("threadpool"));
+            return Integer.parseInt(prop.getProperty("backup.threadpool"));
 
         } catch (Exception ex) {
             System.err.println("No configuration file");
@@ -66,7 +66,7 @@ public class BackupOptions {
             input = BackupOptions.class.getClassLoader().getResourceAsStream("config.properties");
             prop.load(input);
 
-            return Integer.parseInt(prop.getProperty("savepoint"));
+            return Integer.parseInt(prop.getProperty("backup.savepoint"));
 
         } catch (Exception ex) {
             System.err.println("No configuration file");
@@ -83,7 +83,7 @@ public class BackupOptions {
             input = BackupOptions.class.getClassLoader().getResourceAsStream("config.properties");
             prop.load(input);
 
-            return Integer.parseInt(prop.getProperty("maxentry"));
+            return Integer.parseInt(prop.getProperty("backup.maxentry"));
 
         } catch (IOException ex) {
             System.err.println("No configuration file");
@@ -99,7 +99,7 @@ public class BackupOptions {
             input = BackupOptions.class.getClassLoader().getResourceAsStream("config.properties");
             prop.load(input);
 
-            return Integer.parseInt(prop.getProperty("timelapse"));
+            return Integer.parseInt(prop.getProperty("backup.timelapse"));
 
         } catch (Exception ex) {
             System.err.println("No configuration file");
