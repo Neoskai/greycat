@@ -1,14 +1,29 @@
 .App {
   text-align: center;
+  height: 100% !important;
 }
 
 .App-header {
   background-color: #222;
-  height: 60px;
+  height: 100px;
   padding: 20px;
   color: white;
 }
 
 .App-intro {
   font-size: large;
+}
+
+.content{
+background-color: #22262d;
+}
+
+.nopadding {
+  padding-right: 0 !important;
+  margin-right: 0 !important;
+}
+
+.mainContent {
+  background-color: white;
+  height: -webkit-calc(100vh - 250px);
 }

@@ -1,0 +1,14 @@
+.BackupList {
+    background-color: #22262d;
+    color:white;
+    overflow:hidden;
+    height: -webkit-calc(100vh - 250px);
+    margin-right:0;
+    padding-right:0;
+}
+
+.component {
+    text-align: left;
+    display: inline-block;
+    vertical-align: top;
+}
