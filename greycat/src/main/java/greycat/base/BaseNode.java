@@ -51,6 +51,7 @@ public class BaseNode implements Node {
     public volatile long _index_worldOrder = -1;
     public volatile long _index_superTimeTree = -1;
     public volatile long _index_timeTree = -1;
+    public volatile int _index_timeTree_offset = -1;
     public volatile long _index_stateChunk = -1;
     public volatile long _world_magic = -1;
     public volatile long _super_time_magic = -1;
@@ -638,6 +639,11 @@ public class BaseNode implements Node {
     }
 
     @Override
+    public final void drop(Callback callback) {
+        _resolver.drop(this, callback);
+    }
+
+    @Override
     public String toString() {
         if (_lock == 1) {
             return "locked";
@@ -967,7 +973,9 @@ public class BaseNode implements Node {
     }
 
     @Override
-    public final IntStringMap getIntStringMap(String name){ return (IntStringMap) get(name);}
+    public final IntStringMap getIntStringMap(String name) {
+        return (IntStringMap) get(name);
+    }
 
     @Override
     public final LongLongArrayMap getLongLongArrayMap(String name) {

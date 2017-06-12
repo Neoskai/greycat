@@ -103,6 +103,9 @@ class HeapDMatrix implements DMatrix {
                 aligned = true;
             }
         }
+        if(newColumn.length!=nbRows){
+            throw new RuntimeException("Vector has different row size than Matrix");
+        }
         //just insert
         System.arraycopy(newColumn, 0, backend, (nbMaxColumn * nbRows) + INDEX_OFFSET, newColumn.length);
         backend[INDEX_MAX_COLUMN] = nbMaxColumn + 1;
@@ -305,6 +308,9 @@ class HeapDMatrix implements DMatrix {
             backend[INDEX_OFFSET + index] = value;
             parent.declareDirty();
         }
+        else {
+            throw new RuntimeException("Please init the Matrix first!");
+        }
     }
 
     final double[] unsafe_data() {
@@ -323,6 +329,10 @@ class HeapDMatrix implements DMatrix {
     }
 
     public final long load(final Buffer buffer, final long offset, final long max) {
+        if(offset >= max) {
+            unsafe_init(INDEX_OFFSET);
+            return offset;
+        }
         long cursor = offset;
         byte current = buffer.read(cursor);
         boolean isFirst = true;
@@ -345,7 +355,7 @@ class HeapDMatrix implements DMatrix {
             }
         }
         if(previous == cursor) {
-            unsafe_init(0);
+            unsafe_init(INDEX_OFFSET);
         } else if (isFirst) {
             unsafe_init(Base64.decodeToIntWithBounds(buffer, previous, cursor));
         } else {
