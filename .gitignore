@@ -24,3 +24,5 @@ node_modules/
 /data/
 /plugins/backup/data*
 /plugins/sparkey/data*
+
+/plugins/backupexposer/src/main/resources/data
