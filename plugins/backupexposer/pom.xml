@@ -16,49 +16,30 @@
     limitations under the License.
 
 -->
+
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>greycat-parent</artifactId>
+        <groupId>com.datathings</groupId>
+        <version>8-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
     <modelVersion>4.0.0</modelVersion>
-    <groupId>org.kevoree.mwg.plugins</groupId>
-    <artifactId>rest</artifactId>
-    <version>11-SNAPSHOT</version>
-    <name>mwg :: Plugins :: Rest</name>
+
+    <artifactId>backup-exposer</artifactId>
+    <name>backup-exposer</name>
 
     <properties>
+        <header.path>${basedir}/../../HEADER</header.path>
         <undertow.version>1.4.16.Final</undertow.version>
     </properties>
 
-    <parent>
-        <artifactId>core</artifactId>
-        <groupId>org.kevoree.mwg</groupId>
-        <version>11</version>
-        <relativePath>../..</relativePath>
-    </parent>
-
     <dependencies>
-        <dependency>
-            <groupId>org.kevoree.mwg</groupId>
-            <artifactId>core</artifactId>
-            <version>11</version>
-        </dependency>
         <dependency>
             <groupId>io.undertow</groupId>
             <artifactId>undertow-core</artifactId>
             <version>${undertow.version}</version>
         </dependency>
-        <!-- Test dependencies -->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.12</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.mashape.unirest</groupId>
-            <artifactId>unirest-java</artifactId>
-            <version>1.4.9</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
-
 </project>
