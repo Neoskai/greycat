@@ -16,14 +16,51 @@
 
 package com.datathings;
 
+import com.google.gson.Gson;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 public class BackupHandler implements HttpHandler{
+    private String _basePath;
+
+    public BackupHandler(String basePath){
+        _basePath = basePath;
+    }
+
     @Override
     public void handleRequest(HttpServerExchange httpServerExchange) throws Exception {
-        httpServerExchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
-        httpServerExchange.getResponseSender().send("Hello World");
+        httpServerExchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
+        httpServerExchange.getResponseSender().send(getJsonBackups());
+    }
+
+    private String getJsonBackups(){
+        Map<Long, Long> backups = new HashMap<>();
+
+        List<String> files = new ArrayList<>();
+        String path = _basePath + "/backup/meta";
+        files = FileUtil.getFiles(files, Paths.get(path));
+
+        for (String file : files){
+            String backupNumber = file.substring(file.lastIndexOf("/")+1);
+
+            try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+                backups.put(Long.parseLong(backupNumber), Long.parseLong(br.readLine()));
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return new Gson().toJson(backups);
     }
 }

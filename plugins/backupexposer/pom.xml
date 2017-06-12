@@ -33,6 +33,7 @@
     <properties>
         <header.path>${basedir}/../../HEADER</header.path>
         <undertow.version>1.4.16.Final</undertow.version>
+        <gson.version>2.8.1</gson.version>
     </properties>
 
     <dependencies>
@@ -40,6 +41,11 @@
             <groupId>io.undertow</groupId>
             <artifactId>undertow-core</artifactId>
             <version>${undertow.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>${gson.version}</version>
         </dependency>
     </dependencies>
 </project>

@@ -41,7 +41,8 @@ public class Server
                 .addHttpListener(_port, "0.0.0.0")
                 .setHandler(
                         path()
-                                .addPrefixPath("/backup", new BackupHandler())
+                                .addPrefixPath("/backup", new BackupHandler(_basePath))
+                                .addPrefixPath("/logs", new LogHandler(_basePath))
                                 .addPrefixPath("/file",
                                         resource(new PathResourceManager(Paths.get(_basePath), 100))
                                                 .setDirectoryListingEnabled(true))
