@@ -28,9 +28,17 @@ import io.undertow.util.Headers;
 
 public class PartialBackupHandler implements HttpHandler{
     private String _basePath;
+    private FastBackupLoader _loader;
 
     public PartialBackupHandler(String basePath){
         _basePath = basePath;
+
+        Graph graph = new GraphBuilder()
+                .withScheduler(new NoopScheduler())
+                .withStorage(new RocksDBStorage(_basePath))
+                .build();
+
+        _loader = new FastBackupLoader(_basePath, graph);
     }
 
 
@@ -42,17 +50,7 @@ public class PartialBackupHandler implements HttpHandler{
         String endString = httpServerExchange.getQueryParameters().get("end").getFirst();
         Long endStamp = Long.parseLong(endString);
 
-        String rocksPath = _basePath;
-        String sparkeyPath = rocksPath+ "/logs";
-
-        Graph graph = new GraphBuilder()
-                .withScheduler(new NoopScheduler())
-                .withStorage(new RocksDBStorage(rocksPath))
-                .build();
-
-        FastBackupLoader loader = new FastBackupLoader(_basePath, graph);
-
-        loader.backupSequence(startStamp, endStamp);
+        _loader.backupSequence(startStamp, endStamp);
 
         httpServerExchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
         httpServerExchange.getResponseSender().send("Backup Done");

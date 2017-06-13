@@ -23,25 +23,26 @@ import greycat.struct.BackupEntry;
 public class CrossBackup {
 
     public static Graph loadBackup(Graph g, String sparkeyPath){
-        BackupEntry entry= g.storage().loadLatestBackup();
+        synchronized (FastBackupLoader.LOCK) {
+            BackupEntry entry = g.storage().loadLatestBackup();
 
-        FastBackupLoader loader = new FastBackupLoader(sparkeyPath, g);
+            FastBackupLoader loader = new FastBackupLoader(sparkeyPath, g);
 
-        if(entry != null) {
-            try {
-                return loader.backupSequence(entry.getTimestamp()*1000, System.currentTimeMillis());
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            if (entry != null) {
+                try {
+                    return loader.backupSequence(entry.getTimestamp() * 1000, System.currentTimeMillis());
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                try {
+                    return loader.backup();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
-        }
-        else {
-            try {
-                return loader.backup();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
 
-        return g;
+            return g;
+        }
     }
 }

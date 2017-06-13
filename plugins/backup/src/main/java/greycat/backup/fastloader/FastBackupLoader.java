@@ -37,8 +37,10 @@ public class FastBackupLoader {
     private Graph _graph;
     private String _folderPath;
     private Map<Integer, Map<Long, FileKey>> _fileMap;
-    
+
     private int _poolSize;
+
+    public static final Object LOCK = new Object();
 
     public FastBackupLoader(String folderPath){
         this(folderPath,
@@ -53,7 +55,7 @@ public class FastBackupLoader {
         _graph = graphToUse;
 
         _fileMap = new HashMap<>();
-        
+
         _poolSize = BackupOptions.poolSize();
     }
 
@@ -63,30 +65,32 @@ public class FastBackupLoader {
      * @throws InterruptedException
      */
     public Graph backup() throws InterruptedException{
-        _graph.connect(null);
-        long initialBench = System.currentTimeMillis();
+        synchronized (LOCK) {
+            _graph.connect(null);
+            long initialBench = System.currentTimeMillis();
 
-        loadFiles(_folderPath);
+            loadFiles(_folderPath);
 
-        ExecutorService es = Executors.newFixedThreadPool(4);
-        // For each shard
-        for(Integer shardKey :_fileMap.keySet()){
-            es.execute(new Runnable() {
-                @Override
-                public void run() {
-                    ShardLoader loader = new ShardLoader(_fileMap.get(shardKey));
-                    loader.run(_graph);
-                }
-            });
+            ExecutorService es = Executors.newFixedThreadPool(4);
+            // For each shard
+            for (Integer shardKey : _fileMap.keySet()) {
+                es.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        ShardLoader loader = new ShardLoader(_fileMap.get(shardKey));
+                        loader.run(_graph);
+                    }
+                });
+            }
+
+            es.shutdown();
+            es.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+
+            System.out.println("Backup took: " + ((System.currentTimeMillis() - initialBench) / 1000) + " s");
+            _graph.disconnect(null);
+
+            return _graph;
         }
-
-        es.shutdown();
-        es.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-
-        System.out.println("Backup took: " + ((System.currentTimeMillis()-initialBench)/1000) + " s");
-        _graph.disconnect(null);
-
-        return _graph;
     }
 
     /**
@@ -97,30 +101,32 @@ public class FastBackupLoader {
      * @throws InterruptedException
      */
     public Graph backupSequence(long initialStamp, long endStamp) throws InterruptedException {
-        _graph.connect(null);
-        long initialBench = System.currentTimeMillis();
+        synchronized (LOCK) {
+            _graph.connect(null);
+            long initialBench = System.currentTimeMillis();
 
-        loadFileFromSequence(_folderPath, initialStamp, endStamp);
+            loadFileFromSequence(_folderPath, initialStamp, endStamp);
 
-        ExecutorService es = Executors.newFixedThreadPool(4);
-        // For each shard
-        for(Integer shardKey :_fileMap.keySet()){
-            es.execute(new Runnable() {
-                @Override
-                public void run() {
-                    ShardLoader loader = new ShardLoader(_fileMap.get(shardKey));
-                    loader.run(_graph);
-                }
-            });
+            ExecutorService es = Executors.newFixedThreadPool(4);
+            // For each shard
+            for (Integer shardKey : _fileMap.keySet()) {
+                es.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        ShardLoader loader = new ShardLoader(_fileMap.get(shardKey));
+                        loader.run(_graph);
+                    }
+                });
+            }
+
+            es.shutdown();
+            es.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+
+            System.out.println("Backup took: " + ((System.currentTimeMillis() - initialBench) / 1000) + " s");
+            _graph.disconnect(null);
+
+            return _graph;
         }
-
-        es.shutdown();
-        es.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-
-        System.out.println("Backup took: " + ((System.currentTimeMillis()-initialBench)/1000) + " s");
-        _graph.disconnect(null);
-
-        return _graph;
     }
 
     /**
@@ -132,28 +138,30 @@ public class FastBackupLoader {
      * @throws InterruptedException
      */
     public Graph backupNodeSequence(long initialStamp, long endStamp, List<Long> nodeId) throws InterruptedException{
-        _graph.connect(null);
-        long initialBench = System.currentTimeMillis();
+        synchronized (LOCK) {
+            _graph.connect(null);
+            long initialBench = System.currentTimeMillis();
 
-        loadFileFromSequence(_folderPath, initialStamp, endStamp);
+            loadFileFromSequence(_folderPath, initialStamp, endStamp);
 
-        ExecutorService es = Executors.newFixedThreadPool(_poolSize);
-        // For each shard
-        for(Integer shardKey :_fileMap.keySet()){
-            es.execute(new Runnable() {
-                @Override
-                public void run() {
-                    ShardLoader loader = new ShardLoader(_fileMap.get(shardKey), nodeId);
-                    loader.run(_graph);
-                }
-            });
+            ExecutorService es = Executors.newFixedThreadPool(_poolSize);
+            // For each shard
+            for (Integer shardKey : _fileMap.keySet()) {
+                es.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        ShardLoader loader = new ShardLoader(_fileMap.get(shardKey), nodeId);
+                        loader.run(_graph);
+                    }
+                });
+            }
+            es.shutdown();
+            es.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+
+            System.out.println("Backup took: " + ((System.currentTimeMillis() - initialBench) / 1000) + " s");
+            _graph.disconnect(null);
+            return _graph;
         }
-        es.shutdown();
-        es.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-
-        System.out.println("Backup took: " + ((System.currentTimeMillis()-initialBench)/1000) + " s");
-        _graph.disconnect(null);
-        return _graph;
     }
 
     /**
@@ -163,29 +171,31 @@ public class FastBackupLoader {
      * @throws InterruptedException
      */
     public Graph nodeBackup(List<Long> nodeId) throws InterruptedException{
-        _graph.connect(null);
-        long initialBench = System.currentTimeMillis();
+        synchronized (LOCK) {
+            _graph.connect(null);
+            long initialBench = System.currentTimeMillis();
 
-        loadFiles(_folderPath);
+            loadFiles(_folderPath);
 
-        ExecutorService es = Executors.newFixedThreadPool(_poolSize);
-        for(Integer shardKey :_fileMap.keySet()){
-            es.execute(new Runnable() {
-                @Override
-                public void run() {
-                    ShardLoader loader = new ShardLoader(_fileMap.get(shardKey), nodeId);
-                    loader.run(_graph);
-                }
-            });
+            ExecutorService es = Executors.newFixedThreadPool(_poolSize);
+            for (Integer shardKey : _fileMap.keySet()) {
+                es.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        ShardLoader loader = new ShardLoader(_fileMap.get(shardKey), nodeId);
+                        loader.run(_graph);
+                    }
+                });
+            }
+
+            es.shutdown();
+            es.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+
+            System.out.println("Backup took: " + ((System.currentTimeMillis() - initialBench) / 1000) + " s");
+            _graph.disconnect(null);
+
+            return _graph;
         }
-
-        es.shutdown();
-        es.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-
-        System.out.println("Backup took: " + ((System.currentTimeMillis()-initialBench)/1000) + " s");
-        _graph.disconnect(null);
-
-        return _graph;
     }
 
     /**
