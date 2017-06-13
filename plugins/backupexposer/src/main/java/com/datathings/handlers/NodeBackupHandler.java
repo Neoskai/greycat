@@ -26,6 +26,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class NodeBackupHandler implements HttpHandler{
@@ -47,7 +48,10 @@ public class NodeBackupHandler implements HttpHandler{
     public void handleRequest(HttpServerExchange httpServerExchange) throws Exception {
         List<Long> nodeIds = new ArrayList<>();
 
-        for(String elem : httpServerExchange.getQueryParameters().get("nodes")){
+        String nodeString= httpServerExchange.getQueryParameters().get("nodes").getFirst();
+        String [] nodeArray = nodeString.split(",");
+
+        for(String elem : nodeArray){
             nodeIds.add(Long.parseLong(elem));
         }
 

@@ -53,7 +53,10 @@ public class PartialNodeHandler implements HttpHandler{
 
         List<Long> nodeIds = new ArrayList<>();
 
-        for(String elem : httpServerExchange.getQueryParameters().get("nodes")){
+        String nodeString= httpServerExchange.getQueryParameters().get("nodes").getFirst();
+        String [] nodeArray = nodeString.split(",");
+
+        for(String elem : nodeArray){
             nodeIds.add(Long.parseLong(elem));
         }
 
