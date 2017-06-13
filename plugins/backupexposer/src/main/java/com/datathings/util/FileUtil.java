@@ -1,4 +1,4 @@
-package com.datathings;
+package com.datathings.util;
 
 
 import java.io.IOException;

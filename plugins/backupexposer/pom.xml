@@ -47,5 +47,20 @@
             <artifactId>gson</artifactId>
             <version>${gson.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.datathings</groupId>
+            <artifactId>greycat</artifactId>
+            <version>9-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.datathings</groupId>
+            <artifactId>greycat-rocksdb</artifactId>
+            <version>9-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.datathings</groupId>
+            <artifactId>backup</artifactId>
+            <version>9-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 </project>

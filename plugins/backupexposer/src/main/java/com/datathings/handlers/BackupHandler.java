@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.datathings;
+package com.datathings.handlers;
 
+import com.datathings.util.FileUtil;
 import com.google.gson.Gson;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;

@@ -14,41 +14,37 @@
  * limitations under the License.
  */
 
-package com.datathings;
+package com.datathings.handlers;
 
-import com.google.gson.Gson;
+import greycat.Graph;
+import greycat.GraphBuilder;
+import greycat.backup.CrossBackup;
+import greycat.rocksdb.RocksDBStorage;
+import greycat.scheduler.NoopScheduler;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-
-public class LogHandler implements HttpHandler{
+public class FullBackupHandler implements HttpHandler{
     private String _basePath;
 
-    public LogHandler(String basePath){
+    public FullBackupHandler(String basePath){
         _basePath = basePath;
     }
 
     @Override
     public void handleRequest(HttpServerExchange httpServerExchange) throws Exception {
-        httpServerExchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
-        httpServerExchange.getResponseSender().send(getJsonLogs());
-    }
+        String rocksPath = _basePath;
+        String sparkeyPath = rocksPath+ "/logs";
 
-    private String getJsonLogs(){
-        List<String> logFiles = new ArrayList<>();
+        Graph graph = new GraphBuilder()
+                .withScheduler(new NoopScheduler())
+                .withStorage(new RocksDBStorage(rocksPath))
+                .build();
 
-        String path = _basePath + "/logs";
-        logFiles = FileUtil.getFiles(logFiles, Paths.get(path));
+        CrossBackup.loadBackup(graph, sparkeyPath);
 
-        for(int i=0 ; i < logFiles.size(); i++){
-            String newName = logFiles.get(i).substring(logFiles.get(i).indexOf("/data"));
-            logFiles.set(i, newName);
-        }
-
-        return new Gson().toJson(logFiles);
+        httpServerExchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
+        httpServerExchange.getResponseSender().send("Backup Done");
     }
 }
