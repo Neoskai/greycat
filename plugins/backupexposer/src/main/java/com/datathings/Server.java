@@ -16,10 +16,7 @@
 
 package com.datathings;
 
-import com.datathings.handlers.BackupHandler;
-import com.datathings.handlers.FullBackupHandler;
-import com.datathings.handlers.LogHandler;
-import com.datathings.handlers.PartialBackupHandler;
+import com.datathings.handlers.*;
 import io.undertow.Undertow;
 import io.undertow.server.handlers.resource.PathResourceManager;
 
@@ -45,10 +42,12 @@ public class Server
                 .addHttpListener(_port, "0.0.0.0")
                 .setHandler(
                         path()
-                                .addPrefixPath("/backup", new BackupHandler(_basePath))
+                                .addPrefixPath("/database", new BackupHandler(_basePath))
                                 .addPrefixPath("/logs", new LogHandler(_basePath))
-                                .addPrefixPath("/fullBackup", new FullBackupHandler(_basePath))
-                                .addPrefixPath("/partialBackup", new PartialBackupHandler(_basePath))
+                                .addPrefixPath("/backup/full", new FullBackupHandler(_basePath))
+                                .addPrefixPath("/backup/partial", new PartialBackupHandler(_basePath))
+                                .addPrefixPath("/backup/nodes", new NodeBackupHandler(_basePath))
+                                .addPrefixPath("/backup/partialNode", new PartialNodeHandler(_basePath))
                                 .addPrefixPath("/file",
                                         resource(new PathResourceManager(Paths.get(_basePath), 100))
                                                 .setDirectoryListingEnabled(true))

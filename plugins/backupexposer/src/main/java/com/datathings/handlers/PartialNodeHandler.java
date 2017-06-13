@@ -25,11 +25,14 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 
-public class PartialBackupHandler implements HttpHandler{
+import java.util.ArrayList;
+import java.util.List;
+
+public class PartialNodeHandler implements HttpHandler{
     private String _basePath;
     private FastBackupLoader _loader;
 
-    public PartialBackupHandler(String basePath){
+    public PartialNodeHandler(String basePath){
         _basePath = basePath;
 
         Graph graph = new GraphBuilder()
@@ -40,7 +43,6 @@ public class PartialBackupHandler implements HttpHandler{
         _loader = new FastBackupLoader(_basePath, graph);
     }
 
-
     @Override
     public void handleRequest(HttpServerExchange httpServerExchange) throws Exception {
         String startString = httpServerExchange.getQueryParameters().get("start").getFirst();
@@ -49,9 +51,16 @@ public class PartialBackupHandler implements HttpHandler{
         String endString = httpServerExchange.getQueryParameters().get("end").getFirst();
         Long endStamp = Long.parseLong(endString);
 
-        _loader.backupSequence(startStamp, endStamp);
+        List<Long> nodeIds = new ArrayList<>();
+
+        for(String elem : httpServerExchange.getQueryParameters().get("nodes")){
+            nodeIds.add(Long.parseLong(elem));
+        }
+
+        _loader.backupNodeSequence(startStamp, endStamp, nodeIds);
 
         httpServerExchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
         httpServerExchange.getResponseSender().send("Backup Done");
     }
+
 }
