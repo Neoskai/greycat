@@ -107,4 +107,52 @@ public class BackupOptions {
 
         return Constants.TIMELAPSEDURATION;
     }
+
+    public static String minioPath(){
+        Properties prop = new Properties();
+        InputStream input;
+        try {
+            input = BackupOptions.class.getClassLoader().getResourceAsStream("config.properties");
+            prop.load(input);
+
+            return prop.getProperty("minio.path");
+
+        } catch (Exception ex) {
+            System.err.println("No configuration file");
+        }
+
+        return "http://localhost:9000";
+    }
+
+    public static String accessKey(){
+        Properties prop = new Properties();
+        InputStream input;
+        try {
+            input = BackupOptions.class.getClassLoader().getResourceAsStream("config.properties");
+            prop.load(input);
+
+            return prop.getProperty("minio.access");
+
+        } catch (Exception ex) {
+            System.err.println("No configuration file");
+        }
+
+        return "QZEIXYIYB22HADEYYC1X";
+    }
+
+    public static String secretKey(){
+        Properties prop = new Properties();
+        InputStream input;
+        try {
+            input = BackupOptions.class.getClassLoader().getResourceAsStream("config.properties");
+            prop.load(input);
+
+            return prop.getProperty("minio.secret");
+
+        } catch (Exception ex) {
+            System.err.println("No configuration file");
+        }
+
+        return "15d4CYxNHAR12tKjxN/1q5HIgIo4KbzC1twzozwZ";
+    }
 }

@@ -15,6 +15,7 @@
  */
 package greycat.rocksdb;
 
+import greycat.BackupOptions;
 import greycat.Callback;
 import greycat.Constants;
 import greycat.Graph;
@@ -24,6 +25,7 @@ import greycat.struct.Buffer;
 import greycat.struct.BufferIterator;
 import greycat.utility.Base64;
 import greycat.utility.HashHelper;
+import io.minio.MinioClient;
 import org.rocksdb.*;
 
 import java.io.File;
@@ -74,6 +76,19 @@ public class RocksDBStorage implements Storage {
 
             entry.setId(info.backupId());
             entry.setTimestamp(info.timestamp());
+
+            try {
+                MinioClient minioClient = new MinioClient(BackupOptions.minioPath(),
+                        BackupOptions.accessKey(),
+                        BackupOptions.secretKey());
+
+                if(!minioClient.bucketExists("database")) {
+                    minioClient.makeBucket("database");
+                }
+
+            } catch (Exception e){
+                System.err.println("Couldn't upload file to server");
+            }
 
             return entry;
         } catch (RocksDBException e) {

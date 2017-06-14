@@ -31,6 +31,7 @@
 
     <properties>
         <rocksdb.version>5.2.1</rocksdb.version>
+        <minio.version>3.0.4</minio.version>
         <header.path>${basedir}/../../HEADER</header.path>
     </properties>
 
@@ -44,6 +45,11 @@
             <groupId>org.rocksdb</groupId>
             <artifactId>rocksdbjni</artifactId>
             <version>${rocksdb.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.minio</groupId>
+            <artifactId>minio</artifactId>
+            <version>${minio.version}</version>
         </dependency>
     </dependencies>
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2017 The GreyCat Authors.  All rights reserved.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -45,6 +45,25 @@ function timeToDate(timestamp){
 }
 
 function getItems(){
+    var xhr = new XMLHttpRequest();
+    var url = "http://localhost:8080/backup";
+    xhr.open('GET', url, true);
+
+    xhr.responseType = 'json';
+    xhr.setRequestHeader('Access-Control-Allow-Headers', '*');
+    xhr.setRequestHeader('Content-type', 'application/ecmascript');
+    xhr.setRequestHeader('Access-Control-Allow-Origin', '*');
+
+    xhr.send();
+
+    xhr.onreadystatechange = processRequest;
+
+    function processRequest(e) {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            return xhr.response
+        }
+    }
+
     return [
         {
             id: 1,
