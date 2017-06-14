@@ -31,13 +31,14 @@ public class PartialBackupHandler implements HttpHandler{
 
     public PartialBackupHandler(String basePath){
         _basePath = basePath;
+        String sparkeyPath = _basePath+ "/logs";
 
         Graph graph = new GraphBuilder()
                 .withScheduler(new NoopScheduler())
                 .withStorage(new RocksDBStorage(_basePath))
                 .build();
 
-        _loader = new FastBackupLoader(_basePath, graph);
+        _loader = new FastBackupLoader(sparkeyPath, graph);
     }
 
 

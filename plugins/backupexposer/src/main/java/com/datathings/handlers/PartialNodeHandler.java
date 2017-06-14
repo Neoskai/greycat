@@ -34,13 +34,14 @@ public class PartialNodeHandler implements HttpHandler{
 
     public PartialNodeHandler(String basePath){
         _basePath = basePath;
+        String sparkeyPath = _basePath+ "/logs";
 
         Graph graph = new GraphBuilder()
                 .withScheduler(new NoopScheduler())
                 .withStorage(new RocksDBStorage(_basePath))
                 .build();
 
-        _loader = new FastBackupLoader(_basePath, graph);
+        _loader = new FastBackupLoader(sparkeyPath, graph);
     }
 
     @Override
@@ -57,7 +58,9 @@ public class PartialNodeHandler implements HttpHandler{
         String [] nodeArray = nodeString.split(",");
 
         for(String elem : nodeArray){
-            nodeIds.add(Long.parseLong(elem));
+            if(elem.length() > 1) {
+                nodeIds.add(Long.parseLong(elem));
+            }
         }
 
         _loader.backupNodeSequence(startStamp, endStamp, nodeIds);

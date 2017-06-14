@@ -26,7 +26,6 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class NodeBackupHandler implements HttpHandler{
@@ -35,13 +34,15 @@ public class NodeBackupHandler implements HttpHandler{
 
     public NodeBackupHandler(String basePath){
         _basePath = basePath;
+        String sparkeyPath = _basePath+ "/logs";
+
 
         Graph graph = new GraphBuilder()
                 .withScheduler(new NoopScheduler())
                 .withStorage(new RocksDBStorage(_basePath))
                 .build();
 
-        _loader = new FastBackupLoader(_basePath, graph);
+        _loader = new FastBackupLoader(sparkeyPath, graph);
     }
 
     @Override
