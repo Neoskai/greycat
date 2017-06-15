@@ -50,6 +50,49 @@ const data = {
     ]
 };
 
+
+function getLogs(tree){
+    var Minio = require('minio');
+
+    var minioClient = new Minio.Client({
+        endPoint: 'localhost',
+        port: 9000,
+        secure: false,
+        accessKey: 'QZEIXYIYB22HADEYYC1X',
+        secretKey: '15d4CYxNHAR12tKjxN/1q5HIgIo4KbzC1twzozwZ'
+    });
+
+    var stream = minioClient.listObjectsV2('logs','', true);
+
+    stream.on('data', function(obj) {
+        buildTree(obj.name.split('/'), tree);
+    } );
+    stream.on('error', function(err) {
+        console.log(err)
+    } );
+
+}
+
+function buildTree(parts,treeNode) {
+    if(parts.length === 0)
+    {
+        return;
+    }
+    for(var i = 0 ; i < treeNode.length; i++)
+    {
+        if(parts[0] === treeNode[i].name)
+        {
+            buildTree(parts.splice(1,parts.length),treeNode[i].children);
+            return;
+        }
+    }
+    var newNode = {'name': parts[0] ,'children':[]};
+    treeNode.push(newNode);
+    buildTree(parts.splice(1,parts.length),newNode.children);
+}
+
+
+
 decorators.Header = (props) => {
     const style = props.style;
     const iconType = props.node.children ? 'folder' : 'file-text';
@@ -68,7 +111,7 @@ decorators.Header = (props) => {
 export default class BackupList extends Component{
     constructor(props){
         super(props);
-        this.state = {};
+        this.state = {logData: []};
         this.onToggle = this.onToggle.bind(this);
     }
     onToggle(node, toggled){

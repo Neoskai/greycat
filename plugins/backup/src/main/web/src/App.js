@@ -46,7 +46,7 @@ function timeToDate(timestamp){
 
 function getItems(){
     var xhr = new XMLHttpRequest();
-    var url = "http://localhost:8080/backup";
+    var url = "http://localhost:8080/database";
     xhr.open('GET', url, true);
 
     xhr.responseType = 'json';

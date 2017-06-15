@@ -21,12 +21,20 @@ import greycat.Graph;
 import greycat.GraphBuilder;
 import greycat.backup.tools.FileKey;
 import greycat.rocksdb.RocksDBStorage;
+import io.minio.MinioClient;
+import io.minio.Result;
+import io.minio.errors.*;
+import io.minio.messages.Item;
+import org.xmlpull.v1.XmlPullParserException;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -37,6 +45,8 @@ public class FastBackupLoader {
     private Graph _graph;
     private String _folderPath;
     private Map<Integer, Map<Long, FileKey>> _fileMap;
+
+    private List<String> _localFiles;
 
     private int _poolSize;
 
@@ -57,6 +67,7 @@ public class FastBackupLoader {
         _fileMap = new HashMap<>();
 
         _poolSize = BackupOptions.poolSize();
+        _localFiles = new ArrayList<>();
     }
 
     /**
@@ -246,9 +257,58 @@ public class FastBackupLoader {
                     initialMap = new HashMap<>();
                 }
                 initialMap.put(fileNumber, key);
-
+                _localFiles.add(file);
                 _fileMap.put(shard, initialMap);
             }
+        }
+
+        loadExternalFiles(startSeq,endSeq);
+    }
+
+    /**
+     * Adds missing files from the bucket
+     */
+    private void loadExternalFiles(long startSeq, long endSeq){
+        try {
+            MinioClient minioClient = new MinioClient(BackupOptions.minioPath(),
+                    BackupOptions.accessKey(),
+                    BackupOptions.secretKey());
+
+            if (minioClient.bucketExists("logs")) {
+                Iterable<Result<Item>> myObjects = minioClient.listObjects("logs");
+                List<String> missingItems = new ArrayList<>();
+
+                for (Result<Item> result : myObjects) {
+                    Item item = result.get();
+                    String fileName = item.objectName();
+
+                    String midPath = fileName.substring(fileName.indexOf("/shard"), fileName.length());
+                    String startLapseMatch = CharMatcher.inRange('0', '9').retainFrom(midPath.substring(midPath.indexOf("-"), midPath.lastIndexOf("-")));
+                    String endLapseMatch = CharMatcher.inRange('0', '9').retainFrom(midPath.substring(midPath.lastIndexOf("-"), midPath.length()));
+                    long startLapse = Long.valueOf(startLapseMatch);
+                    long endLapse = System.currentTimeMillis();
+
+                    // If not in the local files and Corresponds to our part to backup
+                    if(!_localFiles.contains(fileName) && ((startLapse >= startSeq && startLapse <= endSeq) || (endLapse >= startSeq && endLapse <= endSeq))) {
+                        missingItems.add(fileName);
+                    }
+                }
+
+                for(String name : missingItems){
+                    System.out.println("Downloading " + name);
+
+                    File file = new File(name);
+                    File parent = file.getParentFile();
+                    if (!parent.exists() && !parent.mkdirs()) {
+                        throw new IllegalStateException("Couldn't create dir: " + parent);
+                    }
+
+                    minioClient.getObject("logs", name, name);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            //System.out.println("Error occurred: " + e);
         }
     }
 
