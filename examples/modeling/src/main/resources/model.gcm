@@ -5,8 +5,8 @@ class Device {
     rel modules : Module indexed by name,name2
     ref button : Button
 
-    indexed with time by name,identifier as MyIndex
-    indexed by name as MyIndex2
+    key with time name,identifier as MyKey
+    key name as MyKey2
 
 }
 
@@ -20,3 +20,19 @@ class Button {
 }
 
 
+class SubModule extends Module {
+
+    key name as SubModules
+}
+
+
+class AttributeInstance {
+    ref attType : AttributeType
+}
+
+
+class AttributeType {
+    att name : String
+    att isMendatory : Boolean
+    att isStatic : Boolean
+}

@@ -142,6 +142,8 @@ public class Generator {
 
         transpiler.process();
         transpiler.addHeader("import * as greycat from 'greycat'");
+        transpiler.addHeader("import {java} from 'j2ts-jre';");
+
         transpiler.generate();
 
         File tsGen = new File(target.getAbsolutePath() + "-ts" + File.separator + packageName + ".ts");

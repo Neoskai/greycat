@@ -1,11 +1,3 @@
-package greycat.modeling.example;
-
-import greycat.Callback;
-import greycat.Graph;
-import greycat.GraphBuilder;
-import model.Device;
-import model.ModelPlugin;
-
 /**
  * Copyright 2017 The GreyCat Authors.  All rights reserved.
  * <p>
@@ -21,6 +13,15 @@ import model.ModelPlugin;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package greycat.modeling.example;
+
+import greycat.Callback;
+import greycat.Graph;
+import greycat.GraphBuilder;
+import model.Device;
+import model.ModelPlugin;
+import model.Module;
+
 public class HelloModelingWorld {
 
 
@@ -43,10 +44,18 @@ public class HelloModelingWorld {
                 Device device3 = Device.create(0, 0, graph);
                 device3.setName("device3");
 
+                // module
+                Module module = (Module) graph.newTypedNode(0, 0, Module.NODE_NAME);
+                module.setName("name");
+                module.setName2("name2");
+                device.addToModules(module);
+
                 System.out.println(device);
                 System.out.println(device2);
                 System.out.println(device3);
-                
+
+                device.findModules(result1 -> System.out.println(result1), "name", "name2");
+
             }
         });
     }

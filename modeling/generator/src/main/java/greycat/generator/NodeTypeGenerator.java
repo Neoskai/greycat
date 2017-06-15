@@ -239,12 +239,13 @@ class NodeTypeGenerator {
                     StringBuilder removeFromBodyBuilder = new StringBuilder();
                     MethodSource<JavaClassSource> remove = javaClass.addMethod();
                     remove.setVisibility(Visibility.PUBLIC).setFinal(true);
-                    String refType = upperCaseFirstChar(prop.name());
+                    String refName = upperCaseFirstChar(prop.name());
+                    String refType = upperCaseFirstChar(prop.type());
                     remove.setName("remove" + refType);
                     remove.setReturnTypeVoid();
                     remove.addParameter("greycat.Callback<Boolean>", "callback");
                     removeFromBodyBuilder.append(classClassifier.name() + " self = this;");
-                    removeFromBodyBuilder.append("get" + refType + "(new greycat.Callback<" + refType + ">() {");
+                    removeFromBodyBuilder.append("get" + refName + "(new greycat.Callback<" + refType + ">() {");
                     removeFromBodyBuilder.append("@Override\n");
                     removeFromBodyBuilder.append("public void on(" + refType + " result) {");
                     removeFromBodyBuilder.append("self.removeFromRelation(").append(prop.name().toUpperCase()).append(", result);");
@@ -265,17 +266,46 @@ class NodeTypeGenerator {
                     remove.setBody(removeFromBodyBuilder.toString());
                 }
 
+
+                if (rel.isIndexedRelation()) {
+                    // find methods
+                    MethodSource<JavaClassSource> find = javaClass.addMethod();
+                    find.setVisibility(Visibility.PUBLIC).setFinal(true);
+                    find.setName("find" + upperCaseFirstChar(prop.name()));
+                    find.setReturnTypeVoid();
+                    find.addParameter("greycat.Callback<" + rel.type() + "[]>", "callback");
+                    for (String indexedAtt : rel.indexedAttributes()) {
+                        find.addParameter("String", indexedAtt);
+                    }
+                    StringBuilder findBodyBuilder = new StringBuilder();
+                    findBodyBuilder.append("this.getRelationIndexed(" + prop.name().toUpperCase() + ").find(new Callback<greycat.Node[]>() {");
+                    findBodyBuilder.append("@Override\n");
+                    findBodyBuilder.append("public void on(greycat.Node[] result) {");
+                    findBodyBuilder.append(prop.type() + "[] typedResult = new " + prop.type() + "[result.length];");
+                    findBodyBuilder.append("java.lang.System.arraycopy(result, 0, typedResult, 0, result.length);");
+                    findBodyBuilder.append("callback.on(typedResult);");
+                    findBodyBuilder.append("}");
+                    findBodyBuilder.append("},");
+                    findBodyBuilder.append("this.world(), this.time(),");
+                    for (String indexedAtt : rel.indexedAttributes()) {
+                        findBodyBuilder.append(rel.type() + "." + indexedAtt.toUpperCase() + "," + indexedAtt + ",");
+                    }
+                    findBodyBuilder.deleteCharAt(findBodyBuilder.length() - 1);
+                    findBodyBuilder.append(");");
+                    find.setBody(findBodyBuilder.toString());
+
+                }
             }
         }
 
 
-        // indexes
-        if (classClassifier.indexes().length > 0) {
+        // keys
+        if (classClassifier.keys().length > 0) {
             StringBuilder indexMethodBody = new StringBuilder();
             StringBuilder unindexMethodBody = new StringBuilder();
 
             String deferPart = "\t\tfinal " + classClassifier.name() + " self = this;\n" +
-                    "\t\tgreycat.DeferCounter deferCounter = this.graph().newCounter(" + classClassifier.indexes().length + ");\n" +
+                    "\t\tgreycat.DeferCounter deferCounter = this.graph().newCounter(" + classClassifier.keys().length + ");\n" +
                     "\t\tdeferCounter.then(new greycat.plugin.Job() {\n" +
                     "\t\t\t@Override\n" +
                     "\t\t\tpublic void run() {\n" +
@@ -288,28 +318,28 @@ class NodeTypeGenerator {
             indexMethodBody.append(deferPart);
             unindexMethodBody.append(deferPart);
 
-            for (Index idx : classClassifier.indexes()) {
-                String idxName = idx.name();
+            for (Key key : classClassifier.keys()) {
+                String keyName = key.name();
 
                 // index constants
                 javaClass.addField()
                         .setVisibility(Visibility.PUBLIC)
                         .setFinal(true)
-                        .setName(idxName.toUpperCase())
+                        .setName(keyName.toUpperCase())
                         .setType(String.class)
-                        .setStringInitializer(idxName)
+                        .setStringInitializer(keyName)
                         .setStatic(true);
 
                 StringBuilder indexedProperties = new StringBuilder();
-                for (Property property : idx.attributes()) {
+                for (Property property : key.attributes()) {
                     indexedProperties.append(property.name().toUpperCase());
                     indexedProperties.append(",");
                 }
                 indexedProperties.deleteCharAt(indexedProperties.length() - 1);
-                String time = idx.isWithTime() ? "time()" : "greycat.Constants.BEGINNING_OF_TIME";
+                String time = key.isWithTime() ? "time()" : "greycat.Constants.BEGINNING_OF_TIME";
 
                 indexMethodBody.append(
-                        "\t\tthis.graph().index(world(), " + time + "," + idxName.toUpperCase() + " , new greycat.Callback<greycat.NodeIndex>() {\n" +
+                        "\t\tthis.graph().index(world(), " + time + "," + keyName.toUpperCase() + " , new greycat.Callback<greycat.NodeIndex>() {\n" +
                                 "\t\t\t@Override\n" +
                                 "\t\t\tpublic void on(greycat.NodeIndex indexNode) {\n" +
                                 "\t\t\t\tindexNode.removeFromIndex(self, " + indexedProperties + " );\n" +
@@ -320,7 +350,7 @@ class NodeTypeGenerator {
                 );
 
                 unindexMethodBody.append(
-                        "\t\tthis.graph().index(world(), " + time + "," + idxName.toUpperCase() + " , new greycat.Callback<greycat.NodeIndex>() {\n" +
+                        "\t\tthis.graph().index(world(), " + time + "," + keyName.toUpperCase() + " , new greycat.Callback<greycat.NodeIndex>() {\n" +
                                 "\t\t\t@Override\n" +
                                 "\t\t\tpublic void on(greycat.NodeIndex indexNode) {\n" +
                                 "\t\t\t\tindexNode.removeFromIndex(self, " + indexedProperties + " );\n" +
@@ -347,6 +377,7 @@ class NodeTypeGenerator {
                     .setBody(unindexMethodBody.toString())
                     .addParameter("Callback<Boolean>", "callback");
             javaClass.addImport(Callback.class);
+
         }
 
 
