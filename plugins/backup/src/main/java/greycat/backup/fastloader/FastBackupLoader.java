@@ -285,12 +285,29 @@ public class FastBackupLoader {
                     String midPath = fileName.substring(fileName.indexOf("/shard"), fileName.length());
                     String startLapseMatch = CharMatcher.inRange('0', '9').retainFrom(midPath.substring(midPath.indexOf("-"), midPath.lastIndexOf("-")));
                     String endLapseMatch = CharMatcher.inRange('0', '9').retainFrom(midPath.substring(midPath.lastIndexOf("-"), midPath.length()));
+                    String numberMatch = CharMatcher.inRange('0', '9').retainFrom(midPath.substring(midPath.indexOf("/save"), midPath.indexOf("-")));
+                    String shardMatch = CharMatcher.inRange('0', '9').retainFrom(midPath.substring(0, midPath.indexOf("/timelapse")));
+
+                    int shard = Integer.valueOf(shardMatch);
                     long startLapse = Long.valueOf(startLapseMatch);
+                    long fileNumber = Long.valueOf(numberMatch);
                     long endLapse = System.currentTimeMillis();
+
+                    FileKey key = new FileKey();
+                    key.setEndLapse(endLapse);
+                    key.setStartLapse(startLapse);
+                    key.setFilePath(fileName);
 
                     // If not in the local files and Corresponds to our part to backup
                     if(!_localFiles.contains(fileName) && ((startLapse >= startSeq && startLapse <= endSeq) || (endLapse >= startSeq && endLapse <= endSeq))) {
                         missingItems.add(fileName);
+                        Map<Long, FileKey> initialMap = _fileMap.get(shard);
+                        if (initialMap == null) {
+                            initialMap = new HashMap<>();
+                        }
+                        initialMap.put(fileNumber, key);
+                        _localFiles.add(fileName);
+                        _fileMap.put(shard, initialMap);
                     }
                 }
 

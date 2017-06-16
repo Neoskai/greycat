@@ -31,64 +31,64 @@ public class NodeGeneratorTest {
     public void testManyPoints(){
         //1 Node with Many Points
         Graph graph = new GraphBuilder()
-                .withMemorySize(2000000)
-                .build();
+            .withMemorySize(2000000)
+            .build();
 
         graph.connect(new Callback<Boolean>() {
-            @Override
-            public void on(Boolean result) {
-                final long before = System.currentTimeMillis();
-                System.out.println("Connected to graph");
+        @Override
+        public void on(Boolean result) {
+            final long before = System.currentTimeMillis();
+            System.out.println("Connected to graph");
 
-                final Node initialNode = graph.newNode(0,0);
-                final DeferCounter counter = graph.newCounter(valuesToInsert);
+            final Node initialNode = graph.newNode(0,0);
+            final DeferCounter counter = graph.newCounter(valuesToInsert);
 
-                for(long i = 0 ; i < valuesToInsert; i++){
+            for(long i = 0 ; i < valuesToInsert; i++){
 
-                    if(i%(valuesToInsert/10) == 0) {
-                        System.out.println("<insert til " + i + " in " + (System.currentTimeMillis() - before) / 1000 + "s");
-                        graph.save(new Callback<Boolean>() {
-                            @Override
-                            public void on(Boolean result) {
-                                // NOTHING
-                            }
-                        });
-                    }
-
-                    final double value= i * 0.3;
-                    final long time = initialStamp + i;
-
-                    graph.lookup(0, time, initialNode.id(), new Callback<Node>() {
+                if(i%(valuesToInsert/10) == 0) {
+                    System.out.println("<insert til " + i + " in " + (System.currentTimeMillis() - before) / 1000 + "s");
+                    graph.save(new Callback<Boolean>() {
                         @Override
-                        public void on(Node timedNode) {
-                            timedNode.set("value", Type.DOUBLE, value);
-                            counter.count();
-                            timedNode.free();
+                        public void on(Boolean result) {
+                            // NOTHING
                         }
                     });
                 }
 
-                initialNode.free();
+                final double value= i * 0.3;
+                final long time = initialStamp + i;
 
-                counter.then(new Job() {
+                graph.lookup(0, time, initialNode.id(), new Callback<Node>() {
                     @Override
-                    public void run() {
-                        System.out.println("<end insert phase>" + " " + (System.currentTimeMillis() - before) / 1000 + "s");
-                        System.out.println( "Sparkey result: " + (valuesToInsert / ((System.currentTimeMillis() - before) / 1000) / 1000) + "kv/s");
-
-
-                        graph.disconnect(new Callback<Boolean>() {
-                            @Override
-                            public void on(Boolean result) {
-                                System.out.println("Disconnected from graph");
-                            }
-                        });
+                    public void on(Node timedNode) {
+                        timedNode.set("value", Type.DOUBLE, value);
+                        counter.count();
+                        timedNode.free();
                     }
                 });
-
             }
-        });
-    }
+
+            initialNode.free();
+
+            counter.then(new Job() {
+                @Override
+                public void run() {
+                    System.out.println("<end insert phase>" + " " + (System.currentTimeMillis() - before) / 1000 + "s");
+                    System.out.println( "Sparkey result: " + (valuesToInsert / ((System.currentTimeMillis() - before) / 1000) / 1000) + "kv/s");
+
+
+                    graph.disconnect(new Callback<Boolean>() {
+                        @Override
+                        public void on(Boolean result) {
+                            System.out.println("Disconnected from graph");
+                        }
+                    });
+                }
+            });
+
+        }
+    });
+}
 
     @Ignore
     @Test
