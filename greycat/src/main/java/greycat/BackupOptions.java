@@ -155,4 +155,20 @@ public class BackupOptions {
 
         return "15d4CYxNHAR12tKjxN/1q5HIgIo4KbzC1twzozwZ";
     }
+
+    public static String bucket(){
+        Properties prop = new Properties();
+        InputStream input;
+        try {
+            input = BackupOptions.class.getClassLoader().getResourceAsStream("config.properties");
+            prop.load(input);
+
+            return prop.getProperty("minio.bucket");
+
+        } catch (Exception ex) {
+            System.err.println("No configuration file");
+        }
+
+        return "logs";
+    }
 }

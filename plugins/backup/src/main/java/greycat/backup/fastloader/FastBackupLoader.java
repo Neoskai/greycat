@@ -274,8 +274,8 @@ public class FastBackupLoader {
                     BackupOptions.accessKey(),
                     BackupOptions.secretKey());
 
-            if (minioClient.bucketExists("logs")) {
-                Iterable<Result<Item>> myObjects = minioClient.listObjects("logs");
+            if (minioClient.bucketExists(BackupOptions.bucket())) {
+                Iterable<Result<Item>> myObjects = minioClient.listObjects(BackupOptions.bucket());
                 List<String> missingItems = new ArrayList<>();
 
                 for (Result<Item> result : myObjects) {
@@ -291,7 +291,7 @@ public class FastBackupLoader {
                     int shard = Integer.valueOf(shardMatch);
                     long startLapse = Long.valueOf(startLapseMatch);
                     long fileNumber = Long.valueOf(numberMatch);
-                    long endLapse = System.currentTimeMillis();
+                    long endLapse = Long.valueOf(endLapseMatch);
 
                     FileKey key = new FileKey();
                     key.setEndLapse(endLapse);
@@ -320,7 +320,7 @@ public class FastBackupLoader {
                         throw new IllegalStateException("Couldn't create dir: " + parent);
                     }
 
-                    minioClient.getObject("logs", name, name);
+                    minioClient.getObject(BackupOptions.bucket(), name, name);
                 }
             }
         } catch (Exception e) {
