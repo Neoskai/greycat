@@ -17,7 +17,7 @@
 import React, { Component } from 'react';
 import Timeline from 'react-visjs-timeline'
 import Snapshot from './Snapshot'
-import BackupList from './BackupList'
+import Logs from './Logs'
 import BackupLoader from './BackupLoader'
 import { Grid, Row, Col } from 'react-bootstrap';
 
@@ -108,7 +108,7 @@ class App extends Component {
                                     <BackupLoader />
                                 </Col>
                                 <Col xs={3} md={3} className="BackupList">
-                                    <BackupList />
+                                    <Logs />
                                 </Col>
                             </Row>
                         </Grid>

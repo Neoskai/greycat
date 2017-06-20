@@ -17,7 +17,7 @@
 import React, { Component } from 'react';
 import {Treebeard, decorators} from 'react-treebeard';
 
-import './BackupList.css';
+import './Logs.css';
 
 const data = {
     name: 'root',
@@ -108,18 +108,20 @@ decorators.Header = (props) => {
     );
 };
 
-export default class BackupList extends Component{
+export default class Logs extends Component{
     constructor(props){
         super(props);
         this.state = {logData: []};
         this.onToggle = this.onToggle.bind(this);
     }
+
     onToggle(node, toggled){
         if(this.state.cursor){this.state.cursor.active = false;}
         node.active = true;
         if(node.children){ node.toggled = toggled; }
         this.setState({ cursor: node });
     }
+
     render(){
         return (
             <div className="BackupList component">

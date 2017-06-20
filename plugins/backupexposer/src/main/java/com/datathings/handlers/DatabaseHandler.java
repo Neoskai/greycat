@@ -31,10 +31,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class BackupHandler implements HttpHandler{
+public class DatabaseHandler implements HttpHandler{
     private String _basePath;
 
-    public BackupHandler(String basePath){
+    public DatabaseHandler(String basePath){
         _basePath = basePath;
     }
 

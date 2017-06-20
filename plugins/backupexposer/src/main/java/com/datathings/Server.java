@@ -17,7 +17,9 @@
 package com.datathings;
 
 import com.datathings.handlers.*;
+import io.mikesir87.javacors.undertow.CorsHandler;
 import io.undertow.Undertow;
+import io.undertow.server.handlers.SetHeaderHandler;
 import io.undertow.server.handlers.resource.PathResourceManager;
 
 import java.nio.file.Paths;
@@ -42,7 +44,7 @@ public class Server
                 .addHttpListener(_port, "0.0.0.0")
                 .setHandler(
                         path()
-                                .addPrefixPath("/database", new BackupHandler(_basePath))
+                                .addPrefixPath("/database", new DatabaseHandler(_basePath))
                                 .addPrefixPath("/logs", new LogHandler(_basePath))
                                 .addPrefixPath("/backup/full", new FullBackupHandler(_basePath))
                                 .addPrefixPath("/backup/partial", new PartialBackupHandler(_basePath))
@@ -52,7 +54,11 @@ public class Server
                                         resource(new PathResourceManager(Paths.get(_basePath), 100))
                                                 .setDirectoryListingEnabled(true))
 
-                ).build();
+                )
+                //.setHandler(new SetHeaderHandler("Access-Control-Allow-Origin", "*"))
+                //.setHandler(new SetHeaderHandler("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE"))
+                .build();
+
         _server.start();
     }
 
