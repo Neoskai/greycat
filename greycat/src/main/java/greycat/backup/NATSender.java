@@ -39,9 +39,9 @@ public class NATSender extends AbstractSender{
     }
 
     @Override
-    public boolean sendMessage(byte[] message){
+    public boolean sendMessage(String channel, byte[] message){
         try {
-            _producer.publish("Greycat", message);
+            _producer.publish(channel, message);
             return true;
         } catch (IOException e) {
             e.printStackTrace();

@@ -20,8 +20,8 @@ package greycat.struct;
  */
 public class BackupEntry {
 
-    private long id;
-    private long timestamp;
+    private long id; // ID of the Backup
+    private long timestamp; // Timestamp the backup was generated at
 
     public long getId() {
         return id;

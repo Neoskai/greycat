@@ -46,9 +46,9 @@ public class UTTSender extends AbstractSender{
     }
 
     @Override
-    public boolean sendMessage(byte[] message) {
+    public boolean sendMessage(String channel, byte[] message) {
         try {
-            _producer.publish("Greycat", message, 2, false);
+            _producer.publish(channel, message, 2, false);
 
             return true;
         } catch (MqttException e) {

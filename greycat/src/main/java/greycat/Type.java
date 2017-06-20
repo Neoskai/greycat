@@ -58,7 +58,7 @@ public class Type {
         return p_type < BOOL || p_type > INT_TO_STRING_MAP;
     }
 
-    public static final byte REMOVE = 28;
+    public static final int REMOVE = 28;
 
     /**
      * Convert a type that represent a byte to a readable String representation

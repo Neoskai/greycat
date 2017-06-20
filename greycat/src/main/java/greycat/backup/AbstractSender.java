@@ -39,7 +39,7 @@ public abstract class AbstractSender {
      * @param message byte[] message
      * @return True if success , false otherwise
      */
-    public abstract boolean sendMessage(byte[] message);
+    public abstract boolean sendMessage(String channel, byte[] message);
 
     /**
      * Bufferize a message
@@ -71,7 +71,7 @@ public abstract class AbstractSender {
         buffer.write(Constants.CHUNK_SEP);
 
         if(value == null){
-            buffer.write(Type.REMOVE);
+            Base64.encodeIntToBuffer(Type.REMOVE, buffer);
             buffer.write(Constants.CHUNK_SEP);
         }else{
             Base64.encodeIntToBuffer(type, buffer);
@@ -94,7 +94,7 @@ public abstract class AbstractSender {
      */
     public void processMessage(long world, long time, long id, int index, long eventId, int type, Object value){
         Buffer buffer = bufferizeMessage(world, time, id, index, eventId, type, value);
-        sendMessage(buffer.data());
+        sendMessage("Greycat", buffer.data());
     }
 
     /**

@@ -47,9 +47,9 @@ public class NSQSender extends AbstractSender{
     }
 
     @Override
-    public boolean sendMessage(byte[] message){
+    public boolean sendMessage(String channel, byte[] message){
         try {
-            _producer.produce("Greycat", message);
+            _producer.produce(channel, message);
             return true;
         } catch (NSQException | TimeoutException e) {
             e.printStackTrace();
