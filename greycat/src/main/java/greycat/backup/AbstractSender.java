@@ -51,7 +51,7 @@ public abstract class AbstractSender {
      * @param value Value
      * @return Buffer containing key and value
      */
-    public Buffer bufferizeMessage(long world, long time, long id, int index, long eventId, byte type, Object value){
+    public Buffer bufferizeMessage(long world, long time, long id, int index, long eventId, int type, Object value){
         if (g == null){ // Init done here to prevent error caused by Class Init Order
             g = GraphBuilder.newBuilder().build();
         }
@@ -74,7 +74,7 @@ public abstract class AbstractSender {
             buffer.write(Type.REMOVE);
             buffer.write(Constants.CHUNK_SEP);
         }else{
-            buffer.write(type);
+            Base64.encodeIntToBuffer(type, buffer);
             buffer.write(Constants.CHUNK_SEP);
             valueToBuffer(buffer,value, type);
         }
@@ -92,7 +92,7 @@ public abstract class AbstractSender {
      * @param type The type of the value we are setting
      * @param value The value to set
      */
-    public void processMessage(long world, long time, long id, int index, long eventId, byte type, Object value){
+    public void processMessage(long world, long time, long id, int index, long eventId, int type, Object value){
         Buffer buffer = bufferizeMessage(world, time, id, index, eventId, type, value);
         sendMessage(buffer.data());
     }
@@ -105,7 +105,7 @@ public abstract class AbstractSender {
      * @param type The type of the object
      * @return The buffer with the object written in
      */
-    private static Buffer valueToBuffer(Buffer buffer, Object obj, byte type){
+    private static Buffer valueToBuffer(Buffer buffer, Object obj, int type){
         if (obj == null){
             return buffer;
         }

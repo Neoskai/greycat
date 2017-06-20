@@ -17,7 +17,6 @@
 package com.datathings;
 
 import com.datathings.handlers.*;
-import io.mikesir87.javacors.undertow.CorsHandler;
 import io.undertow.Undertow;
 import io.undertow.server.handlers.SetHeaderHandler;
 import io.undertow.server.handlers.resource.PathResourceManager;

@@ -331,17 +331,12 @@ public class BaseNode implements Node {
      * return this;
      */
     @Override
-<<<<<<< HEAD
-    public Node setAt(int index, byte type, Object value) {
+    public Node setAt(int index, int type, Object value) {
         if(_sender.isConnected()){
             long eventId= eventCounts.get(_id);
             _sender.processMessage(_world, _time, _id, index, eventId, type, value);
             eventCounts.put(_id, ++eventId);
         }
-
-=======
-    public Node setAt(int index, int type, Object value) {
->>>>>>> upstream/master
         final NodeState unPhasedState = this._resolver.resolveState(this);
         boolean isDiff = (type != unPhasedState.typeAt(index));
         if (!isDiff) {
