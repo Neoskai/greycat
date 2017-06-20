@@ -16,6 +16,7 @@
 package greycat.internal.heap;
 
 import greycat.*;
+import greycat.struct.IntArray;
 import greycat.struct.LongLongArrayMapCallBack;
 import greycat.base.BaseNode;
 import greycat.plugin.NodeState;
@@ -31,15 +32,34 @@ class HeapRelationIndexed extends HeapLongLongArrayMap implements RelationIndexe
     }
 
     @Override
-    public RelationIndexed add(Node node, String... attributeNames) {
+    public final RelationIndexed add(Node node, String... attributeNames) {
         internal_add_remove(true, node, attributeNames);
         return this;
     }
 
     @Override
-    public RelationIndexed remove(Node node, String... attributeNames) {
+    public final RelationIndexed remove(Node node, String... attributeNames) {
         internal_add_remove(false, node, attributeNames);
         return this;
+    }
+
+    @Override
+    public final long update(long previous, Node node, IntArray hashes) {
+        final Query flatQuery = node.graph().newQuery();
+        final NodeState toIndexNodeState = node.graph().resolver().resolveState(node);
+        for (int i = 0; i < hashes.size(); i++) {
+            final int hash = hashes.get(i);
+            final Object attValue = toIndexNodeState.getAt(hash);
+            if (attValue != null) {
+                flatQuery.addRaw(hash, attValue.toString());
+            } else {
+                flatQuery.addRaw(hash, null);
+            }
+        }
+        delete(previous, node.id());
+        final long newHash = flatQuery.hash();
+        put(newHash, node.id());
+        return newHash;
     }
 
     private void internal_add_remove(boolean isIndex, Node node, String... attributeNames) {
@@ -62,13 +82,13 @@ class HeapRelationIndexed extends HeapLongLongArrayMap implements RelationIndexe
     }
 
     @Override
-    public RelationIndexed clear() {
-        //TODO
+    public final RelationIndexed clear() {
+        internal_clear();
         return this;
     }
 
     @Override
-    public void find(Callback<Node[]> callback, long world, long time, String... params) {
+    public final void find(Callback<Node[]> callback, long world, long time, String... params) {
         Query queryObj = _graph.newQuery();
         queryObj.setWorld(world);
         queryObj.setTime(time);
@@ -100,12 +120,12 @@ class HeapRelationIndexed extends HeapLongLongArrayMap implements RelationIndexe
     }
 
     @Override
-    public final long[] selectByQuery(Query query) {
+    public final long[] selectByQuery(final Query query) {
         return get(query.hash());
     }
 
     @Override
-    public void findByQuery(Query query, Callback<Node[]> callback) {
+    public final void findByQuery(final Query query, final Callback<Node[]> callback) {
         final long[] foundIds = get(query.hash());
         if (foundIds == null) {
             callback.on(new BaseNode[0]);
@@ -171,13 +191,13 @@ class HeapRelationIndexed extends HeapLongLongArrayMap implements RelationIndexe
     }
 
     @Override
-    public long getByIndex(int index) {
+    public final long getByIndex(final int index) {
         return value(index);
     }
 
     @Override
-    public long[] all() {
-        long[] flat = new long[(int) size()];
+    public final long[] all() {
+        long[] flat = new long[size()];
         final int[] i = {0};
         this.each(new LongLongArrayMapCallBack() {
             @Override

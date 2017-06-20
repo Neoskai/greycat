@@ -13,33 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package greycat.language;
+package greycat.internal.custom;
 
-public abstract class Property implements Comparable<Property> {
-
-    private final String name;
-    private final String type;
-
-    public Property(String name, String type) {
-        this.name = name;
-        this.type = type;
-    }
-
-    public String name() {
-        return name;
-    }
-
-    public String type() {
-        return type;
-    }
-
-    public int compareTo(Property p) {
-        if (p.name().equals(name)) {
-            return 0;
-        } else {
-            return name().compareTo(p.name);
-        }
-    }
-
-
+class TreeStrategy {
+    static final int INDEX = 0;
+    static final int PROFILE = 1;
+    //public static final int APPEND = 2;
+    static final int DEFAULT = INDEX;
 }

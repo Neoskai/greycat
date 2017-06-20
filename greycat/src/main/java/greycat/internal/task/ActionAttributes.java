@@ -48,7 +48,7 @@ class ActionAttributes implements Action {
                 final NodeState nState = ctx.graph().resolver().resolveState(n);
                 nState.each(new NodeStateCallback() {
                     @Override
-                    public void on(int attributeKey, byte elemType, Object elem) {
+                    public void on(int attributeKey, int elemType, Object elem) {
                         if (_filter == -1 || elemType == _filter) {
                             String retrieved = ctx.graph().resolver().hashToString(attributeKey);
                             if (retrieved != null) {

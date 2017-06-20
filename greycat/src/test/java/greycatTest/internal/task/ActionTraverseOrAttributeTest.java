@@ -24,7 +24,7 @@ import greycat.TaskContext;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static greycat.internal.task.CoreActions.readGlobalIndex;
+import static greycat.internal.task.CoreActions.readIndex;
 import static greycat.internal.task.CoreActions.traverse;
 import static greycat.Tasks.newTask;
 
@@ -34,7 +34,7 @@ public class ActionTraverseOrAttributeTest extends AbstractActionTest {
     public void test() {
         initGraph();
         newTask()
-                .then(readGlobalIndex("nodes"))
+                .then(readIndex("nodes"))
                 .traverse("children")
                 .traverse("name")
                 .thenDo(new ActionFunction() {
@@ -52,7 +52,7 @@ public class ActionTraverseOrAttributeTest extends AbstractActionTest {
     public void testDefaultSynthax() {
         initGraph();
         newTask()
-                .then(readGlobalIndex("nodes"))
+                .then(readIndex("nodes"))
                 .parse("children.name", graph)
                 .thenDo(new ActionFunction() {
                     @Override
@@ -70,7 +70,7 @@ public class ActionTraverseOrAttributeTest extends AbstractActionTest {
     public void testParse() {
         initGraph();
         newTask()
-                .parse("readGlobalIndex(nodes).traverse(children)", graph)
+                .parse("readIndex(nodes).traverse(children)", graph)
                 .thenDo(new ActionFunction() {
                     @Override
                     public void eval(TaskContext ctx) {
@@ -100,9 +100,8 @@ public class ActionTraverseOrAttributeTest extends AbstractActionTest {
         Node root = graph.newNode(0, 0);
         root.set("name", Type.STRING, "root2");
 
-        graph.index(0, 0, "roots", rootIndex -> {
-            rootIndex.addToIndex(root, "name");
-
+        graph.declareIndex(0, "roots", rootIndex -> {
+            rootIndex.update(root);
             RelationIndexed irel = (RelationIndexed) root.getOrCreate("childrenIndexed", Type.RELATION_INDEXED);
             irel.add(node1, "name");
             irel.add(node2, "name");
@@ -117,7 +116,7 @@ public class ActionTraverseOrAttributeTest extends AbstractActionTest {
                 }
             });
 
-        });
+        }, "name");
 
         /*
         readIndex("rootIndex", "name=root2")
@@ -132,7 +131,7 @@ public class ActionTraverseOrAttributeTest extends AbstractActionTest {
 */
 
         newTask()
-                .then(readGlobalIndex("rootIndex", "name", "root2"))
+                .then(readIndex("rootIndex", "name", "root2"))
                 .then(traverse("childrenIndexed", "name", "node3"))
                 .thenDo(new ActionFunction() {
                     @Override

@@ -13,11 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package greycat.internal.tree;
+package greycat.plugin;
 
-class TreeStrategy {
-    static final int INDEX = 0;
-    static final int PROFILE = 1;
-    //public static final int APPEND = 2;
-    static final int DEFAULT = INDEX;
+import greycat.struct.EGraph;
+
+/**
+ * Type plugin allows to propose alternative implementations for basic Types.<br>
+ * Custom types are wrapper of EGraph and should leverage them as backend.
+ */
+@FunctionalInterface
+public interface TypeFactory {
+
+    /**
+     * Create a new Node
+     *
+     * @param backend backend
+     * @return newly created Type object
+     */
+    Object wrap(EGraph backend);
+
 }

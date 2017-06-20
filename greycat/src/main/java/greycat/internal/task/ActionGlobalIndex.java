@@ -36,7 +36,7 @@ class ActionGlobalIndex implements Action {
     @Override
     public void eval(final TaskContext ctx) {
         final String name = ctx.template(_name);
-        ctx.graph().indexIfExists(ctx.world(), ctx.time(), name, new Callback<NodeIndex>() {
+        ctx.graph().index(ctx.world(), ctx.time(), name, new Callback<NodeIndex>() {
             @Override
             public void on(NodeIndex resolvedIndex) {
                 if (resolvedIndex != null) {

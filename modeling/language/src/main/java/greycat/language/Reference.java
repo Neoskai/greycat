@@ -15,8 +15,22 @@
  */
 package greycat.language;
 
+public class Reference extends ASTNode {
 
-public interface Classifier {
+    private final String name;
+    private final String type;
 
-    String name();
+    public Reference(String name, String type) {
+        this.name = name;
+        this.type = type;
+    }
+
+    public String name() {
+        return name;
+    }
+
+    public String type() {
+        return type;
+    }
+
 }

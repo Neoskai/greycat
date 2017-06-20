@@ -15,28 +15,38 @@
  */
 package greycat.language;
 
-import java.util.Set;
-import java.util.TreeSet;
-
-public class Enum implements Classifier {
+public class Constant extends ASTNode {
     private final String name;
-    private final Set<String> literals;
+    private final String type;
+    private final String value;
 
-    public Enum(String name) {
+    private boolean isGlobal;
+
+    public Constant(String name, String type, String value) {
         this.name = name;
-        literals = new TreeSet<>();
+        this.type = type;
+        this.value = value;
     }
 
-    public String[] literals() {
-        return literals.toArray(new String[literals.size()]);
-    }
-
-    public void addLiteral(String value) {
-        literals.add(value);
-    }
-
-    @Override
     public String name() {
         return name;
     }
+
+    public boolean isGlobal() {
+        return isGlobal;
+    }
+
+    public void setIsGlobal(boolean isGlobal) {
+        this.isGlobal = isGlobal;
+    }
+
+    public String type() {
+        return this.type;
+    }
+
+    public String value() {
+        return value;
+    }
 }
+
+

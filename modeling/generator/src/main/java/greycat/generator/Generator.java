@@ -16,9 +16,7 @@
 package greycat.generator;
 
 import greycat.language.Model;
-import greycat.language.ModelChecker;
 import java2typescript.SourceTranslator;
-import jline.internal.Log;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.project.MavenProject;
 import org.jboss.forge.roaster.model.source.JavaSource;
@@ -34,11 +32,13 @@ public class Generator {
     public static final String FILE_EXTENSION = ".gcm";
 
     private final Model model;
-    private final ModelChecker modelChecker;
 
     public Generator() {
         this.model = new Model();
-        this.modelChecker = new ModelChecker();
+    }
+
+    static String upperCaseFirstChar(String init) {
+        return init.substring(0, 1).toUpperCase() + init.substring(1);
     }
 
     public void scan(File target) throws Exception {
@@ -49,14 +49,12 @@ public class Generator {
             } else {
                 for (String name : files) {
                     if (name.trim().endsWith(FILE_EXTENSION)) {
-                        this.modelChecker.check(new File(target, name));
                         this.model.parse(new File(target, name));
                     }
                 }
             }
 
         } else if (target.getName().endsWith(FILE_EXTENSION)) {
-            this.modelChecker.check(target);
             this.model.parse(target);
         } else {
             throw new RuntimeException("no file with correct extension found");
@@ -71,7 +69,6 @@ public class Generator {
             } else {
                 for (String name : files) {
                     if (name.trim().endsWith(FILE_EXTENSION)) {
-                        this.modelChecker.check(new File(target, name));
                         this.model.parse(new File(target, name));
                     } else {
                         File current = new File(target, name);
@@ -83,21 +80,34 @@ public class Generator {
             }
 
         } else if (target.getName().endsWith(FILE_EXTENSION)) {
-            this.modelChecker.check(target);
             this.model.parse(target);
         }
     }
 
     private void generateJava(String packageName, String pluginName, File target) {
         int index = 0;
-        JavaSource[] sources = new JavaSource[(model.classifiers().length) * 2 + 2];
+        // TODO
+        int size = model.classes().length + model.customTypes().length + model.globalIndexes().length + 1;
+
+        JavaSource[] sources = new JavaSource[size * 2 + 2];
         sources[index] = PluginClassGenerator.generate(packageName, pluginName, model);
         index++;
 
-        JavaSource[] nodeTypes = NodeTypeGenerator.generate(packageName, pluginName, model);
-        System.arraycopy(nodeTypes, 0, sources, index, nodeTypes.length);
-        index += nodeTypes.length;
+        JavaSource[] classTypes = ClassTypeGenerator.generate(packageName, model);
+        System.arraycopy(classTypes, 0, sources, index, classTypes.length);
+        index += classTypes.length;
 
+        JavaSource[] customTypes = CustomTypeGenerator.generate(packageName, model);
+        System.arraycopy(customTypes, 0, sources, index, customTypes.length);
+        index += customTypes.length;
+
+        JavaSource[] globalIndexes = GlobalIndexGenerator.generate(packageName, model);
+        System.arraycopy(globalIndexes, 0, sources, index, globalIndexes.length);
+        index += globalIndexes.length;
+
+        JavaSource[] globalConstants = GlobalConstantGenerator.generate(packageName, model);
+        System.arraycopy(globalConstants, 0, sources, index, globalConstants.length);
+        index += globalConstants.length;
 
         for (int i = 0; i < index; i++) {
             if (sources[i] != null) {
@@ -141,7 +151,7 @@ public class Generator {
         }
 
         transpiler.process();
-        transpiler.addHeader("import * as greycat from 'greycat'");
+        transpiler.addHeader("import * as greycat from 'greycat';");
         transpiler.addHeader("import {java} from 'j2ts-jre';");
 
         transpiler.generate();
@@ -221,7 +231,7 @@ public class Generator {
                     "g.connect(function (isSucceed) {\n" +
                     "console.log(\"--- GreyCat ready ---\");\n" +
                     "    var n = g.newNode(0,0);\n" +
-                    "    n.set(\"name\",greycat.Type.STRING, \"myName\");\n" +
+                    "    n.set(\"name\",greycat.CustomType.STRING, \"myName\");\n" +
                     "    console.log(n.toString());\n" +
                     "});").getBytes());
 
@@ -233,8 +243,8 @@ public class Generator {
                     "  \"main\": \"main.js\",\n" +
                     "  \"author\": \"\",\n" +
                     "  \"description\":\"empty\",\n" +
-                            "  \"repository\":\"empty\",\n" +
-                            "  \"license\":\"UNLICENSED\","+
+                    "  \"repository\":\"empty\",\n" +
+                    "  \"license\":\"UNLICENSED\"," +
                     "  \"dependencies\": {\n" +
                     "    \"greycat\": \"" + gcVersion + "\",\n" +
                     "    \"" + packageName + "\": \"../greycat-modeling-ts\"\n" +
@@ -266,7 +276,7 @@ public class Generator {
                     "g.connect(function (isSucceed) {\n" +
                     "    console.log(\"--- GreyCat ready ---\");\n" +
                     "    var n = g.newNode(0,0);\n" +
-                    "    n.set(\"name\",greycat.Type.STRING, \"myName\");\n" +
+                    "    n.set(\"name\",greycat.CustomType.STRING, \"myName\");\n" +
                     "    console.log(n.toString());\n" +
                     "})\n").getBytes());
 

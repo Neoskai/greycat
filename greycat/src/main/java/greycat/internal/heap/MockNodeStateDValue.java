@@ -182,28 +182,28 @@ public class MockNodeStateDValue implements StateChunk {
     }
 
     @Override
-    public final Object getTypedRawAt(int index, byte type) {
+    public final Object getTypedRawAt(int index, int type) {
         return chunk._values[offset];
     }
 
     @Override
-    public final byte type(String name) {
+    public final int type(String name) {
         return Type.DOUBLE;
     }
 
     @Override
-    public final byte typeAt(int index) {
+    public final int typeAt(int index) {
         return Type.DOUBLE;
     }
 
     @Override
-    public final Container set(String name, byte type, Object value) {
+    public final Container set(String name, int type, Object value) {
         chunk._values[offset] = (double) value;
         return this;
     }
 
     @Override
-    public final Container setAt(int index, byte type, Object value) {
+    public final Container setAt(int index, int type, Object value) {
         chunk._values[offset] = (double) value;
         return this;
     }
@@ -219,12 +219,12 @@ public class MockNodeStateDValue implements StateChunk {
     }
 
     @Override
-    public final Object getOrCreate(String name, byte type) {
+    public final Object getOrCreate(String name, int type) {
         return null;
     }
 
     @Override
-    public final Object getOrCreateAt(int index, byte type) {
+    public final Object getOrCreateAt(int index, int type) {
         return null;
     }
 

@@ -19,6 +19,7 @@ import greycat.Callback;
 import greycat.Container;
 import greycat.Node;
 import greycat.Query;
+import greycat.struct.IntArray;
 import greycat.struct.Relation;
 import greycat.struct.RelationIndexed;
 
@@ -86,6 +87,11 @@ public final class RelationIndexedProxy implements RelationIndexed {
     public final RelationIndexed remove(final Node node, final String... attributeNames) {
         check();
         return _elem.remove(node, attributeNames);
+    }
+
+    @Override
+    public final long update(long previous, Node node, IntArray hashes) {
+        return _elem.update(previous, node, hashes);
     }
 
     @Override

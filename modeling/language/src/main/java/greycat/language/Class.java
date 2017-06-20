@@ -18,35 +18,93 @@ package greycat.language;
 
 import java.util.*;
 
-public class Class implements Classifier {
+public class Class extends ASTNode {
     private final String name;
-    private final Map<String, Property> properties;
-    private final List<Key> keys;
+    private final Map<String, Attribute> attributes;
+    private final Map<String, Relation> relations;
+    private final Map<String, Reference> references;
+    private final Map<String, LocalIndex> localIndexes;
+    private final Map<String, Constant> constants;
 
     private Class parent;
 
     public Class(String name) {
         this.name = name;
-        this.properties = new HashMap<>();
-        this.keys = new LinkedList<>();
+        this.attributes = new HashMap<>();
+        this.relations = new HashMap<>();
+        this.references = new HashMap<>();
+        this.localIndexes = new HashMap<>();
+        this.constants = new HashMap<>();
     }
 
-    public Property[] properties() {
-        return properties.values().toArray(new Property[properties.size()]);
+
+    public Collection<Constant> constants() {
+        return this.constants.values();
     }
 
-    public Property getProperty(String name) {
-        for (Property property : properties()) {
-            if (property.name().equals(name)) {
-                return property;
+    public void addConstant(Constant constant) {
+        this.constants.put(constant.name(), constant);
+    }
+
+    public Collection<LocalIndex> localIndexes() {
+        return this.localIndexes.values();
+    }
+
+    public void addLocalIndex(LocalIndex localIndex) {
+        localIndexes.put(localIndex.name(), localIndex);
+    }
+
+    public Collection<Attribute> attributes() {
+        return attributes.values();
+    }
+
+    public Attribute getAttribute(String name) {
+        for (Attribute att : attributes()) {
+            if (att.name().equals(name)) {
+                return att;
             }
         }
         return null;
     }
 
-    public void addProperty(Property property) {
-        properties.put(property.name(), property);
+    public void addAttribute(Attribute att) {
+        attributes.put(att.name(), att);
     }
+
+    public Collection<Relation> relations() {
+        return relations.values();
+    }
+
+    public Relation getRelation(String name) {
+        for (Relation rel : relations()) {
+            if (rel.name().equals(name)) {
+                return rel;
+            }
+        }
+        return null;
+    }
+
+    public void addRelation(Relation rel) {
+        relations.put(rel.name(), rel);
+    }
+
+    public Collection<Reference> references() {
+        return references.values();
+    }
+
+    public Reference getReference(String name) {
+        for (Reference ref : references()) {
+            if (ref.name().equals(name)) {
+                return ref;
+            }
+        }
+        return null;
+    }
+
+    public void addReference(Reference ref) {
+        references.put(ref.name(), ref);
+    }
+
 
     public Class parent() {
         return parent;
@@ -56,16 +114,6 @@ public class Class implements Classifier {
         this.parent = parent;
     }
 
-    public void addKey(Key index) {
-        keys.add(index);
-    }
-
-    public Key[] keys() {
-        return keys.toArray(new Key[keys.size()]);
-    }
-
-
-    @Override
     public String name() {
         return name;
     }

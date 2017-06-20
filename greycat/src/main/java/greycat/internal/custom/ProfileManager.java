@@ -13,15 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package greycat.internal.tree.ndmanager;
+package greycat.internal.custom;
 
 import greycat.struct.NDManager;
 
-/**
- * Created by assaad on 09/05/2017.
- */
-public class IndexManager implements NDManager {
-
+public class ProfileManager implements NDManager {
     @Override
     public Object get(long id) {
         return id;
@@ -29,12 +25,12 @@ public class IndexManager implements NDManager {
 
     @Override
     public long updateExistingLeafNode(long oldKey, Object valueToInsert) {
-        return (long) valueToInsert;
+        return oldKey + (long) valueToInsert;
     }
 
     @Override
     public boolean updateParentsOnExisting() {
-        return false;
+        return true;
     }
 
     @Override
@@ -44,22 +40,21 @@ public class IndexManager implements NDManager {
 
     @Override
     public boolean parentsHaveNodes() {
-        return false;
+        return true;
     }
 
     @Override
     public long getNewLeafNode(Object valueToInsert) {
-        return (long) valueToInsert;
+        return 0;
     }
 
     @Override
     public long getNewParentNode() {
-        return -1;
+        return 0;
     }
 
     @Override
     public long updateParent(long parentkey, double[] key, Object valueToInsert) {
-        return parentkey;
+        return parentkey + (long) valueToInsert;
     }
 }
-

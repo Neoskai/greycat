@@ -60,7 +60,7 @@ public interface Node extends Container {
      * @param value Must be consistent with the propertyType.
      * @return The node for fluent API.
      */
-    Node forceSet(String name, byte type, Object value);
+    Node forceSet(String name, int type, Object value);
 
     /**
      * Sets the value of an attribute of this node for its current world and time.<br>
@@ -70,7 +70,7 @@ public interface Node extends Container {
      * @param value Must be consistent with the propertyType.
      * @return The node for fluent API.
      */
-    Node forceSetAt(int index, byte type, Object value);
+    Node forceSetAt(int index, int type, Object value);
 
     /**
      * Retrieves the named relation.

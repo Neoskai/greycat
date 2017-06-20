@@ -17,13 +17,13 @@ package greycat;
 
 public interface NodeIndex extends Node {
 
+    void declareAttributes(Callback<NodeIndex> callback, String... attributeNames);
+
     long size();
 
     long[] all();
 
-    NodeIndex addToIndex(Node node, String... attributeNames);
-
-    NodeIndex removeFromIndex(Node node, String... attributeNames);
+    NodeIndex update(Node node);
 
     NodeIndex clear();
 

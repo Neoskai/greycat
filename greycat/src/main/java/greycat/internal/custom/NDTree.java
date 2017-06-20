@@ -13,15 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package greycat.internal.tree;
+package greycat.internal.custom;
 
 import greycat.Type;
+import greycat.base.BaseCustomType;
 import greycat.plugin.NodeStateCallback;
 import greycat.struct.*;
 import greycat.utility.distance.Distance;
 import greycat.utility.distance.Distances;
 
-public class NDTree implements NDIndexer {
+public class NDTree extends BaseCustomType implements NDIndexer {
+
+    public static final String NAME = "NDTree";
 
     //default values:
     public static int BUFFER_SIZE_DEF = 20;
@@ -47,19 +50,16 @@ public class NDTree implements NDIndexer {
     private static int MAX = 1;
     private static int CENTER = 2;
 
-
-    private final EGraph eGraph;
     private final NDManager manager;
 
     public NDTree(final EGraph eGraph, final NDManager manager) {
-        this.eGraph = eGraph;
+        super(eGraph);
         this.manager = manager;
         if (eGraph.root() == null) {
             ENode root = eGraph.newNode();
             eGraph.setRoot(root);
         }
     }
-
 
     //From a key to insert, and a parent space with min and max boundaries, get the relation id of the subspace of child where to insert the key
     private static int getRelationId(double[][] space, double[] keyToInsert) {
@@ -325,24 +325,24 @@ public class NDTree implements NDIndexer {
 
     @Override
     public void setDistance(int distanceType) {
-        eGraph.root().setAt(DISTANCE, Type.INT, distanceType);
+        _backend.root().setAt(DISTANCE, Type.INT, distanceType);
     }
 
 
     @Override
     public void setResolution(double[] resolution) {
-        ((DoubleArray) (eGraph.root().getOrCreateAt(RESOLUTION, Type.DOUBLE_ARRAY))).initWith(resolution);
+        ((DoubleArray) (_backend.root().getOrCreateAt(RESOLUTION, Type.DOUBLE_ARRAY))).initWith(resolution);
     }
 
     @Override
     public void setMinBound(double[] min) {
-        ((DoubleArray) (eGraph.root().getOrCreateAt(BOUND_MIN, Type.DOUBLE_ARRAY))).initWith(min);
+        ((DoubleArray) (_backend.root().getOrCreateAt(BOUND_MIN, Type.DOUBLE_ARRAY))).initWith(min);
     }
 
 
     @Override
     public void setMaxBound(double[] max) {
-        ((DoubleArray) (eGraph.root().getOrCreateAt(BOUND_MAX, Type.DOUBLE_ARRAY))).initWith(max);
+        ((DoubleArray) (_backend.root().getOrCreateAt(BOUND_MAX, Type.DOUBLE_ARRAY))).initWith(max);
     }
 
     @Override
@@ -350,14 +350,14 @@ public class NDTree implements NDIndexer {
         if (bufferSize < 0) {
             throw new RuntimeException("Buffer size can't be <0");
         } else {
-            eGraph.root().setAt(BUFFER_SIZE, Type.INT, bufferSize);
+            _backend.root().setAt(BUFFER_SIZE, Type.INT, bufferSize);
         }
 
     }
 
     @Override
     public void insert(final double[] keys, final long value) {
-        ENode root = eGraph.root();
+        ENode root = _backend.root();
         double[][] space = getRootSpace(root);
         check(keys, space[MIN], space[MAX]);
         double[] resolution = ((DoubleArray) root.getAt(RESOLUTION)).extract();
@@ -388,7 +388,7 @@ public class NDTree implements NDIndexer {
 
     @Override
     public final ProfileResult queryBoundedRadius(final double[] keys, final double radius, final int max) {
-        ENode root = eGraph.root();
+        ENode root = _backend.root();
         if (root.getAtWithDefault(E_TOTAL, 0L) == 0) {
             return null;
         }
@@ -396,7 +396,7 @@ public class NDTree implements NDIndexer {
 
         check(keys, space[MIN], space[MAX]);
         Distance distance = Distances.getDistance(root.getAtWithDefault(DISTANCE, Distances.DEFAULT), null);
-        EGraph calcZone = eGraph.graph().space().newVolatileGraph();
+        EGraph calcZone = _backend.graph().space().newVolatileGraph();
         VolatileTreeResult nnl = new VolatileTreeResult(calcZone.newNode(), max);
         reccursiveTraverse(root, calcZone, nnl, distance, keys, null, null, radius, space);
         nnl.sort(true);
@@ -406,7 +406,7 @@ public class NDTree implements NDIndexer {
 
     @Override
     public final ProfileResult queryArea(final double[] min, final double[] max) {
-        ENode root = eGraph.root();
+        ENode root = _backend.root();
         if (root.getAtWithDefault(E_TOTAL, 0L) == 0) {
             return null;
         }
@@ -415,7 +415,7 @@ public class NDTree implements NDIndexer {
         for (int i = 0; i < center.length; i++) {
             center[i] = (min[i] + max[i]) / 2;
         }
-        EGraph calcZone = eGraph.graph().space().newVolatileGraph();
+        EGraph calcZone = _backend.graph().space().newVolatileGraph();
         VolatileTreeResult nnl = new VolatileTreeResult(calcZone.newNode(), -1);
         double[][] space = getRootMinMax(root);
 
@@ -426,13 +426,13 @@ public class NDTree implements NDIndexer {
 
     @Override
     public long size() {
-        ENode root = eGraph.root();
+        ENode root = _backend.root();
         return root.getAtWithDefault(E_TOTAL, 0L);
     }
 
     @Override
     public long treeSize() {
-        return eGraph.size();
+        return _backend.size();
     }
 
 
@@ -472,7 +472,7 @@ public class NDTree implements NDIndexer {
 
                     node.each(new NodeStateCallback() {
                         @Override
-                        public void on(int attributeKey, byte elemType, Object elem) {
+                        public void on(int attributeKey, int elemType, Object elem) {
                             if (attributeKey >= E_OFFSET_REL) {
                                 double[][] childSpace = getChildMinMax(space, attributeKey);
                                 childPriority.insert(childSpace[MIN], attributeKey, TreeHelper.getclosestDistance(target, childSpace[MIN], childSpace[MAX], distance));
@@ -491,7 +491,7 @@ public class NDTree implements NDIndexer {
             } else {
                 node.each(new NodeStateCallback() {
                     @Override
-                    public void on(int attributeKey, byte elemType, Object elem) {
+                    public void on(int attributeKey, int elemType, Object elem) {
                         if (attributeKey >= E_OFFSET_REL) {
                             ENode child = (ENode) node.getAt(attributeKey);
                             double[][] childSpace = getChildMinMax(space, attributeKey);

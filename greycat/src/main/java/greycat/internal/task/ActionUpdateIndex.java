@@ -25,40 +25,35 @@ import greycat.TaskContext;
 import greycat.TaskResult;
 import greycat.struct.Buffer;
 
-class ActionAddRemoveToGlobalIndex implements Action {
+class ActionUpdateIndex implements Action {
 
     private final String _name;
-    private final String[] _attributes;
-    private final boolean _timed;
-    private final boolean _remove;
+    // private final String[] _attributes;
 
-    ActionAddRemoveToGlobalIndex(final boolean remove, final boolean timed, final String name, final String... attributes) {
+    ActionUpdateIndex(final String name/*, final String... attributes*/) {
         this._name = name;
-        this._timed = timed;
-        this._attributes = attributes;
-        this._remove = remove;
+        // this._attributes = attributes;
     }
 
     @Override
     public final void eval(final TaskContext ctx) {
         final TaskResult previousResult = ctx.result();
         final String templatedIndexName = ctx.template(_name);
-        final String[] templatedAttributes = ctx.templates(_attributes);
+        //final String[] templatedAttributes = ctx.templates(_attributes);
         final DeferCounter counter = new CoreDeferCounter(previousResult.size());
         for (int i = 0; i < previousResult.size(); i++) {
             final Object loop = previousResult.get(i);
             if (loop instanceof BaseNode) {
                 BaseNode loopBaseNode = (BaseNode) loop;
-                long indexTime = Constants.BEGINNING_OF_TIME;
-                if (_timed) {
-                    indexTime = ctx.time();
-                }
+                long indexTime = ctx.time();
                 ctx.graph().index(loopBaseNode.world(), indexTime, templatedIndexName, indexNode -> {
+                    indexNode.update(loopBaseNode);
+                    /*
                     if (_remove) {
                         indexNode.removeFromIndex(loopBaseNode, templatedAttributes);
                     } else {
                         indexNode.addToIndex(loopBaseNode, templatedAttributes);
-                    }
+                    }*/
                     indexNode.free();
                     counter.count();
                 });
@@ -76,6 +71,9 @@ class ActionAddRemoveToGlobalIndex implements Action {
 
     @Override
     public final void serialize(final Buffer builder) {
+        builder.writeString(CoreActionNames.UPDATE_INDEX);
+
+        /*
         if (_timed) {
             if (_remove) {
                 builder.writeString(CoreActionNames.REMOVE_FROM_GLOBAL_TIMED_INDEX);
@@ -89,17 +87,20 @@ class ActionAddRemoveToGlobalIndex implements Action {
                 builder.writeString(CoreActionNames.ADD_TO_GLOBAL_INDEX);
             }
         }
+        */
         builder.writeChar(Constants.TASK_PARAM_OPEN);
         TaskHelper.serializeString(_name, builder, true);
-        builder.writeChar(Constants.TASK_PARAM_SEP);
-        TaskHelper.serializeStringParams(_attributes, builder);
+        //builder.writeChar(Constants.TASK_PARAM_SEP);
+        //TaskHelper.serializeStringParams(_attributes, builder);
         builder.writeChar(Constants.TASK_PARAM_CLOSE);
     }
 
     @Override
     public final String name() {
+        return CoreActionNames.UPDATE_INDEX;
+        /*
         return (_remove ?
                 (_timed ? CoreActionNames.REMOVE_FROM_GLOBAL_TIMED_INDEX : CoreActionNames.REMOVE_FROM_GLOBAL_INDEX)
-                : (_timed ? CoreActionNames.ADD_TO_GLOBAL_TIMED_INDEX : CoreActionNames.ADD_TO_GLOBAL_INDEX));
+                : (_timed ? CoreActionNames.ADD_TO_GLOBAL_TIMED_INDEX : CoreActionNames.ADD_TO_GLOBAL_INDEX));*/
     }
 }

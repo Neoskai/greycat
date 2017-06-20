@@ -48,6 +48,7 @@
                 <artifactId>antlr4-maven-plugin</artifactId>
                 <version>${antlr.version}</version>
                 <configuration>
+                    <outputDirectory>${project.build.directory}/generated-sources/antlr4/greycat/language</outputDirectory>
                     <arguments>
                         <argument>-package</argument>
                         <argument>greycat.language</argument>

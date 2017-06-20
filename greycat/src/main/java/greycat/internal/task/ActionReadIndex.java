@@ -23,12 +23,12 @@ import greycat.NodeIndex;
 import greycat.TaskContext;
 import greycat.struct.Buffer;
 
-class ActionReadGlobalIndex implements Action {
+class ActionReadIndex implements Action {
 
     private final String _name;
     private final String[] _params;
 
-    ActionReadGlobalIndex(final String p_indexName, final String... p_query) {
+    ActionReadIndex(final String p_indexName, final String... p_query) {
         if (p_indexName == null) {
             throw new RuntimeException("indexName should not be null");
         }
@@ -37,10 +37,10 @@ class ActionReadGlobalIndex implements Action {
     }
 
     @Override
-    public void eval(final TaskContext ctx) {
+    public final void eval(final TaskContext ctx) {
         final String name = ctx.template(_name);
         final String[] query = ctx.templates(_params);
-        ctx.graph().indexIfExists(ctx.world(), ctx.time(), name, new Callback<NodeIndex>() {
+        ctx.graph().index(ctx.world(), ctx.time(), name, new Callback<NodeIndex>() {
             @Override
             public void on(NodeIndex resolvedIndex) {
                 if (resolvedIndex != null) {
@@ -59,8 +59,8 @@ class ActionReadGlobalIndex implements Action {
     }
 
     @Override
-    public void serialize(final Buffer builder) {
-        builder.writeString(CoreActionNames.READ_GLOBAL_INDEX);
+    public final void serialize(final Buffer builder) {
+        builder.writeString(CoreActionNames.READ_INDEX);
         builder.writeChar(Constants.TASK_PARAM_OPEN);
         TaskHelper.serializeString(_name, builder, true);
         if (_params != null && _params.length > 0) {
@@ -73,7 +73,7 @@ class ActionReadGlobalIndex implements Action {
 
     @Override
     public final String name() {
-        return CoreActionNames.READ_GLOBAL_INDEX;
+        return CoreActionNames.READ_INDEX;
     }
 
 }

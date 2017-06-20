@@ -25,20 +25,28 @@ NUMBER : [\-]?[0-9]+'.'?[0-9]*;
 WS : ([ \t\r\n]+ | SL_COMMENT) -> skip ; // skip spaces, tabs, newlines
 SL_COMMENT :  '//' ~('\r' | '\n')* ;
 
-modelDcl: (enumDcl | classDcl)*;
+modelDcl: (constDcl | classDcl | globalIndexDcl | customTypeDcl)*;
 
-enumDcl: 'enum' name=IDENT '{' enumLiteralsDcl '}';
-enumLiteralsDcl: IDENT (',' IDENT)*;
+constDcl: 'const' name=IDENT ':' typeDcl ('=' value=STRING)?;
 
-classDcl: 'class' name=IDENT parentDcl? '{' (attributeDcl | relationDcl | keyDcl)* '}';
-parentDcl: 'extends' name=IDENT;
-attributeDcl: 'att' name=IDENT ':' attributeTypeDcl;
-attributeTypeDcl: ('String' | 'Double' | 'Long' | 'Integer' | 'Boolean') ('[]')?;
-relationDcl: (toManyDcl | toOneDcl);
-toManyDcl : 'rel' name=IDENT ':' type=IDENT relationIndexDcl?;
-relationIndexDcl: 'indexed' 'by' indexedAttributesDcl;
-indexedAttributesDcl: IDENT (',' IDENT)*;
-toOneDcl : 'ref' name=IDENT ':' type=IDENT;
+classDcl: 'class' name=IDENT parentDcl? '{' (constDcl | attributeDcl | relationDcl | referenceDcl | localIndexDcl)* '}';
+parentDcl: 'extends' IDENT;
+attributeDcl: 'att' name=IDENT ':' typeDcl;
 
-keyDcl: 'key' withTimeDcl? indexedAttributesDcl ('as' name=IDENT)?;
+typeDcl: (builtInTypeDcl | customBuiltTypeDcl);
+customBuiltTypeDcl: IDENT;
+builtInTypeDcl: ('Bool' | 'String' | 'Long' | 'Int' | 'Double' |
+                 'DoubleArray' | 'LongArray' | 'IntArray' | 'StringArray' |
+                 'LongToLongMap' | 'LongToLongArrayMap' | 'StringToIntMap'|
+                 'DMatrix' |'LMatrix' |'StructArray' |'Struct' | 'KDTree' | 'NDTree' |
+                 'IntToIntMap' | 'IntToStringMap' | 'Task' | 'TaskArray' | 'Node');
+relationDcl: 'rel' name=IDENT ':' type=IDENT;
+referenceDcl : 'ref' name=IDENT ':' type=IDENT;
+
+localIndexDcl: 'index' name=IDENT ':' type=IDENT 'using' indexAttributesDcl;
+indexAttributesDcl: IDENT (',' IDENT)*;
+
+globalIndexDcl: 'index' name=IDENT withTimeDcl? 'of' type=IDENT 'using' indexAttributesDcl;
 withTimeDcl: 'with time';
+
+customTypeDcl: 'type' name=IDENT '{' (attributeDcl | constDcl)* '}';

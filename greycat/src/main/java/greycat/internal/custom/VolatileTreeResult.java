@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package greycat.internal.tree;
+package greycat.internal.custom;
 
 import greycat.Type;
-import greycat.internal.tree.ndmanager.IndexManager;
 import greycat.struct.*;
 
 public class VolatileTreeResult implements ProfileResult {

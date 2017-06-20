@@ -15,16 +15,21 @@
  */
 package greycat.language;
 
-public class Attribute extends Property {
-    private final boolean isArray;
+public class Attribute extends ASTNode {
+    private final String name;
+    private final String type;
 
-    public Attribute(String name, String type, boolean isArray) {
-        super(name, type);
-        this.isArray = isArray;
+    public Attribute(String name, String type) {
+        this.name = name;
+        this.type = type;
     }
 
-    public boolean isArray() {
-        return this.isArray;
+    public String name() {
+        return name;
+    }
+
+    public String type() {
+        return type;
     }
 
 

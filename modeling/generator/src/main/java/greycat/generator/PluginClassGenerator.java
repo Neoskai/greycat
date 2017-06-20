@@ -17,7 +17,7 @@ package greycat.generator;
 
 import greycat.Graph;
 import greycat.language.Class;
-import greycat.language.Classifier;
+import greycat.language.CustomType;
 import greycat.language.Model;
 import greycat.plugin.NodeFactory;
 import greycat.plugin.Plugin;
@@ -45,18 +45,25 @@ class PluginClassGenerator {
                 .addAnnotation(Override.class);
 
         StringBuilder startBodyBuilder = new StringBuilder();
-        for (Classifier classifier : model.classifiers()) {
-            if (classifier instanceof Class) {
-                startBodyBuilder.append("\t\tgraph.nodeRegistry()\n")
-                        .append("\t\t\t.getOrCreateDeclaration(").append(classifier.name()).append(".NODE_NAME").append(")").append("\n")
-                        .append("\t\t\t.setFactory(new NodeFactory() {\n" +
-                                "\t\t\t\t\t@Override\n" +
-                                "\t\t\t\t\tpublic greycat.Node create(long world, long time, long id, Graph graph) {\n" +
-                                "\t\t\t\t\t\treturn new ").append(classifier.name()).append("(world,time,id,graph);\n" +
-                        "\t\t\t\t\t}\n" +
-                        "\t\t\t\t});\n");
+        for (Class classType : model.classes()) {
+            startBodyBuilder.append("\t\tgraph.nodeRegistry()\n")
+                    .append("\t\t\t.getOrCreateDeclaration(").append(classType.name()).append(".NODE_NAME").append(")").append("\n")
+                    .append("\t\t\t.setFactory(new NodeFactory() {\n" +
+                            "\t\t\t\t\t@Override\n" +
+                            "\t\t\t\t\tpublic greycat.Node create(long world, long time, long id, Graph graph) {\n" +
+                            "\t\t\t\t\t\treturn new ").append(classType.name()).append("(world,time,id,graph);\n" +
+                    "\t\t\t\t\t}\n" +
+                    "\t\t\t\t});\n");
 
-            }
+        }
+
+        for (CustomType customType : model.customTypes()) {
+            startBodyBuilder.append("graph.typeRegistry().getOrCreateDeclaration(\"" + customType.name() + "\").setFactory(new greycat.plugin.TypeFactory() {");
+            startBodyBuilder.append("@Override\n");
+            startBodyBuilder.append("public Object wrap(final greycat.struct.EGraph backend) {");
+            startBodyBuilder.append("return new " + customType.name() + "(backend);");
+            startBodyBuilder.append("}");
+            startBodyBuilder.append("});");
         }
 
         MethodSource<JavaClassSource> startMethod = pluginClass.addMethod();

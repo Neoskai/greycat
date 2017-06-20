@@ -147,7 +147,7 @@ public class CoreActions {
      * @param value will be interpreted as a template
      * @return the action to chain
      */
-    public static Action setAttribute(final String name, final byte type, final String value) {
+    public static Action setAttribute(final String name, final int type, final String value) {
         return new ActionSetAttribute(name, Type.typeName(type), value, false);
     }
 
@@ -168,7 +168,7 @@ public class CoreActions {
      * @param value will be interpreted as template
      * @return the action to chain
      */
-    public static Action forceAttribute(String name, byte type, String value) {
+    public static Action forceAttribute(String name, int type, String value) {
         return new ActionSetAttribute(name, Type.typeName(type), value, true);
     }
 
@@ -198,7 +198,7 @@ public class CoreActions {
      * @param filterType type of attributes to filter
      * @return the action to chain
      */
-    public static Action attributesWithTypes(byte filterType) {
+    public static Action attributesWithTypes(int filterType) {
         return new ActionAttributes(Type.typeName(filterType));
     }
 
@@ -255,8 +255,8 @@ public class CoreActions {
      * @param query     query to filter nodes, such as 'name', 'FOO' to look for nodes with name == FOO
      * @return the action to chain
      */
-    public static Action readGlobalIndex(String indexName, String... query) {
-        return new ActionReadGlobalIndex(indexName, query);
+    public static Action readIndex(String indexName, String... query) {
+        return new ActionReadIndex(indexName, query);
     }
 
     public static Action globalIndex(String indexName) {
@@ -266,39 +266,19 @@ public class CoreActions {
     /**
      * Adds node to the named global index.
      *
-     * @param name       of the index
-     * @param attributes Attributes of the node used for indexation
+     * @param name of the index
      * @return the action to chain
      */
-    public static Action addToGlobalIndex(String name, String... attributes) {
-        return new ActionAddRemoveToGlobalIndex(false, false, name, attributes);
+    public static Action updateIndex(String name) {
+        return new ActionUpdateIndex(name);
     }
 
-
-    public static Action addToGlobalTimedIndex(String name, String... attributes) {
-        return new ActionAddRemoveToGlobalIndex(false, true, name, attributes);
+    public static Action declareIndex(String name, String... attributes) {
+        return new ActionDeclareIndex(false, name, attributes);
     }
 
-    /**
-     * Removes a node from the named global index.
-     *
-     * @param name       of the index
-     * @param attributes attributes to used to find the node in the index
-     * @return the action to chain
-     */
-    public static Action removeFromGlobalIndex(String name, String... attributes) {
-        return new ActionAddRemoveToGlobalIndex(true, false, name, attributes);
-    }
-
-    /**
-     * Removes a node from the named global index.
-     *
-     * @param name       of the index
-     * @param attributes attributes to used to find the node in the index
-     * @return the action to chain
-     */
-    public static Action removeFromGlobalTimedIndex(String name, String... attributes) {
-        return new ActionAddRemoveToGlobalIndex(true, true, name, attributes);
+    public static Action declareTimedIndex(String name, String... attributes) {
+        return new ActionDeclareIndex(true, name, attributes);
     }
 
     /**

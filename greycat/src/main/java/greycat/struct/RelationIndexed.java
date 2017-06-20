@@ -31,6 +31,8 @@ public interface RelationIndexed {
 
     RelationIndexed remove(Node node, String... attributeNames);
 
+    long update(long previous, Node node, IntArray hashes);
+
     RelationIndexed clear();
 
     void find(Callback<Node[]> callback, long world, long time, String... params);

@@ -48,7 +48,7 @@ class HeapENode implements ENode, HeapContainer {
             }
             //copy types
             if (origin._type != null) {
-                byte[] cloned_type = new byte[_capacity];
+                int[] cloned_type = new int[_capacity];
                 System.arraycopy(origin._type, 0, cloned_type, 0, _capacity);
                 _type = cloned_type;
             }
@@ -144,7 +144,7 @@ class HeapENode implements ENode, HeapContainer {
     private int[] _k;
     private Object[] _v;
     private int[] _next_hash;
-    private byte[] _type;
+    private int[] _type;
     private boolean _dirty;
 
     @Override
@@ -206,7 +206,7 @@ class HeapENode implements ENode, HeapContainer {
             System.arraycopy(_v, 0, ex_v, 0, _capacity);
         }
         _v = ex_v;
-        byte[] ex_type = new byte[newCapacity];
+        int[] ex_type = new int[newCapacity];
         if (_type != null) {
             System.arraycopy(_type, 0, ex_type, 0, _capacity);
         }
@@ -256,7 +256,7 @@ class HeapENode implements ENode, HeapContainer {
         return null;
     }
 
-    private byte internal_type(final int p_key) {
+    private int internal_type(final int p_key) {
         //empty chunk, we return immediately
         if (_size == 0) {
             return -1;
@@ -268,7 +268,7 @@ class HeapENode implements ENode, HeapContainer {
         return -1;
     }
 
-    private void internal_set(final int p_key, final byte p_type, final Object p_unsafe_elem, boolean replaceIfPresent, boolean initial) {
+    private void internal_set(final int p_key, final int p_type, final Object p_unsafe_elem, boolean replaceIfPresent, boolean initial) {
         Object param_elem = null;
         //check the param type
         if (p_unsafe_elem != null) {
@@ -355,7 +355,7 @@ class HeapENode implements ENode, HeapContainer {
             _capacity = Constants.MAP_INITIAL_CAPACITY;
             _k = new int[_capacity];
             _v = new Object[_capacity];
-            _type = new byte[_capacity];
+            _type = new int[_capacity];
             _next_hash = new int[_capacity * 3];
             Arrays.fill(_next_hash, 0, _capacity * 3, -1);
             _k[0] = p_key;
@@ -464,7 +464,7 @@ class HeapENode implements ENode, HeapContainer {
         Object[] ex_v = new Object[newCapacity];
         System.arraycopy(_v, 0, ex_v, 0, _capacity);
         _v = ex_v;
-        byte[] ex_type = new byte[newCapacity];
+        int[] ex_type = new int[newCapacity];
         System.arraycopy(_type, 0, ex_type, 0, _capacity);
         _type = ex_type;
         _capacity = newCapacity;
@@ -491,13 +491,13 @@ class HeapENode implements ENode, HeapContainer {
     }
 
     @Override
-    public ENode set(String name, byte type, Object value) {
+    public ENode set(String name, int type, Object value) {
         internal_set(_eGraph.graph().resolver().stringToHash(name, true), type, value, true, false);
         return this;
     }
 
     @Override
-    public ENode setAt(int key, byte type, Object value) {
+    public ENode setAt(int key, int type, Object value) {
         internal_set(key, type, value, true, false);
         return this;
     }
@@ -530,7 +530,7 @@ class HeapENode implements ENode, HeapContainer {
     }
 
     @Override
-    public final Object getTypedRawAt(final int index, final byte type) {
+    public final Object getTypedRawAt(final int index, final int type) {
         if (_size == 0) {
             return null;
         }
@@ -542,12 +542,12 @@ class HeapENode implements ENode, HeapContainer {
     }
 
     @Override
-    public byte type(String name) {
+    public int type(String name) {
         return internal_type(_eGraph.graph().resolver().stringToHash(name, false));
     }
 
     @Override
-    public byte typeAt(int key) {
+    public int typeAt(int key) {
         return internal_type(key);
     }
 
@@ -589,7 +589,7 @@ class HeapENode implements ENode, HeapContainer {
     }
 
     @Override
-    public Object getOrCreate(String key, byte type) {
+    public Object getOrCreate(String key, int type) {
         Object previous = get(key);
         if (previous != null) {
             return previous;
@@ -599,7 +599,7 @@ class HeapENode implements ENode, HeapContainer {
     }
 
     @Override
-    public final Object getOrCreateAt(final int key, final byte type) {
+    public final Object getOrCreateAt(final int key, final int type) {
         final int found = internal_find(key);
         if (found != -1) {
             if (_type[found] == type) {
@@ -665,7 +665,7 @@ class HeapENode implements ENode, HeapContainer {
             final Object elem = _v[i];
             final Resolver resolver = _eGraph.graph().resolver();
             final int attributeKey = _k[i];
-            final byte elemType = _type[i];
+            final int elemType = _type[i];
             if (elem != null) {
                 if (isFirstField) {
                     isFirstField = false;
@@ -1129,7 +1129,7 @@ class HeapENode implements ENode, HeapContainer {
         long cursor = currentCursor;
         long previous = cursor;
         byte state = LOAD_WAITING_ALLOC;
-        byte read_type = -1;
+        int read_type = -1;
         int read_key = -1;
         while (cursor < payloadSize) {
             byte current = buffer.read(cursor);
@@ -1145,7 +1145,7 @@ class HeapENode implements ENode, HeapContainer {
                         previous = cursor;
                         break;
                     case LOAD_WAITING_TYPE:
-                        read_type = (byte) Base64.decodeToIntWithBounds(buffer, previous, cursor);
+                        read_type = Base64.decodeToIntWithBounds(buffer, previous, cursor);
                         state = LOAD_WAITING_KEY;
                         cursor++;
                         previous = cursor;
@@ -1401,7 +1401,7 @@ class HeapENode implements ENode, HeapContainer {
         return cursor;
     }
 
-    private void load_primitive(final int read_key, final byte read_type, final Buffer buffer, final long previous, final long cursor, final boolean initial) {
+    private void load_primitive(final int read_key, final int read_type, final Buffer buffer, final long previous, final long cursor, final boolean initial) {
         switch (read_type) {
             case Type.BOOL:
                 internal_set(read_key, read_type, (((byte) Base64.decodeToIntWithBounds(buffer, previous, cursor)) == CoreConstants.BOOL_TRUE), true, initial);

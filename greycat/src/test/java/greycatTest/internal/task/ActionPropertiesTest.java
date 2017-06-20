@@ -24,7 +24,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import greycat.struct.RelationIndexed;
 
-import static greycat.internal.task.CoreActions.readGlobalIndex;
+import static greycat.internal.task.CoreActions.readIndex;
 import static greycat.internal.task.CoreActions.attributes;
 import static greycat.internal.task.CoreActions.attributesWithTypes;
 import static greycat.Tasks.newTask;
@@ -41,9 +41,9 @@ public class ActionPropertiesTest {
                 root.set("id", Type.INT, 1);
                 root.set("attribute", Type.BOOL, false);
 
-                graph.index(0, Constants.BEGINNING_OF_TIME, "root", rootIndex -> {
-                    rootIndex.addToIndex(root, "id");
-                });
+                graph.declareIndex(0, "root", rootIndex -> {
+                    rootIndex.update(root);
+                }, "id");
 
                 Node child1 = graph.newNode(0, Constants.BEGINNING_OF_TIME);
                 child1.set("name", Type.STRING, "child1");
@@ -62,7 +62,7 @@ public class ActionPropertiesTest {
     public void testNormalRelations() {
         initGraph();
         newTask()
-                .then(readGlobalIndex("root"))
+                .then(readIndex("root"))
                 .then(attributes())
                 .thenDo(new ActionFunction() {
                     @Override
@@ -85,7 +85,7 @@ public class ActionPropertiesTest {
     public void testLocalIndex() {
         initGraph();
         newTask()
-                .then(readGlobalIndex("root"))
+                .then(readIndex("root"))
                 .pipe(
                         newTask().then(attributesWithTypes(Type.RELATION)),
                         newTask().then(attributesWithTypes(Type.RELATION_INDEXED))

@@ -1,8 +1,3 @@
-package greycat.language;
-
-import java.util.LinkedList;
-import java.util.List;
-
 /**
  * Copyright 2017 The GreyCat Authors.  All rights reserved.
  * <p>
@@ -18,38 +13,33 @@ import java.util.List;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-public class Key {
+package greycat.language;
+
+import java.util.Collection;
+import java.util.LinkedList;
+
+public class GlobalIndex {
     private final String name;
-    private final List<Attribute> attributes;
+    private final String type;
+    private final Collection<Attribute> attributes;
 
     private boolean withTime;
 
 
-    public Key(String name) {
+    public GlobalIndex(String name, String type) {
         this.name = name;
+        this.type = type;
         this.attributes = new LinkedList<>();
         this.withTime = false;
     }
 
-    public Attribute[] attributes() {
-        return this.attributes.toArray(new Attribute[this.attributes.size()]);
+    public Collection<Attribute> attributes() {
+        return this.attributes;
     }
 
 
     public void addAttribute(Attribute attribute) {
         this.attributes.add(attribute);
-    }
-
-    public boolean equals(Object other) {
-        if (this == other) return true;
-        if (!(other instanceof Key)) return false;
-        final Key that = (Key) other;
-        return this.name().equals(that.name());
-    }
-
-    @Override
-    public int hashCode() {
-        return this.name().hashCode();
     }
 
     public String name() {

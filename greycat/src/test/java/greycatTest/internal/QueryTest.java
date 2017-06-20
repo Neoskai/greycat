@@ -180,15 +180,19 @@ public class QueryTest implements Resolver, Graph {
     }
 
     @Override
-    public void index(long world, long time, String name, Callback<NodeIndex> callback) {
+    public void declareIndex(long world, String name, Callback<NodeIndex> callback, String... indexedAttributes) {
 
     }
 
     @Override
-    public void indexIfExists(long world, long time, String name, Callback<NodeIndex> callback) {
+    public void declareTimedIndex(long world, long time, String name, Callback<NodeIndex> callback, String... indexedAttributes) {
 
     }
 
+    @Override
+    public void index(long world, long time, String name, Callback<NodeIndex> callback) {
+
+    }
 
     @Override
     public void indexNames(long world, long time, Callback<String[]> callback) {
@@ -254,6 +258,11 @@ public class QueryTest implements Resolver, Graph {
 
     @Override
     public NodeRegistry nodeRegistry() {
+        return null;
+    }
+
+    @Override
+    public TypeRegistry typeRegistry() {
         return null;
     }
 

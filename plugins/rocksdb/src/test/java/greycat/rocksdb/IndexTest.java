@@ -34,7 +34,7 @@ public class IndexTest {
         graph.connect(new Callback<Boolean>() {
             @Override
             public void on(Boolean result) {
-                graph.indexIfExists(0, 0, index, new Callback<NodeIndex>() {
+                graph.declareIndex(0, index, new Callback<NodeIndex>() {
                     @Override
                     public void on(NodeIndex result) {
 

@@ -105,11 +105,6 @@
         <module>plugins/backup</module>
         <module>plugins/backupexposer</module>
 
-        <!-- Modelling environment-->
-        <module>modeling/language</module>
-        <module>modeling/generator</module>
-        <module>modeling/mavenplugin</module>
-
         <!-- Examples-->
 
         <!--
@@ -156,6 +151,14 @@
         <module>plugins/benchmark</module>
         <module>plugins/search</module>
         -->
+
+        <!-- <module>modeling/language</module> -->
+        <!-- <module>modeling/generator</module> -->
+        <!-- <module>modeling/mavenplugin</module> -->
+        <!-- Examples-->
+
+        <!-- <module>examples/modeling</module> -->
+
 
     </modules>
 

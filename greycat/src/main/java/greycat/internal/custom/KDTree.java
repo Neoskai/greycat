@@ -13,14 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package greycat.internal.tree;
+package greycat.internal.custom;
 
 import greycat.Type;
+import greycat.base.BaseCustomType;
 import greycat.struct.*;
 import greycat.utility.distance.Distance;
 import greycat.utility.distance.Distances;
 
-public class KDTree implements Tree {
+public class KDTree extends BaseCustomType implements Tree {
+
+    public static final String NAME = "KDTree";
 
     /**
      * public configuration elements
@@ -41,14 +44,12 @@ public class KDTree implements Tree {
     private static int STRATEGY = 12;
     private static int DIM = 13;
 
-    private final EGraph eGraph;
-
     public KDTree(final EGraph eGraph) {
+        super(eGraph);
         if (eGraph.root() == null) {
             ENode root = eGraph.newNode();
             eGraph.setRoot(root);
         }
-        this.eGraph = eGraph;
     }
 
     private static boolean checkCreateLevels(double[] key1, double[] key2, double[] resolutions) {
@@ -262,12 +263,12 @@ public class KDTree implements Tree {
 
     @Override
     public final void setDistance(final int distanceType) {
-        eGraph.root().setAt(DISTANCE, Type.INT, distanceType);
+        _backend.root().setAt(DISTANCE, Type.INT, distanceType);
     }
 
     @Override
     public final void setResolution(final double[] resolution) {
-        ((DoubleArray) eGraph.root().getOrCreateAt(RESOLUTION, Type.DOUBLE_ARRAY)).initWith(resolution);
+        ((DoubleArray) _backend.root().getOrCreateAt(RESOLUTION, Type.DOUBLE_ARRAY)).initWith(resolution);
     }
 
     @Override
@@ -282,7 +283,7 @@ public class KDTree implements Tree {
 
     @Override
     public final void insert(final double[] keys, final long value) {
-        ENode root = eGraph.root();
+        ENode root = _backend.root();
         int strategy = TreeStrategy.INDEX;
         if (root.getAt(E_KEY) == null) {
             root.setAt(STRATEGY, Type.INT, strategy);
@@ -323,7 +324,7 @@ public class KDTree implements Tree {
 
     @Override
     public final TreeResult queryBoundedRadius(final double[] keys, final double radius, final int max) {
-        final ENode root = eGraph.root();
+        final ENode root = _backend.root();
         if (root.getAt(E_KEY) == null) {
             return null;
         }
@@ -331,7 +332,7 @@ public class KDTree implements Tree {
         if (keys.length != ((DoubleArray) root.getAt(E_KEY)).size()) {
             throw new RuntimeException("Keys are not of the same size");
         }
-        EGraph calcZone = eGraph.graph().space().newVolatileGraph();
+        EGraph calcZone = _backend.graph().space().newVolatileGraph();
         VolatileTreeResult nnl = new VolatileTreeResult(calcZone.newNode(), max);
         recursiveTraverse(root, nnl, distance, keys, HRect.infiniteHRect(keys.length), 0, keys.length, Double.MAX_VALUE, radius);
         nnl.sort(true);
@@ -340,7 +341,7 @@ public class KDTree implements Tree {
 
     @Override
     public final TreeResult queryArea(double[] min, double[] max) {
-        ENode root = eGraph.root();
+        ENode root = _backend.root();
         if (root.getAt(E_KEY) == null) {
             return null;
         }
@@ -349,7 +350,7 @@ public class KDTree implements Tree {
         for (int i = 0; i < center.length; i++) {
             center[i] = (min[i] + max[i]) / 2;
         }
-        EGraph calcZone = eGraph.graph().space().newVolatileGraph();
+        EGraph calcZone = _backend.graph().space().newVolatileGraph();
         VolatileTreeResult nnl = new VolatileTreeResult(calcZone.newNode(), -1);
         rangeSearch(min, max, center, distance, root, 0, min.length, nnl);
         nnl.sort(true);
@@ -358,11 +359,11 @@ public class KDTree implements Tree {
 
     @Override
     public final long size() {
-        return (long) eGraph.root().getAt(E_SUBTREE_NODES);
+        return (long) _backend.root().getAt(E_SUBTREE_NODES);
     }
 
     @Override
     public final long treeSize() {
-        return (long) eGraph.root().getAt(E_SUBTREE_NODES);
+        return (long) _backend.root().getAt(E_SUBTREE_NODES);
     }
 }

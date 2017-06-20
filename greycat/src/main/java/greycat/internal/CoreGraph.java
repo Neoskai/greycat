@@ -17,14 +17,10 @@ package greycat.internal;
 
 import greycat.*;
 import greycat.chunk.*;
+import greycat.internal.custom.*;
 import greycat.internal.heap.HeapMemoryFactory;
-import greycat.internal.tree.KDTreeNode;
-import greycat.internal.tree.NDTreeNode;
 import greycat.plugin.*;
-import greycat.struct.Buffer;
-import greycat.struct.BufferIterator;
-import greycat.struct.LongLongMap;
-import greycat.struct.LongLongMapCallBack;
+import greycat.struct.*;
 import greycat.utility.HashHelper;
 import greycat.base.BaseNode;
 import greycat.internal.task.CoreActionRegistry;
@@ -52,6 +48,7 @@ public class CoreGraph implements Graph {
 
     private final ActionRegistry _actionRegistry;
     private final NodeRegistry _nodeRegistry;
+    private final TypeRegistry _typeRegistry;
     private MemoryFactory _memoryFactory;
     private TaskHook[] _taskHooks;
 
@@ -59,6 +56,7 @@ public class CoreGraph implements Graph {
         //initiate the two registry
         _actionRegistry = new CoreActionRegistry();
         _nodeRegistry = new CoreNodeRegistry();
+        _typeRegistry = new CoreTypeRegistry();
         _memoryFactory = new HeapMemoryFactory();
         this._isConnected = new AtomicBoolean(false);
         this._lock = new AtomicBoolean(false);
@@ -80,6 +78,21 @@ public class CoreGraph implements Graph {
         _scheduler = p_scheduler;
         //Third round, initialize all taskActions and nodeTypes
         CoreTask.fillDefault(this._actionRegistry);
+
+        //Register default Custom Types
+        this._typeRegistry.getOrCreateDeclaration(KDTree.NAME).setFactory(new TypeFactory() {
+            @Override
+            public Object wrap(final EGraph backend) {
+                return new KDTree(backend);
+            }
+        });
+        this._typeRegistry.getOrCreateDeclaration(NDTree.NAME).setFactory(new TypeFactory() {
+            @Override
+            public Object wrap(final EGraph backend) {
+                return new NDTree(backend, new IndexManager());
+            }
+        });
+
         this._nodeRegistry.getOrCreateDeclaration(CoreNodeIndex.NAME).setFactory(new NodeFactory() {
             @Override
             public Node create(long world, long time, long id, Graph graph) {
@@ -218,6 +231,11 @@ public class CoreGraph implements Graph {
     }
 
     @Override
+    public final TypeRegistry typeRegistry() {
+        return _typeRegistry;
+    }
+
+    @Override
     public final Graph setMemoryFactory(MemoryFactory factory) {
         if (_isConnected.get()) {
             throw new RuntimeException("Memory factory cannot be changed after connection !");
@@ -322,7 +340,7 @@ public class CoreGraph implements Graph {
             selfPointer._storage.connect(selfPointer, new Callback<Boolean>() {
                 @Override
                 public void on(Boolean connection) {
-                    if(connection) {
+                    if (connection) {
                         selfPointer._storage.lock(new Callback<Buffer>() {
                             @Override
                             public void on(Buffer prefixBuf) {
@@ -475,12 +493,28 @@ public class CoreGraph implements Graph {
     }
 
     @Override
-    public final synchronized void index(long world, long time, String name, Callback<NodeIndex> callback) {
-        internal_index(world, time, name, false, callback);
+    public final void declareIndex(long world, String name, Callback<NodeIndex> callback, String... indexedAttributes) {
+        internal_index(world, Constants.BEGINNING_OF_TIME, name, false, new Callback<NodeIndex>() {
+            @Override
+            public void on(final NodeIndex result) {
+                result.setTimeSensitivity(-1, 0);
+                result.declareAttributes(callback, indexedAttributes);
+            }
+        });
     }
 
     @Override
-    public final synchronized void indexIfExists(long world, long time, String name, Callback<NodeIndex> callback) {
+    public final void declareTimedIndex(long world, long originTime, String name, Callback<NodeIndex> callback, String... indexedAttributes) {
+        internal_index(world, originTime, name, false, new Callback<NodeIndex>() {
+            @Override
+            public void on(final NodeIndex result) {
+                result.declareAttributes(callback, indexedAttributes);
+            }
+        });
+    }
+
+    @Override
+    public final synchronized void index(long world, long time, String name, Callback<NodeIndex> callback) {
         internal_index(world, time, name, true, callback);
     }
 
@@ -497,9 +531,9 @@ public class CoreGraph implements Graph {
                     if (globalIndexNodeUnsafe == null) {
                         globalIndexNodeUnsafe = new BaseNode(world, CoreConstants.BEGINNING_OF_TIME, CoreConstants.END_OF_TIME, selfPointer);
                         selfPointer._resolver.initNode(globalIndexNodeUnsafe, CoreConstants.NULL_LONG);
-                        globalIndexContent = (LongLongMap) globalIndexNodeUnsafe.getOrCreate(CoreConstants.INDEX_ATTRIBUTE, Type.LONG_TO_LONG_MAP);
+                        globalIndexContent = (LongLongMap) globalIndexNodeUnsafe.getOrCreateAt(0, Type.LONG_TO_LONG_MAP);
                     } else {
-                        globalIndexContent = (LongLongMap) globalIndexNodeUnsafe.get(CoreConstants.INDEX_ATTRIBUTE);
+                        globalIndexContent = (LongLongMap) globalIndexNodeUnsafe.getAt(0);
                     }
                     long indexId = globalIndexContent.get(indexNameCoded);
                     if (indexId == CoreConstants.NULL_LONG) {
@@ -533,7 +567,7 @@ public class CoreGraph implements Graph {
                 if (globalIndexNodeUnsafe == null) {
                     callback.on(new String[0]);
                 } else {
-                    LongLongMap globalIndexContent = (LongLongMap) globalIndexNodeUnsafe.get(CoreConstants.INDEX_ATTRIBUTE);
+                    LongLongMap globalIndexContent = (LongLongMap) globalIndexNodeUnsafe.getAt(0);
                     if (globalIndexContent == null) {
                         globalIndexNodeUnsafe.free();
                         callback.on(new String[0]);
