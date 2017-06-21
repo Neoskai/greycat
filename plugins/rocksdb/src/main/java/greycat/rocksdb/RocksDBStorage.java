@@ -26,9 +26,17 @@ import greycat.struct.BufferIterator;
 import greycat.utility.Base64;
 import greycat.utility.HashHelper;
 import io.minio.MinioClient;
+import io.minio.Result;
+import io.minio.messages.Item;
+import org.apache.logging.log4j.core.util.FileUtils;
 import org.rocksdb.*;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -68,7 +76,11 @@ public class RocksDBStorage implements Storage {
                 backupFolder.mkdir();
             }
 
-            BackupEngine backupEngine = BackupEngine.open( Env.getDefault(), new BackupableDBOptions( _storagePath + "/backup"));
+            BackupableDBOptions options = new BackupableDBOptions( _storagePath + "/backup");
+            options.setShareTableFiles(false);
+            options.setShareFilesWithChecksum(false);
+
+            BackupEngine backupEngine = BackupEngine.open( Env.getDefault(), options);
             backupEngine.createNewBackup(_db);
 
             BackupInfo info = backupEngine.getBackupInfo().get(backupEngine.getBackupInfo().size()-1);
@@ -82,8 +94,25 @@ public class RocksDBStorage implements Storage {
                         BackupOptions.accessKey(),
                         BackupOptions.secretKey());
 
-                if(!minioClient.bucketExists("database")) {
-                    minioClient.makeBucket("database");
+                if(!minioClient.bucketExists(BackupOptions.dbBucket())) {
+                    minioClient.makeBucket(BackupOptions.dbBucket());
+                }
+
+                Iterable<Result<Item>> myObjects = minioClient.listObjects(BackupOptions.dbBucket());
+
+                List<String> localObjects = new ArrayList<>();
+                List<String> externalObjects = new ArrayList<>();
+                localObjects = getFiles(localObjects, Paths.get(backupFolder.getPath()));
+
+                for (Result<Item> result : myObjects) {
+                    Item item = result.get();
+                    externalObjects.add(item.objectName());
+                }
+
+                for(String local : localObjects){
+                    if(!externalObjects.contains(local)){
+                        minioClient.putObject(BackupOptions.dbBucket(), local.substring(local.indexOf("/backup"), local.length()), local);
+                    }
                 }
 
             } catch (Exception e){
@@ -95,6 +124,21 @@ public class RocksDBStorage implements Storage {
             e.printStackTrace();
         }
         return null;
+    }
+
+    private List<String> getFiles(List<String> fileNames, Path dir) {
+        try(DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
+            for (Path path : stream) {
+                if(path.toFile().isDirectory()) {
+                    getFiles(fileNames, path);
+                } else {
+                    fileNames.add(path.toAbsolutePath().toString());
+                }
+            }
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
+        return fileNames;
     }
 
     @Override

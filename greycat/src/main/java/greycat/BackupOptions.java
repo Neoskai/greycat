@@ -207,4 +207,24 @@ public class BackupOptions {
 
         return "logs";
     }
+
+    /**
+     * Returns the main bucket to use by minio to save the database backup files
+     * @return Name of the bucket
+     */
+    public static String dbBucket(){
+        Properties prop = new Properties();
+        InputStream input;
+        try {
+            input = BackupOptions.class.getClassLoader().getResourceAsStream("config.properties");
+            prop.load(input);
+
+            return prop.getProperty("minio.dbbucket");
+
+        } catch (Exception ex) {
+            System.err.println("No configuration file");
+        }
+
+        return "database";
+    }
 }

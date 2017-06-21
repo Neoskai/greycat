@@ -267,6 +267,7 @@ public class FastBackupLoader {
 
     /**
      * Adds missing files from the bucket
+     * @TODO : Externalize upload to new Thread, Download files in the right folder
      */
     private void loadExternalFiles(long startSeq, long endSeq){
         try {
