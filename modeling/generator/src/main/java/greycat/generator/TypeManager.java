@@ -27,86 +27,88 @@ import java.util.List;
 public class TypeManager {
     private static List<String> primitives = Arrays.asList("Bool", "String", "Long", "Int", "Double");
 
-    public static String builtInTypeName(String type) {
-        String builtInType = null;
+    public static String typeName(String type) {
+        String typeName;
 
         switch (type) {
             case "Bool":
-                builtInType = "Type.BOOL";
+                typeName = "Type.BOOL";
                 break;
             case "String":
-                builtInType = "Type.STRING";
+                typeName = "Type.STRING";
                 break;
             case "Long":
-                builtInType = "Type.LONG";
+                typeName = "Type.LONG";
                 break;
             case "Int":
-                builtInType = "Type.INT";
+                typeName = "Type.INT";
                 break;
             case "Double":
-                builtInType = "Type.DOUBLE";
+                typeName = "Type.DOUBLE";
                 break;
             case "DoubleArray":
-                builtInType = "Type.DOUBLE_ARRAY";
+                typeName = "Type.DOUBLE_ARRAY";
                 break;
             case "LongArray":
-                builtInType = "Type.LONG_ARRAY";
+                typeName = "Type.LONG_ARRAY";
                 break;
             case "IntArray":
-                builtInType = "Type.INT_ARRAY";
+                typeName = "Type.INT_ARRAY";
                 break;
             case "StringArray":
-                builtInType = "Type.STRING_ARRAY";
+                typeName = "Type.STRING_ARRAY";
                 break;
             case "LongToLongMap":
-                builtInType = "Type.LONG_TO_LONG_MAP";
+                typeName = "Type.LONG_TO_LONG_MAP";
                 break;
             case "LongToLongArrayMap":
-                builtInType = "Type.LONG_TO_LONG_ARRAY_MAP";
+                typeName = "Type.LONG_TO_LONG_ARRAY_MAP";
                 break;
             case "StringToIntMap":
-                builtInType = "Type.STRING_TO_INT_MAP";
+                typeName = "Type.STRING_TO_INT_MAP";
                 break;
             case "DMatrix":
-                builtInType = "Type.DMATRIX";
+                typeName = "Type.DMATRIX";
                 break;
             case "LMatrix":
-                builtInType = "Type.LMATRIX";
+                typeName = "Type.LMATRIX";
                 break;
-            case "StructArray":
-                builtInType = "Type.STRUCT_ARRAY";
+            case "EGraph":
+                typeName = "Type.EGRAPH";
                 break;
-            case "Struct":
-                builtInType = "Type.STRUCT";
+            case "ENode":
+                typeName = "Type.ENODE";
                 break;
             case "KDTree":
-                builtInType = "Type.KDTREE";
+                typeName = "Type.KDTREE";
                 break;
             case "NDTree":
-                builtInType = "Type.NDTREE";
+                typeName = "Type.NDTREE";
                 break;
             case "IntToIntMap":
-                builtInType = "Type.INT_TO_INT_MAP";
+                typeName = "Type.INT_TO_INT_MAP";
                 break;
             case "IntToStringMap":
-                builtInType = "Type.INT_TO_STRING_MAP";
+                typeName = "Type.INT_TO_STRING_MAP";
                 break;
             case "Task":
-                builtInType = "Type.TASK";
+                typeName = "Type.TASK";
                 break;
             case "TaskArray":
-                builtInType = "Type.TASK_ARRAY";
+                typeName = "Type.TASK_ARRAY";
                 break;
             case "Node":
-                builtInType = "Type.NODE";
+                typeName = "Type.NODE";
                 break;
+            default:
+                typeName = type + ".TYPE_HASH";
         }
 
-        return builtInType;
+        return typeName;
     }
 
-    public static String builtInClassName(String type) {
-        String className = null;
+    public static String cassName(String type) {
+        String className;
 
         switch (type) {
             case "Bool":
@@ -151,10 +153,10 @@ public class TypeManager {
             case "LMatrix":
                 className = LMatrix.class.getCanonicalName();
                 break;
-            case "StructArray":
+            case "EGraph":
                 className = EGraph.class.getCanonicalName();
                 break;
-            case "Struct":
+            case "ENode":
                 className = ENode.class.getCanonicalName();
                 break;
             case "KDTree":
@@ -178,6 +180,8 @@ public class TypeManager {
             case "Node":
                 className = Node.class.getCanonicalName();
                 break;
+            default:
+                className = type;
         }
 
         return className;
@@ -186,7 +190,6 @@ public class TypeManager {
     public static boolean isPrimitive(String type) {
         return primitives.contains(type);
     }
-
 
 }
 

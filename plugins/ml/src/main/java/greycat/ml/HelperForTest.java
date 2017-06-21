@@ -13,32 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package greycat.struct;
+package greycat.ml;
 
-import greycat.Container;
-import greycat.Graph;
+/**
+ * Created by assaad on 21/06/2017.
+ */
+public class HelperForTest {
+    public static boolean assertArrayEquals(double[] p1, double[] p2, double eps){
+        if(p1.length!=p2.length){
+            return false;
+        }
 
-public interface EGraph {
-
-    ENode root();
-
-    ENode newNode();
-
-    ENode node(int index);
-
-    EGraph setRoot(ENode eNode);
-
-    EGraph drop(ENode eNode);
-
-    int size();
-
-    /**
-     * Tag the object to be freed from the memory.
-     * Warning this method is not a clear EGraph and is not supposed to be called manually in case of EGraph attached to a GreyCat Node.
-     * This method is mainly for volatile EGraph usages.
-     */
-    void free();
-
-    Graph graph();
-
+        for(int i=0;i<p1.length;i++){
+            if(Math.abs(p1[i]-p2[i])>eps){
+                return false;
+            }
+        }
+        return true;
+    }
 }

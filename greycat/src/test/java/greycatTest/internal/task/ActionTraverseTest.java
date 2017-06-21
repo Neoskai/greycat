@@ -15,14 +15,9 @@
  */
 package greycatTest.internal.task;
 
-import greycat.Node;
-import greycat.ActionFunction;
+import greycat.*;
 import org.junit.Assert;
 import org.junit.Test;
-import greycat.Callback;
-import greycat.Type;
-import greycat.struct.RelationIndexed;
-import greycat.TaskContext;
 
 import static greycat.Tasks.newTask;
 import static greycat.internal.task.CoreActions.*;
@@ -137,16 +132,17 @@ public class ActionTraverseTest extends AbstractActionTest {
         graph.declareIndex(0, "roots", rootIndex -> {
             rootIndex.update(root);
 
-            RelationIndexed irel = (RelationIndexed) root.getOrCreate("childrenIndexed", Type.RELATION_INDEXED);
-            irel.add(node1, "name");
-            irel.add(node2, "name");
+            Index irel = (Index) root.getOrCreate("childrenIndexed", Type.INDEX);
+            irel.declareAttributes(null, "name");
+            irel.update(node1);
+            irel.update(node2);
             //  irel.add(node3, "name");
 
             root.travelInTime(12, new Callback<Node>() {
                 @Override
                 public void on(Node root12) {
-                    RelationIndexed irel12 = (RelationIndexed) root12.getOrCreate("childrenIndexed", Type.RELATION_INDEXED);
-                    irel12.add(node3, "name");
+                    Index irel12 = (Index) root12.get("childrenIndexed");
+                    irel12.update(node3);
                 }
             });
 
@@ -217,18 +213,19 @@ public class ActionTraverseTest extends AbstractActionTest {
     public void indexedRelationTest() {
         initGraph();
         newTask()
-                .then(createNode())
-                .then(setAttribute("name", Type.STRING, "toto"))
-                .then(setAsVar("child"))
-                .then(createNode())
-                .then(setAttribute("name", Type.STRING, "parent"))
-                .then(setAsVar("parent"))
-                .then(addVarToRelation("children", "child", "name"))
-                .then(inject("toto"))
-                .then(setAsVar("child_name"))
-                .then(readVar("parent"))
-                .then(traverse("children", "name", "{{child_name}}"))
-                .then(println("{{result}}"))
+                .createNode()
+                .setAttribute("name", Type.STRING, "toto")
+                .setAsVar("child")
+                .createNode()
+                .setAttribute("name", Type.STRING, "parent")
+                .setAsVar("parent")
+                .declareLocalIndex("children", "name")
+                .addVarTo("children", "child")
+                .inject("toto")
+                .setAsVar("child_name")
+                .readVar("parent")
+                .traverse("children", "name", "{{child_name}}")
+                .println("{{result}}")
                 .thenDo(context -> {
                     Assert.assertEquals(1, context.result().size());
                 })

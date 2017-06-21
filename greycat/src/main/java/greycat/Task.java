@@ -339,9 +339,9 @@ public interface Task {
 
     Task attributesWithType(int filterType);
 
-    Task addVarToRelation(String relName, String varName, String... attributes);
+    Task addVarTo(String relName, String varName);
 
-    Task removeVarFromRelation(String relName, String varFrom, String... attributes);
+    Task removeVarFrom(String relName, String varFrom);
 
     Task traverse(String name, String... params);
 
@@ -349,11 +349,13 @@ public interface Task {
 
     Task readIndex(String indexName, String... query);
 
-    Task globalIndex(String indexName);
-
     Task updateIndex(String name);
 
+    Task unindexFrom(String name);
+
     Task declareIndex(String indexName, String... indexedAttributesNames);
+
+    Task declareLocalIndex(String name, String... attributes);
 
     Task declareTimedIndex(String indexName, String... indexedAttributesNames);
 

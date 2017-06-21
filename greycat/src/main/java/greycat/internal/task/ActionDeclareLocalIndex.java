@@ -16,16 +16,16 @@
 package greycat.internal.task;
 
 import greycat.*;
+import greycat.base.BaseNode;
+import greycat.plugin.Job;
 import greycat.struct.Buffer;
 
-class ActionDeclareIndex implements Action {
+class ActionDeclareLocalIndex implements Action {
 
-    private final boolean _timed;
     private final String _name;
     private final String[] _attributes;
 
-    ActionDeclareIndex(final boolean timed, final String name, final String... attributes) {
-        this._timed = timed;
+    ActionDeclareLocalIndex(final String name, final String... attributes) {
         this._name = name;
         this._attributes = attributes;
     }
@@ -35,32 +35,30 @@ class ActionDeclareIndex implements Action {
         final TaskResult previousResult = ctx.result();
         final String templatedIndexName = ctx.template(_name);
         final String[] templatedAttributes = ctx.templates(_attributes);
-        if (_timed) {
-            ctx.graph().declareTimedIndex(ctx.world(), ctx.time(), templatedIndexName, new Callback<NodeIndex>() {
-                @Override
-                public void on(NodeIndex result) {
-                    result.free();
-                    ctx.continueTask();
-                }
-            }, templatedAttributes);
-        } else {
-            ctx.graph().declareIndex(ctx.world(), templatedIndexName, new Callback<NodeIndex>() {
-                @Override
-                public void on(NodeIndex result) {
-                    result.free();
-                    ctx.continueTask();
-                }
-            }, templatedAttributes);
+        DeferCounter barrier = ctx.graph().newCounter(previousResult.size());
+        barrier.then(new Job() {
+            @Override
+            public void run() {
+                ctx.continueTask();
+            }
+        });
+        for (int i = 0; i < previousResult.size(); i++) {
+            Object resolved = previousResult.get(i);
+            if (resolved instanceof BaseNode) {
+                Node casted = (Node) resolved;
+                ((Index) casted.getOrCreate(templatedIndexName, Type.INDEX)).declareAttributes(new Callback() {
+                    @Override
+                    public void on(Object result) {
+                        barrier.count();
+                    }
+                }, templatedAttributes);
+            }
         }
     }
 
     @Override
     public final void serialize(final Buffer builder) {
-        if (_timed) {
-            builder.writeString(CoreActionNames.DECLARE_TIMED_INDEX);
-        } else {
-            builder.writeString(CoreActionNames.DECLARE_INDEX);
-        }
+        builder.writeString(CoreActionNames.DECLARE_LOCAL_INDEX);
         builder.writeChar(Constants.TASK_PARAM_OPEN);
         TaskHelper.serializeString(_name, builder, true);
         builder.writeChar(Constants.TASK_PARAM_SEP);
@@ -70,10 +68,6 @@ class ActionDeclareIndex implements Action {
 
     @Override
     public final String name() {
-        if (_timed) {
-            return CoreActionNames.DECLARE_TIMED_INDEX;
-        } else {
-            return CoreActionNames.DECLARE_INDEX;
-        }
+        return CoreActionNames.DECLARE_LOCAL_INDEX;
     }
 }

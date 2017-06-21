@@ -16,6 +16,7 @@
 package greycat.generator;
 
 import greycat.Graph;
+import greycat.Index;
 import greycat.Type;
 import greycat.language.*;
 import greycat.language.Class;
@@ -48,17 +49,16 @@ class ClassTypeGenerator {
         }
 
         // constants
-        for(Constant constant : classType.constants()) {
+        for (Constant constant : classType.constants()) {
             String value = constant.value();
             if (!constant.type().equals("String")) {
-                value = value.replaceAll("\"","");
+                value = value.replaceAll("\"", "");
             }
             javaClass.addField()
                     .setVisibility(Visibility.PUBLIC)
                     .setFinal(true)
                     .setName(constant.name())
-                    // TODO custom type
-                    .setType(TypeManager.builtInClassName(constant.type()))
+                    .setType(TypeManager.cassName(constant.type()))
                     .setLiteralInitializer(value)
                     .setStatic(true);
         }
@@ -111,23 +111,21 @@ class ClassTypeGenerator {
                     .setVisibility(Visibility.PUBLIC)
                     .setFinal(true)
                     .setName(att.name().toUpperCase() + "_TYPE")
-                    .setType(byte.class)
+                    .setType(int.class)
                     .setStatic(true);
-            // TODO custom type
-            typeField.setLiteralInitializer(TypeManager.builtInTypeName(att.type()));
+            typeField.setLiteralInitializer(TypeManager.typeName(att.type()));
 
             // getter
             MethodSource<JavaClassSource> getter = javaClass.addMethod();
             getter.setVisibility(Visibility.PUBLIC).setFinal(true);
-            // TODO custom type
-            getter.setReturnType(TypeManager.builtInClassName(att.type()));
+            getter.setReturnType(TypeManager.cassName(att.type()));
             getter.setName("get" + Generator.upperCaseFirstChar(att.name()));
 
             if (TypeManager.isPrimitive(att.type())) {
-                getter.setBody("return (" + TypeManager.builtInClassName(att.type()) + ") super.get(" + att.name().toUpperCase() + ");");
+                getter.setBody("return (" + TypeManager.cassName(att.type()) + ") super.get(" + att.name().toUpperCase() + ");");
 
             } else {
-                getter.setBody("return (" + TypeManager.builtInClassName(att.type()) + ") super.getOrCreate(" + att.name().toUpperCase() + ", " + att.name().toUpperCase() + "_TYPE);");
+                getter.setBody("return (" + TypeManager.cassName(att.type()) + ") super.getOrCreate(" + att.name().toUpperCase() + ", " + att.name().toUpperCase() + "_TYPE);");
 
             }
 
@@ -139,8 +137,7 @@ class ClassTypeGenerator {
                     .setBody("super.set(" + att.name().toUpperCase() + ", " + att.name().toUpperCase()
                             + "_TYPE,value);\nreturn this;"
                     )
-                    // TODO custom type
-                    .addParameter(TypeManager.builtInClassName(att.type()), "value");
+                    .addParameter(TypeManager.cassName(att.type()), "value");
 
 
         }
@@ -165,7 +162,7 @@ class ClassTypeGenerator {
             getter.setName("get" + Generator.upperCaseFirstChar(rel.name()));
             getter.addParameter("greycat.Callback<" + resultType + "[]>", "callback");
             getter.setBody(
-                    "this.relation(" + rel.name().toUpperCase() + ",new greycat.Callback<greycat.Node[]>() {\n" +
+                    "this.traverse(" + rel.name().toUpperCase() + ",new greycat.Callback<greycat.Node[]>() {\n" +
                             "@Override\n" +
                             "public void on(greycat.Node[] nodes) {\n" +
                             resultType + "[] result = new " + resultType + "[nodes.length];\n" +
@@ -221,7 +218,7 @@ class ClassTypeGenerator {
             getter.setName("get" + Generator.upperCaseFirstChar(ref.name()));
             getter.addParameter("greycat.Callback<" + resultType + ">", "callback");
             getter.setBody(
-                    "this.relation(" + ref.name().toUpperCase() + ",new greycat.Callback<greycat.Node[]>() {\n" +
+                    "this.traverse(" + ref.name().toUpperCase() + ",new greycat.Callback<greycat.Node[]>() {\n" +
                             "@Override\n" +
                             "public void on(greycat.Node[] nodes) {\n" +
                             resultType + " result = (" + resultType + ") nodes[0];\n" +
@@ -264,9 +261,100 @@ class ClassTypeGenerator {
             remove.setBody(removeFromBodyBuilder.toString());
         }
 
+        // local indexes
+        for (LocalIndex li : classType.localIndexes()) {
+            String indexConstant = li.name().toUpperCase();
+            String indexName = li.name();
+
+            // field for index name
+            javaClass.addField()
+                    .setName(indexConstant)
+                    .setType(String.class)
+                    .setStringInitializer(indexName)
+                    .setStatic(true)
+                    .setVisibility(Visibility.PUBLIC)
+                    .setFinal(true);
+
+            StringBuilder indexedAttBuilder = new StringBuilder();
+
+            for (String att : li.attributes()) {
+                indexedAttBuilder.append(li.type() + "." + att.toUpperCase());
+                indexedAttBuilder.append(",");
+            }
+            indexedAttBuilder.deleteCharAt(indexedAttBuilder.length() - 1);
+
+            // index method
+            MethodSource<JavaClassSource> indexMethod = javaClass.addMethod()
+                    .setName("index" + Generator.upperCaseFirstChar(indexName))
+                    .setVisibility(Visibility.PUBLIC)
+                    .setFinal(true)
+                    .setReturnType("greycat.Index");
+            indexMethod.addParameter(Generator.upperCaseFirstChar(li.type()), li.type().toLowerCase());
+
+            StringBuilder indexBodyBuilder = new StringBuilder();
+            indexBodyBuilder.append("greycat.Index index = this.getIndex(" + indexConstant + ");");
+            indexBodyBuilder.append("if (index == null) {");
+            indexBodyBuilder.append("index = (greycat.Index) this.getOrCreate(" + indexConstant + ", Type.INDEX);");
+            indexBodyBuilder.append("index.declareAttributes(null, " + indexedAttBuilder.toString() + ");");
+            indexBodyBuilder.append("index.update(" + li.type().toLowerCase() + ");");
+            indexBodyBuilder.append("}");
+            indexBodyBuilder.append("return index;");
+
+            indexMethod.setBody(indexBodyBuilder.toString());
+
+            // unindex method
+            MethodSource<JavaClassSource> unindexMethod = javaClass.addMethod()
+                    .setName("unindex" + Generator.upperCaseFirstChar(indexName))
+                    .setVisibility(Visibility.PUBLIC)
+                    .setFinal(true)
+                    .setReturnTypeVoid();
+            unindexMethod.addParameter(Generator.upperCaseFirstChar(li.type()), li.type().toLowerCase());
+
+            StringBuilder unindexBodyBuilder = new StringBuilder();
+            unindexBodyBuilder.append("greycat.Index index = this.getIndex(" + indexConstant + ");");
+            unindexBodyBuilder.append("if (index != null) {");
+            unindexBodyBuilder.append("index.unindex(" + li.type().toLowerCase() + ");");
+            unindexBodyBuilder.append("}");
+
+            unindexMethod.setBody(unindexBodyBuilder.toString());
+
+            // find method
+            MethodSource<JavaClassSource> find = javaClass.addMethod();
+            find.setVisibility(Visibility.PUBLIC).setFinal(true);
+            find.setName("find" + Generator.upperCaseFirstChar(indexName));
+            find.setReturnTypeVoid();
+            for (String indexedAtt : li.attributes()) {
+                find.addParameter("String", indexedAtt);
+            }
+            find.addParameter("greycat.Callback<" + li.type() + "[]>", "callback");
+            StringBuilder findBodyBuilder = new StringBuilder();
+            findBodyBuilder.append("greycat.Index index = this.getIndex(" + indexConstant + ");\n");
+            findBodyBuilder.append("if (index != null) {");
+            findBodyBuilder.append("index.find(new Callback<greycat.Node[]>() {");
+            findBodyBuilder.append("@Override\n");
+            findBodyBuilder.append("public void on(greycat.Node[] result) {");
+            findBodyBuilder.append(li.type() + "[] typedResult = new " + li.type() + "[result.length];");
+            findBodyBuilder.append("java.lang.System.arraycopy(result, 0, typedResult, 0, result.length);");
+            findBodyBuilder.append("callback.on(typedResult);");
+            findBodyBuilder.append("}");
+            findBodyBuilder.append("},");
+            findBodyBuilder.append("this.world(), this.time(),");
+            for (String indexedAtt : li.attributes()) {
+                findBodyBuilder.append(indexedAtt + ",");
+            }
+            findBodyBuilder.deleteCharAt(findBodyBuilder.length() - 1);
+            findBodyBuilder.append(");");
+            findBodyBuilder.append("}");
+
+            find.setBody(findBodyBuilder.toString());
+
+        }
 
         return javaClass;
     }
 
 
 }
+
+
+

@@ -15,22 +15,8 @@
  */
 package greycat;
 
-public interface NodeIndex extends Node {
+public interface NodeIndex extends Index, Node {
 
-    void declareAttributes(Callback<NodeIndex> callback, String... attributeNames);
-
-    long size();
-
-    long[] all();
-
-    NodeIndex update(Node node);
-
-    NodeIndex clear();
-
-    void find(Callback<Node[]> callback, String... params);
-
-    void findByQuery(Query query, Callback<Node[]> callback);
-
-    long[] select(String... params);
+    void findFrom(Callback<Node[]> callback, String... params);
 
 }

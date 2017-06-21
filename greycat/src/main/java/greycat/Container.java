@@ -30,7 +30,7 @@ public interface Container {
 
     Relation getRelation(String name);
 
-    RelationIndexed getRelationIndexed(String name);
+    Index getIndex(String name);
 
     DMatrix getDMatrix(String name);
 

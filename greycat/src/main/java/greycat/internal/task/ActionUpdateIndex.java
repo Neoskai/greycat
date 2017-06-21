@@ -28,18 +28,17 @@ import greycat.struct.Buffer;
 class ActionUpdateIndex implements Action {
 
     private final String _name;
-    // private final String[] _attributes;
+    private final boolean _update;
 
-    ActionUpdateIndex(final String name/*, final String... attributes*/) {
+    ActionUpdateIndex(final String name, final boolean update) {
         this._name = name;
-        // this._attributes = attributes;
+        this._update = update;
     }
 
     @Override
     public final void eval(final TaskContext ctx) {
         final TaskResult previousResult = ctx.result();
         final String templatedIndexName = ctx.template(_name);
-        //final String[] templatedAttributes = ctx.templates(_attributes);
         final DeferCounter counter = new CoreDeferCounter(previousResult.size());
         for (int i = 0; i < previousResult.size(); i++) {
             final Object loop = previousResult.get(i);
@@ -47,13 +46,11 @@ class ActionUpdateIndex implements Action {
                 BaseNode loopBaseNode = (BaseNode) loop;
                 long indexTime = ctx.time();
                 ctx.graph().index(loopBaseNode.world(), indexTime, templatedIndexName, indexNode -> {
-                    indexNode.update(loopBaseNode);
-                    /*
-                    if (_remove) {
-                        indexNode.removeFromIndex(loopBaseNode, templatedAttributes);
+                    if(this._update) {
+                        indexNode.update(loopBaseNode);
                     } else {
-                        indexNode.addToIndex(loopBaseNode, templatedAttributes);
-                    }*/
+                        indexNode.unindex(loopBaseNode);
+                    }
                     indexNode.free();
                     counter.count();
                 });
@@ -71,7 +68,11 @@ class ActionUpdateIndex implements Action {
 
     @Override
     public final void serialize(final Buffer builder) {
-        builder.writeString(CoreActionNames.UPDATE_INDEX);
+        if(this._update) {
+            builder.writeString(CoreActionNames.UPDATE_INDEX);
+        } else {
+            builder.writeString(CoreActionNames.UNINDEX_FROM);
+        }
 
         /*
         if (_timed) {

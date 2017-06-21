@@ -51,7 +51,8 @@ public class ActionLocalIndexOrUnindexTest {
                         .createNode()
                         .setAttribute("name", Type.STRING, "root")
                         .updateIndex("rootIdx")
-                        .addVarToRelation("idxRelation", "child", "name")
+                        .declareLocalIndex("idxRelation", "name")
+                        .addVarTo("idxRelation", "child")
                         .readIndex("rootIdx")
                         .traverse("idxRelation")
                         .thenDo(new ActionFunction() {
@@ -66,7 +67,7 @@ public class ActionLocalIndexOrUnindexTest {
                             }
                         })
                         .readIndex("rootIdx")
-                        .removeVarFromRelation("idxRelation", "child", "name")
+                        .removeVarFrom("idxRelation", "child")
                         .readIndex("rootIdx")
                         .traverse("idxRelation")
                         .thenDo(new ActionFunction() {

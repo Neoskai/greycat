@@ -16,6 +16,7 @@
 package greycat.internal.heap;
 
 import greycat.Container;
+import greycat.Index;
 import greycat.Type;
 import greycat.chunk.StateChunk;
 import greycat.plugin.NodeStateCallback;
@@ -107,7 +108,7 @@ public class MockNodeStateDValue implements StateChunk {
     }
 
     @Override
-    public final RelationIndexed getRelationIndexed(String name) {
+    public final Index getIndex(String name) {
         return null;
     }
 

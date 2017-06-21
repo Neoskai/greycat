@@ -46,6 +46,10 @@ public class GlobalIndex {
         return this.name;
     }
 
+    public String type() {
+        return this.type;
+    }
+
     public boolean isWithTime() {
         return this.withTime;
     }

@@ -68,39 +68,6 @@ public class WorldSample {
 
                         Node node2 = graph.newNode(0, 0);
                         node1.addToRelation("children", node2);
-
-                        Relation refValuesThree = (Relation) node1.get("children");
-                        node1.relation("children", new Callback<Node[]>() {
-                            @Override
-                            public void on(Node[] resolvedNodes) {
-
-                                graph.freeNodes(resolvedNodes);
-                                node1.removeFromRelation("children", node0);
-                                node1.removeFromRelation("children", node0);
-                                node1.removeFromRelation("children", node2);
-
-                                //destroy the node explicitly without waiting GC
-                                node0.free();
-                                node1.free();
-                                node2.free();
-
-                                graph.save(new Callback<Boolean>() {
-                                    @Override
-                                    public void on(Boolean result) {
-                                        graph.disconnect(new Callback<Boolean>() {
-                                            @Override
-                                            public void on(Boolean result) {
-                                                //end of test
-
-                                            }
-                                        });
-                                    }
-                                });
-
-
-                            }
-                        });
-
                     }
                 });
 

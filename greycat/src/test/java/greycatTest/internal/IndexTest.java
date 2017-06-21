@@ -20,7 +20,6 @@ import greycat.ActionFunction;
 import org.junit.Assert;
 import org.junit.Test;
 import greycat.scheduler.NoopScheduler;
-import greycat.struct.RelationIndexed;
 import greycat.TaskContext;
 import greycat.Tasks;
 
@@ -83,8 +82,9 @@ public class IndexTest {
                 final Node node_t1 = graph.newNode(0, 0);
                 node_t1.set("name", Type.STRING, "MyName");
 
-                RelationIndexed irel = (RelationIndexed) node_t0.getOrCreate("ichildren", Type.RELATION_INDEXED);
-                irel.add(node_t1, "name");
+                Index irel = (Index) node_t0.getOrCreate("ichildren", Type.INDEX);
+                irel.declareAttributes(null, "name");
+                irel.update(node_t1);
 
                 long[] flat = irel.all();
                 Assert.assertEquals(1, flat.length);
@@ -98,7 +98,7 @@ public class IndexTest {
                         Assert.assertEquals(result[0].id(), node_t1.id());
                         passed[0]++;
                     }
-                }, 0, 0, "name", "MyName");
+                }, 0, 0, "MyName");
 
                 irel.find(new Callback<Node[]>() {
                     @Override
@@ -107,7 +107,7 @@ public class IndexTest {
                         Assert.assertEquals(result[0].id(), node_t1.id());
                         passed[0]++;
                     }
-                }, 0, 0, "name", "MyName");
+                }, 0, 0, "MyName");
 
                 irel.findByQuery(graph.newQuery().add("name", "MyName").setTime(0).setWorld(0), new Callback<Node[]>() {
                     @Override

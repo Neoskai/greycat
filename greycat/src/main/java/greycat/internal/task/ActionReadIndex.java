@@ -15,12 +15,8 @@
  */
 package greycat.internal.task;
 
-import greycat.Node;
-import greycat.Action;
-import greycat.Callback;
-import greycat.Constants;
-import greycat.NodeIndex;
-import greycat.TaskContext;
+import greycat.*;
+import greycat.Index;
 import greycat.struct.Buffer;
 
 class ActionReadIndex implements Action {
@@ -50,7 +46,7 @@ class ActionReadIndex implements Action {
                             resolvedIndex.free();
                             ctx.continueWith(ctx.wrap(result));
                         }
-                    }, query);
+                    }, ctx.world(), ctx.time(), query);
                 } else {
                     ctx.continueWith(ctx.newResult());
                 }

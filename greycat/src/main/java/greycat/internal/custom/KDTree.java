@@ -23,7 +23,7 @@ import greycat.utility.distance.Distances;
 
 public class KDTree extends BaseCustomType implements Tree {
 
-    public static final String NAME = "KDTree";
+    public static final String NAME = "KDTREE";
 
     /**
      * public configuration elements

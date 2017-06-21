@@ -124,7 +124,7 @@ public class TaskHelper {
         }
     }
 
-    public static void serializeType(byte type, final Buffer builder) {
+    public static void serializeType(int type, final Buffer builder) {
         builder.writeString(Type.typeName(type));
     }
 

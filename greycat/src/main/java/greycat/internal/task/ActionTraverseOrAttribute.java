@@ -22,7 +22,6 @@ import greycat.plugin.NodeState;
 import greycat.plugin.Resolver;
 import greycat.struct.Buffer;
 import greycat.struct.Relation;
-import greycat.struct.RelationIndexed;
 import greycat.TaskContext;
 import greycat.TaskResult;
 import greycat.utility.LArray;
@@ -86,8 +85,8 @@ class ActionTraverseOrAttribute implements Action {
                                 }
                             }
                             break;
-                        case Type.RELATION_INDEXED:
-                            RelationIndexed relationIndexed = (RelationIndexed) casted.get(flatName);
+                        case Type.INDEX:
+                            final Index relationIndexed = (Index) casted.get(flatName);
                             if (relationIndexed != null) {
                                 if (query != null) {
                                     final long[] candidates = relationIndexed.selectByQuery(query);
@@ -97,11 +96,11 @@ class ActionTraverseOrAttribute implements Action {
                                         ids.add(candidates[k]);
                                     }
                                 } else {
-                                    int relSize = relationIndexed.size();
-                                    for (int k = 0; k < relSize; k++) {
+                                    long[] all = relationIndexed.all();
+                                    for (int k = 0; k < all.length; k++) {
                                         worlds.add(casted.world());
                                         times.add(casted.time());
-                                        ids.add(relationIndexed.getByIndex(k));
+                                        ids.add(all[k]);
                                     }
                                 }
                             }
@@ -206,7 +205,7 @@ class ActionTraverseOrAttribute implements Action {
 
     @Override
     public final String name() {
-        return (_isUnknown?_name:(_isAttribute?CoreActionNames.ATTRIBUTE:CoreActionNames.TRAVERSE));
+        return (_isUnknown ? _name : (_isAttribute ? CoreActionNames.ATTRIBUTE : CoreActionNames.TRAVERSE));
     }
 
 }

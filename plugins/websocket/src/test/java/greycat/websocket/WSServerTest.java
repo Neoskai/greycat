@@ -17,8 +17,6 @@ package greycat.websocket;
 
 import greycat.*;
 import greycat.struct.Buffer;
-import greycat.websocket.WSClient;
-import greycat.websocket.WSServer;
 import io.undertow.server.handlers.resource.ClassPathResourceManager;
 import io.undertow.server.handlers.resource.ResourceHandler;
 import org.junit.Assert;
@@ -125,7 +123,7 @@ public class WSServerTest {
                         graph2.index(0, 0, "nodes", new Callback<NodeIndex>() {
                             @Override
                             public void on(NodeIndex indexNodes) {
-                                indexNodes.find(new Callback<Node[]>() {
+                                indexNodes.findFrom(new Callback<Node[]>() {
                                     @Override
                                     public void on(Node[] result1) {
                                         Assert.assertEquals(result1[0].toString(), node.toString());
@@ -144,7 +142,7 @@ public class WSServerTest {
                                                     public void on(Node[] result) {
                                                         Assert.assertEquals(2, result.length);
                                                     }
-                                                });
+                                                }, graph2Nodes.world(), graph2Nodes.time());
                                             }
                                         }, "name");
 
@@ -156,8 +154,8 @@ public class WSServerTest {
 
                                                 graph.index(0, 0, "nodes", new Callback<NodeIndex>() {
                                                     @Override
-                                                    public void on(NodeIndex grapNodeIndex) {
-                                                        grapNodeIndex.find(new Callback<Node[]>() {
+                                                    public void on(NodeIndex grapIndex) {
+                                                        grapIndex.find(new Callback<Node[]>() {
                                                             @Override
                                                             public void on(Node[] result) {
                                                                 Assert.assertEquals(2, result.length);
@@ -165,7 +163,7 @@ public class WSServerTest {
                                                                 Assert.assertEquals(result[1].toString(), "{\"world\":0,\"time\":0,\"id\":137438953473,\"name\":\"hello2\"}");
                                                                 latch.countDown();
                                                             }
-                                                        });
+                                                        }, grapIndex.world(), grapIndex.time());
                                                     }
                                                 });
 

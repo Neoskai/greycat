@@ -28,7 +28,7 @@ import greycat.struct.Buffer;
 
 class ActionAttributes implements Action {
 
-    private final byte _filter;
+    private final  int _filter;
 
     ActionAttributes(String filterType) {
         if (filterType != null) {

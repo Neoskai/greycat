@@ -755,19 +755,13 @@ public class CoreTask implements Task {
                         return new ActionAddToVar((String) params[0]);
                     }
                 });
-        registry.getOrCreateDeclaration(CoreActionNames.ADD_VAR_TO_RELATION)
-                .setParams(Type.STRING, Type.STRING, Type.STRING_ARRAY)
-                .setDescription("Adds the content of the variable (2nd param) to the relation (1st param). Following parameters for indexation.")
+        registry.getOrCreateDeclaration(CoreActionNames.ADD_VAR_TO)
+                .setParams(Type.STRING, Type.STRING)
+                .setDescription("Adds the content of the variable (2nd param) to the relation (1st param).")
                 .setFactory(new ActionFactory() {
                     @Override
                     public Action create(Object[] params) {
-                        final String[] varrags = (String[]) params[2];
-                        if (varrags != null) {
-                            return new ActionAddRemoveVarToRelation(true, (String) params[0], (String) params[1], varrags);
-                        } else {
-                            return new ActionAddRemoveVarToRelation(true, (String) params[0], (String) params[1]);
-                        }
-
+                        return new ActionAddRemoveVarTo(true, (String) params[0], (String) params[1]);
                     }
                 });
         registry.getOrCreateDeclaration(CoreActionNames.TRAVERSE_TIMELINE)
@@ -780,19 +774,13 @@ public class CoreTask implements Task {
                         return new ActionTraverseTimeline((String) params[0], (String) params[1], (String) params[2]);
                     }
                 });
-        registry.getOrCreateDeclaration(CoreActionNames.REMOVE_VAR_TO_RELATION)
-                .setParams(Type.STRING, Type.STRING, Type.STRING_ARRAY)
-                .setDescription("Removes the content of the variable (2nd param) from the relation (1st param). Following parameters for indexed relations.")
+        registry.getOrCreateDeclaration(CoreActionNames.REMOVE_VAR_FROM)
+                .setParams(Type.STRING, Type.STRING)
+                .setDescription("Removes the content of the variable (2nd param) from the relation (1st param).")
                 .setFactory(new ActionFactory() {
                     @Override
                     public Action create(Object[] params) {
-                        final String[] varrags = (String[]) params[2];
-                        if (varrags != null) {
-                            return new ActionAddRemoveVarToRelation(false, (String) params[0], (String) params[1], varrags);
-                        } else {
-                            return new ActionAddRemoveVarToRelation(false, (String) params[0], (String) params[1]);
-                        }
-
+                        return new ActionAddRemoveVarTo(false, (String) params[0], (String) params[1]);
                     }
                 });
         registry.getOrCreateDeclaration(CoreActionNames.TRAVERSE)
@@ -976,15 +964,6 @@ public class CoreTask implements Task {
                         }
                     }
                 });
-        registry.getOrCreateDeclaration(CoreActionNames.GLOBAL_INDEX)
-                .setParams(Type.STRING)
-                .setDescription("Retrieve global index node")
-                .setFactory(new ActionFactory() {
-                    @Override
-                    public Action create(Object[] params) {
-                        return new ActionGlobalIndex((String) params[0]);
-                    }
-                });
         registry.getOrCreateDeclaration(CoreActionNames.INDEX_NAMES)
                 .setDescription("Retrieves existing indexes")
                 .setFactory(new ActionFactory() {
@@ -1039,6 +1018,16 @@ public class CoreTask implements Task {
                         return new ActionDeclareIndex(false, (String) params[0], castedVarrargs);
                     }
                 });
+        registry.getOrCreateDeclaration(CoreActionNames.DECLARE_LOCAL_INDEX)
+                .setParams(Type.STRING, Type.STRING_ARRAY)
+                .setDescription("Declare a new local index")
+                .setFactory(new ActionFactory() {
+                    @Override
+                    public Action create(Object[] params) {
+                        final String[] castedVarrargs = (String[]) params[1];
+                        return new ActionDeclareLocalIndex((String) params[0], castedVarrargs);
+                    }
+                });
         registry.getOrCreateDeclaration(CoreActionNames.DECLARE_TIMED_INDEX)
                 .setParams(Type.STRING, Type.STRING_ARRAY)
                 .setDescription("Declare a new global index with time management")
@@ -1055,9 +1044,19 @@ public class CoreTask implements Task {
                 .setFactory(new ActionFactory() {
                     @Override
                     public Action create(Object[] params) {
-                        return new ActionUpdateIndex((String) params[0]);
+                        return new ActionUpdateIndex((String) params[0], true);
                     }
                 });
+        registry.getOrCreateDeclaration(CoreActionNames.UNINDEX_FROM)
+                .setParams(Type.STRING)
+                .setDescription("Remove the nodes present in the current result from the global index given in parameter.")
+                .setFactory(new ActionFactory() {
+                    @Override
+                    public Action create(Object[] params) {
+                        return new ActionUpdateIndex((String) params[0], false);
+                    }
+                });
+
         registry.getOrCreateDeclaration(CoreActionNames.LOOP)
                 .setParams(Type.STRING, Type.STRING, Type.TASK)
                 .setDescription("Executes a task in a range.")
@@ -1381,13 +1380,13 @@ public class CoreTask implements Task {
     }
 
     @Override
-    public final Task addVarToRelation(final String relName, final String varName, final String... attributes) {
-        return then(CoreActions.addVarToRelation(relName, varName, attributes));
+    public final Task addVarTo(final String relName, final String varName) {
+        return then(CoreActions.addVarTo(relName, varName));
     }
 
     @Override
-    public final Task removeVarFromRelation(final String relName, final String varFrom, final String... attributes) {
-        return then(CoreActions.removeVarFromRelation(relName, varFrom, attributes));
+    public final Task removeVarFrom(final String relName, final String varFrom) {
+        return then(CoreActions.removeVarFrom(relName, varFrom));
     }
 
     @Override
@@ -1406,18 +1405,23 @@ public class CoreTask implements Task {
     }
 
     @Override
-    public final Task globalIndex(String indexName) {
-        return then(CoreActions.globalIndex(indexName));
-    }
-
-    @Override
     public final Task updateIndex(String name) {
         return then(CoreActions.updateIndex(name));
     }
 
     @Override
+    public final Task unindexFrom(String name) {
+        return then(CoreActions.unindexFrom(name));
+    }
+
+    @Override
     public final Task declareIndex(String name, String... attributes) {
         return then(CoreActions.declareIndex(name, attributes));
+    }
+
+    @Override
+    public final Task declareLocalIndex(String name, String... attributes) {
+        return then(CoreActions.declareLocalIndex(name, attributes));
     }
 
     @Override

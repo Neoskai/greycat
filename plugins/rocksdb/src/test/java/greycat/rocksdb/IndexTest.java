@@ -55,7 +55,7 @@ public class IndexTest {
                                                             public void on(Node[] result) {
 
                                                             }
-                                                        });
+                                                        }, result.world(), result.time());
                                                     }
                                                 });
                                             }

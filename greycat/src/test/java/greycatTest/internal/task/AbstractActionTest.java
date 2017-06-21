@@ -50,6 +50,7 @@ public abstract class AbstractActionTest {
                     @Override
                     public void on(NodeIndex rootsIndex) {
                         rootsIndex.update(root);
+                       // rootsIndex.free();
                     }
                 }, "name");
                 selfPointer.graph.declareIndex(0, "nodes", new Callback<NodeIndex>() {
@@ -58,6 +59,7 @@ public abstract class AbstractActionTest {
                         nodesIndex.update(n0);
                         nodesIndex.update(n1);
                         nodesIndex.update(root);
+                       // nodesIndex.free();
                     }
                 }, "name");
             }

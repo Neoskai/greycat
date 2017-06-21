@@ -17,10 +17,7 @@ package greycat.internal;
 
 import greycat.*;
 import greycat.base.BaseNode;
-import greycat.plugin.NodeState;
-import greycat.struct.IntArray;
-import greycat.struct.LongLongMap;
-import greycat.struct.RelationIndexed;
+import greycat.internal.custom.CoreIndexAttribute;
 import greycat.utility.HashHelper;
 
 final class CoreNodeIndex extends BaseNode implements NodeIndex {
@@ -32,79 +29,62 @@ final class CoreNodeIndex extends BaseNode implements NodeIndex {
     }
 
     @Override
-    public void declareAttributes(Callback<NodeIndex> callback, String... attributeNames) {
-        final NodeState state = this.phasedState();
-        //TODO, re-index in case of previously init index
-        state.getOrCreateAt(0, Type.RELATION_INDEXED);
-        state.getOrCreateAt(1, Type.LONG_TO_LONG_MAP);
-        final String[] casted = attributeNames;
-        final IntArray hashes = (IntArray) state.getOrCreateAt(2, Type.INT_ARRAY);
-        hashes.init(casted.length);
-        for (int i = 0; i < casted.length; i++) {
-            hashes.set(i, HashHelper.hash(casted[i]));
-        }
-        callback.on(this);
+    public final void init() {
+        getOrCreateAt(0, HashHelper.hash(CoreIndexAttribute.NAME));
     }
 
     @Override
-    public final long size() {
-        return ((RelationIndexed) getAt(0)).size();
+    public final void declareAttributes(Callback callback, String... attributeNames) {
+        ((Index) getAt(0)).declareAttributes(callback, attributeNames);
+    }
+
+    @Override
+    public final int size() {
+        return ((Index) getAt(0)).size();
     }
 
     @Override
     public final long[] all() {
-        return ((RelationIndexed) getAt(0)).all();
+        return ((Index) getAt(0)).all();
     }
 
     @Override
-    public final NodeIndex clear() {
-        ((RelationIndexed) getAt(0)).clear();
-        return this;
+    public final Index update(Node node) {
+        return ((Index) getAt(0)).update(node);
     }
 
     @Override
-    public final NodeIndex update(Node node) {
-        final RelationIndexed relationIndexed = (RelationIndexed) getAt(0);
-        final LongLongMap reverseMap = (LongLongMap) getAt(1);
-        final IntArray hashes = (IntArray) getAt(2);
-        reverseMap.put(node.id(), relationIndexed.update(reverseMap.get(node.id()), node, hashes));
-        return this;
+    public final Index unindex(Node node) {
+        return ((Index) getAt(0)).unindex(node);
     }
 
     @Override
-    public final void find(Callback<Node[]> callback, String... query) {
-        if (query == null || query.length == 0) {
-            final long[] flat = ((RelationIndexed) getAt(0)).all();
-            graph().lookupAll(world(), time(), flat, callback);
-        } else {
-            final NodeState state = this.unphasedState();
-            final RelationIndexed ri = (RelationIndexed) state.getAt(0);
-            final IntArray hashes = (IntArray) state.getAt(2);
-            if (hashes.size() != query.length) {
-                throw new RuntimeException("Bad API usage, query param is different than index declaration");
-            }
-            Query queryObj = _graph.newQuery();
-            queryObj.setWorld(_world);
-            queryObj.setTime(_time);
-            for (int i = 0; i < hashes.size(); i++) {
-                queryObj.addRaw(hashes.get(i), query[i]);
-            }
-            ri.findByQuery(queryObj, callback);
-        }
+    public final Index clear() {
+        return ((Index) getAt(0)).clear();
+    }
+
+    @Override
+    public final void find(Callback<Node[]> callback, long world, long time, String... params) {
+        ((Index) getAt(0)).find(callback, world, time, params);
     }
 
     @Override
     public final void findByQuery(Query query, Callback<Node[]> callback) {
-        ((RelationIndexed) getAt(0)).findByQuery(query, callback);
+        ((Index) getAt(0)).findByQuery(query, callback);
     }
 
     @Override
     public final long[] select(String... params) {
-        if (params == null || params.length == 0) {
-            return ((RelationIndexed) getAt(0)).all();
-        } else {
-            return ((RelationIndexed) getAt(0)).select(params);
-        }
+        return ((Index) getAt(0)).select(params);
     }
 
+    @Override
+    public final long[] selectByQuery(Query query) {
+        return ((Index) getAt(0)).selectByQuery(query);
+    }
+
+    @Override
+    public final void findFrom(Callback<Node[]> callback, String... params) {
+        ((Index) getAt(0)).find(callback, _world, _time, params);
+    }
 }

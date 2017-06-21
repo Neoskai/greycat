@@ -58,7 +58,7 @@ class PluginClassGenerator {
         }
 
         for (CustomType customType : model.customTypes()) {
-            startBodyBuilder.append("graph.typeRegistry().getOrCreateDeclaration(\"" + customType.name() + "\").setFactory(new greycat.plugin.TypeFactory() {");
+            startBodyBuilder.append("graph.typeRegistry().getOrCreateDeclaration(" + customType.name() + ".TYPE_NAME" + ").setFactory(new greycat.plugin.TypeFactory() {");
             startBodyBuilder.append("@Override\n");
             startBodyBuilder.append("public Object wrap(final greycat.struct.EGraph backend) {");
             startBodyBuilder.append("return new " + customType.name() + "(backend);");

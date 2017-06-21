@@ -16,6 +16,7 @@
 package greycat.struct.proxy;
 
 import greycat.Container;
+import greycat.Index;
 import greycat.Type;
 import greycat.plugin.NodeStateCallback;
 import greycat.struct.*;
@@ -54,8 +55,8 @@ public final class ENodeProxy implements ENode {
     }
 
     @Override
-    public final RelationIndexed getRelationIndexed(String name) {
-        return (RelationIndexed) get(name);
+    public final Index getIndex(String name) {
+        return (Index) get(name);
     }
 
     @Override
@@ -163,8 +164,8 @@ public final class ENodeProxy implements ENode {
                     return new ERelationProxy(index, this, (ERelation) elem);
                 case Type.RELATION:
                     return new RelationProxy(index, this, (Relation) elem);
-                case Type.RELATION_INDEXED:
-                    return new RelationIndexedProxy(index, this, (RelationIndexed) elem);
+                /*case Type.RELATION_INDEXED:
+                    return new RelationIndexedProxy(index, this, (RelationIndexed) elem);*/
                 /*case Type.KDTREE:
                     return new TreeProxy(index, this, (Tree) elem);
                 case Type.NDTREE:

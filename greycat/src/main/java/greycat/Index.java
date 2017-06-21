@@ -13,35 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package greycat.struct;
+package greycat;
 
-import greycat.Callback;
-import greycat.Node;
-import greycat.Query;
+public interface Index {
 
-public interface RelationIndexed {
+    void declareAttributes(Callback callback, String... attributeNames);
 
     int size();
 
-    long getByIndex(int index);
-
     long[] all();
 
-    RelationIndexed add(Node node, String... attributeNames);
+    Index update(Node node);
 
-    RelationIndexed remove(Node node, String... attributeNames);
+    Index unindex(Node node);
 
-    long update(long previous, Node node, IntArray hashes);
-
-    RelationIndexed clear();
+    Index clear();
 
     void find(Callback<Node[]> callback, long world, long time, String... params);
+
+    void findByQuery(Query query, Callback<Node[]> callback);
 
     long[] select(String... params);
 
     long[] selectByQuery(Query query);
-
-    void findByQuery(Query query, Callback<Node[]> callback);
-
 
 }

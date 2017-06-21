@@ -86,10 +86,9 @@ public class Generator {
 
     private void generateJava(String packageName, String pluginName, File target) {
         int index = 0;
-        // TODO
         int size = model.classes().length + model.customTypes().length + model.globalIndexes().length + 1;
-
         JavaSource[] sources = new JavaSource[size * 2 + 2];
+
         sources[index] = PluginClassGenerator.generate(packageName, pluginName, model);
         index++;
 

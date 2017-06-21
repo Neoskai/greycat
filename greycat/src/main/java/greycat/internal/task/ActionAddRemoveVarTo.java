@@ -15,34 +15,27 @@
  */
 package greycat.internal.task;
 
-import greycat.Constants;
-import greycat.Node;
+import greycat.*;
 import greycat.base.BaseNode;
-import greycat.Action;
-import greycat.TaskContext;
-import greycat.TaskResult;
-import greycat.TaskResultIterator;
 import greycat.struct.Buffer;
+import greycat.struct.Relation;
 
-class ActionAddRemoveVarToRelation implements Action {
+class ActionAddRemoveVarTo implements Action {
 
     private final String _name;
     private final String _varFrom;
-    private final String[] _attributes;
     private final boolean _isAdd;
 
-    ActionAddRemoveVarToRelation(final boolean isAdd, final String name, final String varFrom, final String... attributes) {
+    ActionAddRemoveVarTo(final boolean isAdd, final String name, final String varFrom) {
         this._isAdd = isAdd;
         this._name = name;
         this._varFrom = varFrom;
-        this._attributes = attributes;
     }
 
     @Override
     public void eval(final TaskContext ctx) {
         final TaskResult previousResult = ctx.result();
         final TaskResult savedVar = ctx.variable(ctx.template(_varFrom));
-        final String[] templatedAttributes = ctx.templates(_attributes);
         if (previousResult != null && savedVar != null) {
             final String relName = ctx.template(_name);
             final TaskResultIterator previousResultIt = previousResult.iterator();
@@ -55,10 +48,21 @@ class ActionAddRemoveVarToRelation implements Action {
                         if (toAddIter instanceof BaseNode) {
                             final Node castedToAddIter = (Node) toAddIter;
                             final Node castedIter = (Node) iter;
-                            if (_isAdd) {
-                                castedIter.addToRelation(relName, castedToAddIter, templatedAttributes);
+                            final int type = castedIter.type(relName);
+                            if (type == Type.INDEX) {
+                                final Index index = (Index) castedIter.get(relName);
+                                if(_isAdd){
+                                    index.update(castedToAddIter);
+                                } else {
+                                    index.unindex(castedToAddIter);
+                                }
                             } else {
-                                castedIter.removeFromRelation(relName, castedToAddIter, templatedAttributes);
+                                final Relation castedIterRel = (Relation) castedIter.getOrCreate(relName, Type.RELATION);
+                                if (_isAdd) {
+                                    castedIterRel.add(castedToAddIter.id());
+                                } else {
+                                    castedIterRel.remove(castedToAddIter.id());
+                                }
                             }
                         }
                         toAddIter = savedVarIt.next();
@@ -73,22 +77,20 @@ class ActionAddRemoveVarToRelation implements Action {
     @Override
     public void serialize(final Buffer builder) {
         if (_isAdd) {
-            builder.writeString(CoreActionNames.ADD_VAR_TO_RELATION);
+            builder.writeString(CoreActionNames.ADD_VAR_TO);
         } else {
-            builder.writeString(CoreActionNames.REMOVE_VAR_TO_RELATION);
+            builder.writeString(CoreActionNames.REMOVE_VAR_FROM);
         }
         builder.writeChar(Constants.TASK_PARAM_OPEN);
         TaskHelper.serializeString(_name, builder, true);
         builder.writeChar(Constants.TASK_PARAM_SEP);
         TaskHelper.serializeString(_varFrom, builder, true);
-        builder.writeChar(Constants.TASK_PARAM_SEP);
-        TaskHelper.serializeStringParams(_attributes, builder);
         builder.writeChar(Constants.TASK_PARAM_CLOSE);
     }
 
     @Override
     public final String name() {
-        return (_isAdd?CoreActionNames.ADD_VAR_TO_RELATION:CoreActionNames.REMOVE_VAR_TO_RELATION);
+        return (_isAdd ? CoreActionNames.ADD_VAR_TO : CoreActionNames.REMOVE_VAR_FROM);
     }
 
 }

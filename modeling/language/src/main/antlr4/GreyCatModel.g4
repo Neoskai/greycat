@@ -38,7 +38,7 @@ customBuiltTypeDcl: IDENT;
 builtInTypeDcl: ('Bool' | 'String' | 'Long' | 'Int' | 'Double' |
                  'DoubleArray' | 'LongArray' | 'IntArray' | 'StringArray' |
                  'LongToLongMap' | 'LongToLongArrayMap' | 'StringToIntMap'|
-                 'DMatrix' |'LMatrix' |'StructArray' |'Struct' | 'KDTree' | 'NDTree' |
+                 'DMatrix' |'LMatrix' |'EGraph' |'ENode' | 'KDTree' | 'NDTree' |
                  'IntToIntMap' | 'IntToStringMap' | 'Task' | 'TaskArray' | 'Node');
 relationDcl: 'rel' name=IDENT ':' type=IDENT;
 referenceDcl : 'ref' name=IDENT ':' type=IDENT;

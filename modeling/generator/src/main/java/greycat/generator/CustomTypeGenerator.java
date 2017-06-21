@@ -19,6 +19,7 @@ import greycat.language.Attribute;
 import greycat.language.Constant;
 import greycat.language.CustomType;
 import greycat.language.Model;
+import greycat.utility.HashHelper;
 import org.jboss.forge.roaster.Roaster;
 import org.jboss.forge.roaster.model.Visibility;
 import org.jboss.forge.roaster.model.source.JavaClassSource;
@@ -54,11 +55,29 @@ public class CustomTypeGenerator {
                     .setVisibility(Visibility.PUBLIC)
                     .setFinal(true)
                     .setName(constant.name())
-                    // TODO custom type
-                    .setType(TypeManager.builtInClassName(constant.type()))
+                    .setType(TypeManager.cassName(constant.type()))
                     .setLiteralInitializer(value)
                     .setStatic(true);
         }
+
+        // field for type name
+        javaClass.addField()
+                .setVisibility(Visibility.PUBLIC)
+                .setFinal(true)
+                .setStatic(true)
+                .setType(String.class)
+                .setName("TYPE_NAME")
+                .setStringInitializer(customType.name());
+
+        // field for type hash
+        javaClass.addField()
+                .setVisibility(Visibility.PUBLIC)
+                .setFinal(true)
+                .setStatic(true)
+                .setType(int.class)
+                .setName("TYPE_HASH")
+                .setLiteralInitializer("greycat.utility.HashHelper.hash(TYPE_NAME)");
+
 
         for (Attribute att : customType.attributes()) {
             // field attribute name
@@ -84,9 +103,8 @@ public class CustomTypeGenerator {
                     .setName("get" + Generator.upperCaseFirstChar(att.name()))
                     .setVisibility(Visibility.PUBLIC)
                     .setFinal(true)
-                    // TODO check for custom types
-                    .setReturnType(TypeManager.builtInClassName(att.type()))
-                    .setBody("return (" + TypeManager.builtInClassName(att.type()) + ") getAt(" + att.name().toUpperCase() + "_H" + ");");
+                    .setReturnType(TypeManager.cassName(att.type()))
+                    .setBody("return (" + TypeManager.cassName(att.type()) + ") getAt(" + att.name().toUpperCase() + "_H" + ");");
 
             // setter
             javaClass.addMethod()
@@ -94,11 +112,9 @@ public class CustomTypeGenerator {
                     .setVisibility(Visibility.PUBLIC)
                     .setFinal(true)
                     .setReturnTypeVoid()
-                    // TODO check custom types
                     .setBody("this._backend.node(DEF_NODE).setAt(" + att.name().toUpperCase() + "_H," +
-                            "greycat." + TypeManager.builtInTypeName(att.type()) + "," + att.name() + ");")
-                    // TODO check for custom types
-                    .addParameter(TypeManager.builtInClassName(att.type()), att.name());
+                            "greycat." + TypeManager.typeName(att.type()) + "," + att.name() + ");")
+                    .addParameter(TypeManager.cassName(att.type()), att.name());
 
         }
 

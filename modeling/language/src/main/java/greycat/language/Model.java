@@ -33,17 +33,11 @@ public class Model {
     protected final Map<String, GlobalIndex> globalIndexesMap;
     private final Map<String, CustomType> customTypesMap;
 
-    private String name;
-
     public Model() {
         classesMap = new HashMap<>();
         globalConstantsMap = new HashMap<>();
         globalIndexesMap = new HashMap<>();
         customTypesMap = new HashMap<>();
-    }
-
-    public String name() {
-        return this.name;
     }
 
     public Constant[] globalConstants() {
@@ -63,7 +57,6 @@ public class Model {
     }
 
     public void parse(File content) throws Exception {
-        name = content.getName();
         build(new ANTLRFileStream(content.getAbsolutePath()));
     }
 
@@ -123,14 +116,12 @@ public class Model {
                 String name = localIndexDclCtx.name.getText();
                 String type = localIndexDclCtx.type.getText();
 
-                Class indexedClass = getOrAddClass(type);
-
                 LocalIndex localIndex = new LocalIndex(name, type);
                 for (TerminalNode idxDclIdent : localIndexDclCtx.indexAttributesDcl().IDENT()) {
-                    Attribute att = indexedClass.getAttribute(idxDclIdent.getText());
+                    String att = idxDclIdent.getText();
                     localIndex.addAttribute(att);
                 }
-                indexedClass.addLocalIndex(localIndex);
+                newClass.addLocalIndex(localIndex);
             }
 
             // constants
@@ -152,6 +143,9 @@ public class Model {
             for (TerminalNode idxDclIdent : globalIdxDclContext.indexAttributesDcl().IDENT()) {
                 Attribute att = indexedClass.getAttribute(idxDclIdent.getText());
                 globalIndex.addAttribute(att);
+            }
+            if (globalIdxDclContext.withTimeDcl() != null) {
+                globalIndex.setWithTime(true);
             }
         }
 
@@ -191,7 +185,7 @@ public class Model {
         if (typeDclContext.builtInTypeDcl() != null) {
             type = typeDclContext.builtInTypeDcl().getText();
         } else if (typeDclContext.customBuiltTypeDcl() != null) {
-            typeDclContext.customBuiltTypeDcl().getText();
+            type = typeDclContext.customBuiltTypeDcl().getText();
         }
 
         return type;

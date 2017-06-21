@@ -13,38 +13,71 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package greycat.internal.heap;
+package greycat.internal.custom;
 
 import greycat.*;
-import greycat.struct.IntArray;
-import greycat.struct.LongLongArrayMapCallBack;
+import greycat.base.BaseCustomTypeSingle;
 import greycat.base.BaseNode;
 import greycat.plugin.NodeState;
-import greycat.struct.RelationIndexed;
+import greycat.struct.*;
+import greycat.utility.HashHelper;
 
-class HeapRelationIndexed extends HeapLongLongArrayMap implements RelationIndexed {
+public class CoreIndexAttribute extends BaseCustomTypeSingle implements Index {
 
-    private final Graph _graph;
+    private static final int P_MAP = 0;
+    private static final int R_MAP = 1;
+    private static final int HASHES = 2;
 
-    HeapRelationIndexed(final HeapContainer p_listener, final Graph graph) {
-        super(p_listener);
-        this._graph = graph;
+    public static final String NAME = "INDEX";
+
+    public CoreIndexAttribute(final EGraph p_backend) {
+        super(p_backend);
     }
 
     @Override
-    public final RelationIndexed add(Node node, String... attributeNames) {
-        internal_add_remove(true, node, attributeNames);
-        return this;
+    public final void declareAttributes(Callback callback, String... attributeNames) {
+        getOrCreateAt(P_MAP, Type.LONG_TO_LONG_ARRAY_MAP);
+        getOrCreateAt(R_MAP, Type.LONG_TO_LONG_MAP);
+        final String[] casted = attributeNames;
+        final IntArray hashes = (IntArray) getOrCreateAt(HASHES, Type.INT_ARRAY);
+        hashes.init(casted.length);
+        for (int i = 0; i < casted.length; i++) {
+            hashes.set(i, HashHelper.hash(casted[i]));
+        }
+        if(callback != null){
+            callback.on(this);
+        }
     }
 
     @Override
-    public final RelationIndexed remove(Node node, String... attributeNames) {
-        internal_add_remove(false, node, attributeNames);
-        return this;
+    public final int size() {
+        return ((LongLongArrayMap) getAt(P_MAP)).size();
     }
 
     @Override
-    public final long update(long previous, Node node, IntArray hashes) {
+    public final long[] all() {
+        final LongLongArrayMap l_map = (LongLongArrayMap) getAt(P_MAP);
+        if (l_map == null) {
+            return new long[0];
+        } else {
+            long[] flat = new long[l_map.size()];
+            final int[] i = {0};
+            l_map.each(new LongLongArrayMapCallBack() {
+                @Override
+                public void on(long key, long value) {
+                    flat[i[0]] = value;
+                    i[0]++;
+                }
+            });
+            return flat;
+        }
+    }
+
+    @Override
+    public final Index update(final Node node) {
+        final LongLongArrayMap relationIndexed = (LongLongArrayMap) getAt(P_MAP);
+        final LongLongMap reverseMap = (LongLongMap) getAt(R_MAP);
+        final IntArray hashes = (IntArray) getAt(HASHES);
         final Query flatQuery = node.graph().newQuery();
         final NodeState toIndexNodeState = node.graph().resolver().resolveState(node);
         for (int i = 0; i < hashes.size(); i++) {
@@ -56,81 +89,59 @@ class HeapRelationIndexed extends HeapLongLongArrayMap implements RelationIndexe
                 flatQuery.addRaw(hash, null);
             }
         }
-        delete(previous, node.id());
         final long newHash = flatQuery.hash();
-        put(newHash, node.id());
-        return newHash;
-    }
-
-    private void internal_add_remove(boolean isIndex, Node node, String... attributeNames) {
-        Query flatQuery = node.graph().newQuery();
-        final NodeState toIndexNodeState = node.graph().resolver().resolveState(node);
-        for (int i = 0; i < attributeNames.length; i++) {
-            final String attKey = attributeNames[i];
-            final Object attValue = toIndexNodeState.get(attKey);
-            if (attValue != null) {
-                flatQuery.add(attKey, attValue.toString());
-            } else {
-                flatQuery.add(attKey, null);
-            }
-        }
-        if (isIndex) {
-            put(flatQuery.hash(), node.id());
-        } else {
-            delete(flatQuery.hash(), node.id());
-        }
+        final long prevHash = reverseMap.get(node.id());
+        relationIndexed.delete(prevHash, node.id());
+        relationIndexed.put(newHash, node.id());
+        reverseMap.put(node.id(), newHash);
+        return this;
     }
 
     @Override
-    public final RelationIndexed clear() {
-        internal_clear();
+    public final Index unindex(final Node node) {
+        final LongLongArrayMap relationIndexed = (LongLongArrayMap) getAt(P_MAP);
+        final LongLongMap reverseMap = (LongLongMap) getAt(R_MAP);
+        final long prevHash = reverseMap.get(node.id());
+        relationIndexed.delete(prevHash, node.id());
+        reverseMap.remove(node.id());
+        return this;
+    }
+
+    @Override
+    public final Index clear() {
+        setAt(P_MAP, Type.LONG_TO_LONG_ARRAY_MAP, null);
+        setAt(R_MAP, Type.LONG_TO_LONG_MAP, null);
         return this;
     }
 
     @Override
     public final void find(Callback<Node[]> callback, long world, long time, String... params) {
-        Query queryObj = _graph.newQuery();
-        queryObj.setWorld(world);
-        queryObj.setTime(time);
-        String previous = null;
-        for (int i = 0; i < params.length; i++) {
-            if (previous != null) {
-                queryObj.add(previous, params[i]);
-                previous = null;
-            } else {
-                previous = params[i];
+        if (params == null || params.length == 0) {
+            _backend.graph().lookupAll(world, time, all(), callback);
+        } else {
+            final IntArray hashes = (IntArray) getAt(HASHES);
+            if (hashes.size() != params.length) {
+                throw new RuntimeException("Bad API usage, query param is different than index declaration");
             }
-        }
-        findByQuery(queryObj, callback);
-    }
-
-    @Override
-    public final long[] select(final String... params) {
-        final Query queryObj = _graph.newQuery();
-        String previous = null;
-        for (int i = 0; i < params.length; i++) {
-            if (previous != null) {
-                queryObj.add(previous, params[i]);
-                previous = null;
-            } else {
-                previous = params[i];
+            Query queryObj = _backend.graph().newQuery();
+            queryObj.setWorld(world);
+            queryObj.setTime(time);
+            for (int i = 0; i < hashes.size(); i++) {
+                queryObj.addRaw(hashes.get(i), params[i]);
             }
+            findByQuery(queryObj, callback);
         }
-        return selectByQuery(queryObj);
     }
 
     @Override
-    public final long[] selectByQuery(final Query query) {
-        return get(query.hash());
-    }
-
-    @Override
-    public final void findByQuery(final Query query, final Callback<Node[]> callback) {
-        final long[] foundIds = get(query.hash());
+    public final void findByQuery(Query query, Callback<Node[]> callback) {
+        final LongLongArrayMap relationIndexed = (LongLongArrayMap) getAt(P_MAP);
+        final Graph g = _backend.graph();
+        final long[] foundIds = relationIndexed.get(query.hash());
         if (foundIds == null) {
             callback.on(new BaseNode[0]);
         } else {
-            _graph.resolver().lookupAll(query.world(), query.time(), foundIds, new Callback<Node[]>() {
+            g.resolver().lookupAll(query.world(), query.time(), foundIds, new Callback<Node[]>() {
                 @Override
                 public void on(Node[] resolved) {
                     //select
@@ -139,7 +150,7 @@ class HeapRelationIndexed extends HeapLongLongArrayMap implements RelationIndexe
                     for (int i = 0; i < resultSet.length; i++) {
                         final Node resolvedNode = resolved[i];
                         if (resolvedNode != null) {
-                            final NodeState resolvedState = _graph.resolver().resolveState(resolvedNode);
+                            final NodeState resolvedState = g.resolver().resolveState(resolvedNode);
                             boolean exact = true;
                             for (int j = 0; j < query.attributes().length; j++) {
                                 Object obj = resolvedState.getAt(query.attributes()[j]);
@@ -191,50 +202,23 @@ class HeapRelationIndexed extends HeapLongLongArrayMap implements RelationIndexe
     }
 
     @Override
-    public final long getByIndex(final int index) {
-        return value(index);
+    public final long[] select(String... params) {
+        final IntArray hashes = (IntArray) getAt(HASHES);
+        final LongLongArrayMap relationIndexed = (LongLongArrayMap) getAt(P_MAP);
+        if (params.length != hashes.size()) {
+            throw new RuntimeException("Bad API usage, query param is different than index declaration");
+        }
+        final Query queryObj = _backend.graph().newQuery();
+        for (int i = 0; i < params.length; i++) {
+            queryObj.addRaw(hashes.get(i), params[i]);
+        }
+        long hash = queryObj.hash();
+        return relationIndexed.get(hash);
     }
 
     @Override
-    public final long[] all() {
-        long[] flat = new long[size()];
-        final int[] i = {0};
-        this.each(new LongLongArrayMapCallBack() {
-            @Override
-            public void on(long key, long value) {
-                flat[i[0]] = value;
-                i[0]++;
-            }
-        });
-        return flat;
+    public final long[] selectByQuery(Query query) {
+        final LongLongArrayMap relationIndexed = (LongLongArrayMap) getAt(P_MAP);
+        return relationIndexed.get(query.hash());
     }
-
-    HeapRelationIndexed cloneIRelFor(final HeapContainer newParent, final Graph graph) {
-        HeapRelationIndexed cloned = new HeapRelationIndexed(newParent, graph);
-        cloned.mapSize = mapSize;
-        cloned.capacity = capacity;
-        if (keys != null) {
-            long[] cloned_keys = new long[capacity];
-            System.arraycopy(keys, 0, cloned_keys, 0, capacity);
-            cloned.keys = cloned_keys;
-        }
-        if (values != null) {
-            long[] cloned_values = new long[capacity];
-            System.arraycopy(values, 0, cloned_values, 0, capacity);
-            cloned.values = cloned_values;
-        }
-        if (nexts != null) {
-            int[] cloned_nexts = new int[capacity];
-            System.arraycopy(nexts, 0, cloned_nexts, 0, capacity);
-            cloned.nexts = cloned_nexts;
-        }
-        if (hashs != null) {
-            int[] cloned_hashs = new int[capacity * 2];
-            System.arraycopy(hashs, 0, cloned_hashs, 0, capacity * 2);
-            cloned.hashs = cloned_hashs;
-        }
-        return cloned;
-    }
-
-
 }

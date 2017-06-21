@@ -102,6 +102,7 @@
         <module>plugins/websocket</module>
         <module>plugins/ml</module>
 
+
         <module>plugins/backup</module>
         <module>plugins/backupexposer</module>
 
@@ -155,11 +156,6 @@
         <!-- <module>modeling/language</module> -->
         <!-- <module>modeling/generator</module> -->
         <!-- <module>modeling/mavenplugin</module> -->
-        <!-- Examples-->
-
-        <!-- <module>examples/modeling</module> -->
-
-
     </modules>
 
     <build>

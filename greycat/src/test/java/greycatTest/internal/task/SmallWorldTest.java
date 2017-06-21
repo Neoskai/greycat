@@ -46,19 +46,19 @@ public class SmallWorldTest {
                         .createNode().setAttribute("name", Type.STRING, "room01").updateIndex("rooms").then(setAsVar("room01"))
                         .createNode().setAttribute("name", Type.STRING, "room001").updateIndex("rooms").setAsVar("room001")
                         .createNode().setAttribute("name", Type.STRING, "room0001").updateIndex("rooms").setAsVar("room0001")
-                        .readVar("room0").addVarToRelation("rooms", "room01")
-                        .readVar("room01").addVarToRelation("rooms", "room001")
-                        .readVar("room001").addVarToRelation("rooms", "room0001")
+                        .readVar("room0").addVarTo("rooms", "room01")
+                        .readVar("room01").addVarTo("rooms", "room001")
+                        .readVar("room001").addVarTo("rooms", "room0001")
                         .loop("0", "9", //loop automatically inject an it variable
                                 newTask()
                                         .createNode()
                                         .setAttribute("id", Type.STRING, "sensor_{{it}}")
                                         .updateIndex("sensors")
                                         .defineAsVar("sensor")
-                                        .ifThenElse(cond("i % 4 == 0"), newTask().readVar("room0").addVarToRelation("sensors", "sensor"),
-                                                newTask().ifThenElse(cond("i % 4 == 1"), newTask().readVar("room01").addVarToRelation("sensors", "sensor"),
-                                                        newTask().ifThenElse(cond("i % 4 == 2"), newTask().readVar("room001").addVarToRelation("sensors", "sensor"),
-                                                                newTask().ifThen(cond("i % 4 == 3"), newTask().readVar("room0001").addVarToRelation("sensors", "sensor")))))
+                                        .ifThenElse(cond("i % 4 == 0"), newTask().readVar("room0").addVarTo("sensors", "sensor"),
+                                                newTask().ifThenElse(cond("i % 4 == 1"), newTask().readVar("room01").addVarTo("sensors", "sensor"),
+                                                        newTask().ifThenElse(cond("i % 4 == 2"), newTask().readVar("room001").addVarTo("sensors", "sensor"),
+                                                                newTask().ifThen(cond("i % 4 == 3"), newTask().readVar("room0001").addVarTo("sensors", "sensor")))))
                         ).execute(g, new Callback<TaskResult>() {
                     @Override
                     public void on(TaskResult taskResult) {

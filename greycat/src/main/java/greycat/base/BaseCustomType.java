@@ -16,6 +16,7 @@
 package greycat.base;
 
 import greycat.Container;
+import greycat.Index;
 import greycat.struct.*;
 import greycat.utility.HashHelper;
 
@@ -42,8 +43,8 @@ public class BaseCustomType implements Container {
     }
 
     @Override
-    public final RelationIndexed getRelationIndexed(String name) {
-        return (RelationIndexed) get(name);
+    public final Index getIndex(String name) {
+        return (Index) get(name);
     }
 
     @Override

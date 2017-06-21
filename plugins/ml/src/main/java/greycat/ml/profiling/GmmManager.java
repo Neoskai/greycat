@@ -13,25 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package greycat.internal.custom;
+package greycat.ml.profiling;
 
+import greycat.struct.EGraph;
+import greycat.struct.ENode;
 import greycat.struct.NDManager;
 
-public class IndexManager implements NDManager {
+/**
+ * Created by assaad on 21/06/2017.
+ */
+public class GmmManager implements NDManager {
+
+    EGraph _backend;
+    public GmmManager(EGraph eGraph){
+        _backend=eGraph;
+    }
 
     @Override
     public Object get(long id) {
-        return id;
+        return _backend.node((int) id);
     }
 
     @Override
     public long updateExistingLeafNode(long oldKey, double[] key, Object valueToInsert) {
-        return (long) valueToInsert;
+        ENode node= _backend.node((int) oldKey);
+        GaussianENode gn= new GaussianENode(node);
+        gn.learnWithOccurence(key,(int)(long)valueToInsert);
+        return oldKey;
     }
 
     @Override
     public boolean updateParentsOnExisting() {
-        return false;
+        return true;
     }
 
     @Override
@@ -41,22 +54,28 @@ public class IndexManager implements NDManager {
 
     @Override
     public boolean parentsHaveNodes() {
-        return false;
+        return true;
     }
 
     @Override
     public long getNewLeafNode(double[] key, Object valueToInsert) {
-        return (long) valueToInsert;
+        ENode node= _backend.newNode();
+        GaussianENode gn= new GaussianENode(node);
+        gn.learnWithOccurence(key,(int)(long)valueToInsert);
+        return node.id();
     }
 
     @Override
     public long getNewParentNode() {
-        return -1;
+        ENode node= _backend.newNode();
+        return node.id();
     }
 
     @Override
     public long updateParent(long parentkey, double[] key, Object valueToInsert) {
+        ENode node= _backend.node((int) parentkey);
+        GaussianENode gn= new GaussianENode(node);
+        gn.learnWithOccurence(key,(int)(long)valueToInsert);
         return parentkey;
     }
 }
-

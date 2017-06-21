@@ -24,7 +24,7 @@ public class ProfileManager implements NDManager {
     }
 
     @Override
-    public long updateExistingLeafNode(long oldKey, Object valueToInsert) {
+    public long updateExistingLeafNode(long oldKey, double[] key, Object valueToInsert) {
         return oldKey + (long) valueToInsert;
     }
 
@@ -44,7 +44,7 @@ public class ProfileManager implements NDManager {
     }
 
     @Override
-    public long getNewLeafNode(Object valueToInsert) {
+    public long getNewLeafNode(double[] key, Object valueToInsert) {
         return 0;
     }
 

@@ -39,20 +39,23 @@ public class Type {
     public static final int STRING_TO_INT_MAP = 12;
 
     public static final int RELATION = 13;
-    public static final int RELATION_INDEXED = 14;
 
-    public static final int DMATRIX = 15;
-    public static final int LMATRIX = 16;
+    public static final int DMATRIX = 14;
+    public static final int LMATRIX = 15;
 
-    public static final int EGRAPH = 17;
-    public static final int ENODE = 18;
-    public static final int ERELATION = 19;
+    public static final int EGRAPH = 16;
+    public static final int ENODE = 17;
+    public static final int ERELATION = 18;
 
-    public static final int TASK = 20;
-    public static final int TASK_ARRAY = 21;
-    public static final int NODE = 22;
-    public static final int INT_TO_INT_MAP = 23;
-    public static final int INT_TO_STRING_MAP = 24;
+    public static final int TASK = 19;
+    public static final int TASK_ARRAY = 20;
+    public static final int NODE = 21;
+    public static final int INT_TO_INT_MAP = 22;
+    public static final int INT_TO_STRING_MAP = 23;
+
+    public static final int INDEX = 69808306; //hash of 'INDEX';
+    public static final int KDTREE = -2082398089; //hash of 'KDTREE';
+    public static final int NDTREE = -1996510636; //hash of 'NDTREE';
 
     public static boolean isCustom(int p_type) {
         return p_type < BOOL || p_type > INT_TO_STRING_MAP;
@@ -97,8 +100,6 @@ public class Type {
                 return "STRING_TO_INT_MAP";
             case Type.RELATION:
                 return "RELATION";
-            case Type.RELATION_INDEXED:
-                return "RELATION_INDEXED";
             case Type.DMATRIX:
                 return "DMATRIX";
             case Type.LMATRIX:
@@ -113,21 +114,23 @@ public class Type {
                 return "TASK";
             case Type.TASK_ARRAY:
                 return "TASK_ARRAY";
-            /*case Type.KDTREE:
-                return "KDTREE";
-            case Type.NDTREE:
-                return "NDTREE";
-                */
             case Type.INT_TO_INT_MAP:
                 return "INT_TO_INT_MAP";
             case Type.INT_TO_STRING_MAP:
                 return "INT_TO_STRING_MAP";
+                /* default custom Types*/
+            case Type.INDEX:
+                return "INDEX";
+            case Type.KDTREE:
+                return "KDTREE";
+            case Type.NDTREE:
+                return "NDTREE";
             default:
                 return "Custom";
         }
     }
 
-    public static byte typeFromName(String name) {
+    public static int typeFromName(String name) {
         switch (name) {
             case "BOOL":
                 return Type.BOOL;
@@ -155,8 +158,6 @@ public class Type {
                 return Type.STRING_TO_INT_MAP;
             case "RELATION":
                 return Type.RELATION;
-            case "RELATION_INDEXED":
-                return Type.RELATION_INDEXED;
             case "DMATRIX":
                 return Type.DMATRIX;
             case "LMATRIX":
@@ -171,15 +172,17 @@ public class Type {
                 return Type.TASK;
             case "TASK_ARRAY":
                 return Type.TASK_ARRAY;
-           /* case "KDTREE":
-                return Type.KDTREE;
-            case "NDTREE":
-                return Type.NDTREE;
-                */
             case "INT_TO_INT_MAP":
                 return Type.INT_TO_INT_MAP;
             case "INT_TO_STRING_MAP":
                 return Type.INT_TO_STRING_MAP;
+                /* default custom Types*/
+            case "KDTREE":
+                return Type.KDTREE;
+            case "NDTREE":
+                return Type.NDTREE;
+            case "INDEX":
+                return Type.INDEX;
             default:
                 return -1;
         }
