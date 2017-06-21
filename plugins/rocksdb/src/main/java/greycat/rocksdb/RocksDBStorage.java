@@ -144,6 +144,8 @@ public class RocksDBStorage implements Storage {
     @Override
     public BackupEntry loadLatestBackup() {
         try {
+            retrieveLastBackup();
+
             BackupEngine backupEngine = BackupEngine.open( Env.getDefault(), new BackupableDBOptions(_storagePath + "/backup"));
             backupEngine.restoreDbFromLatestBackup(_storagePath + "/data", _storagePath + "/data", new RestoreOptions(true));
 
@@ -161,6 +163,58 @@ public class RocksDBStorage implements Storage {
         }
 
         return null;
+    }
+
+    private void retrieveLastBackup(){
+        try {
+            // Retrieve the highest local backup
+            List<String> localBackups = new ArrayList<>();
+            File backupFolder = new File(_storagePath + "/data/backup/meta");
+            if(backupFolder.exists()){
+                getFiles(localBackups, Paths.get(backupFolder.getPath()));
+            }
+
+            int topLocal = -1;
+            int topExternal = -1;
+
+            for (String local : localBackups) {
+                String fileNumber = local.substring(local.lastIndexOf("/") + 1, local.length());
+                if (Integer.parseInt(fileNumber) > topLocal) {
+                    topLocal = Integer.parseInt(fileNumber);
+                }
+            }
+
+            // Compare with the highest backup in the bucket
+
+            MinioClient minioClient = new MinioClient(BackupOptions.minioPath(),
+                    BackupOptions.accessKey(),
+                    BackupOptions.secretKey());
+
+            if (!minioClient.bucketExists(BackupOptions.dbBucket())) {
+                minioClient.makeBucket(BackupOptions.dbBucket());
+            }
+
+            Iterable<Result<Item>> myObjects = minioClient.listObjects(BackupOptions.dbBucket(), "backup/meta");
+
+            for (Result<Item> result : myObjects) {
+                Item item = result.get();
+                String numberName = item.objectName().substring(item.objectName().lastIndexOf("/")+1, item.objectName().length());
+
+                if( Integer.parseInt(numberName) > topExternal){
+                    topExternal = Integer.parseInt(numberName);
+                }
+            }
+
+            if(topExternal > topLocal){
+                minioClient.getObject(BackupOptions.dbBucket(), "backup/meta/" + topExternal);
+                minioClient.getObject(BackupOptions.dbBucket(), "backup/private/" + topExternal);
+            }
+
+        } catch (Exception e){
+            System.err.println("Could not retrieve last backup for DFS");
+        }
+
+
     }
 
     @Override
