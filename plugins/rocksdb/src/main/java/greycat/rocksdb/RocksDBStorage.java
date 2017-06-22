@@ -199,18 +199,39 @@ public class RocksDBStorage implements Storage {
             for (Result<Item> result : myObjects) {
                 Item item = result.get();
                 String numberName = item.objectName().substring(item.objectName().lastIndexOf("/")+1, item.objectName().length());
-
                 if( Integer.parseInt(numberName) > topExternal){
                     topExternal = Integer.parseInt(numberName);
                 }
             }
 
             if(topExternal > topLocal){
-                minioClient.getObject(BackupOptions.dbBucket(), "backup/meta/" + topExternal);
-                minioClient.getObject(BackupOptions.dbBucket(), "backup/private/" + topExternal);
+                String metaName =   "backup/meta/" + topExternal;
+
+                File metaFile = new File(_storagePath + "/" + metaName);
+                File metaParent = metaFile.getParentFile();
+                if (!metaParent.exists() && !metaParent.mkdirs()) {
+                    throw new IllegalStateException("Couldn't create dir: " + metaParent);
+                }
+
+                minioClient.getObject(BackupOptions.dbBucket(), metaName, _storagePath + "/" + metaName);
+
+                Iterable<Result<Item>> backupElems = minioClient.listObjects(BackupOptions.dbBucket(), "backup/private/"+topExternal);
+                for (Result<Item> result : backupElems) {
+                    Item item = result.get();
+                    String name = item.objectName();
+
+                    File file = new File(_storagePath + "/" +  name);
+                    File parent = file.getParentFile();
+                    if (!parent.exists() && !parent.mkdirs()) {
+                        throw new IllegalStateException("Couldn't create dir: " + parent);
+                    }
+
+                    minioClient.getObject(BackupOptions.dbBucket(), name, _storagePath+ "/" + name);
+                }
             }
 
         } catch (Exception e){
+            System.err.println(e);
             System.err.println("Could not retrieve last backup for DFS");
         }
 
