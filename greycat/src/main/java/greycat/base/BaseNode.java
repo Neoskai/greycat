@@ -31,6 +31,8 @@ import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Base implementation to develop NodeFactory plugins without overriding every methods
@@ -69,6 +71,11 @@ public class BaseNode implements Node {
      * @ignore ts
      */
     private static ConcurrentHashMap<Long, Long> eventCounts = new ConcurrentHashMap<Long, Long>();
+
+    /**
+     * @ignore ts
+     */
+    private static AtomicLong relationCount = new AtomicLong();
 
     /**
      * @native ts
@@ -1059,9 +1066,27 @@ public class BaseNode implements Node {
         return addToRelationAt(this._resolver.stringToHash(relationName, true), relatedNode);
     }
 
+    /**
+     * @native ts
+    * if (relatedNode != null) {
+    * let preciseState: greycat.plugin.NodeState = this._resolver.alignState(this);
+    * if (preciseState != null) {
+    * let relationArray: greycat.struct.Relation = <greycat.struct.Relation>preciseState.getOrCreateAt(relationIndex, greycat.Type.RELATION);
+    * relationArray.add(relatedNode.id());
+    * } else {
+    * throw new Error(greycat.Constants.CACHE_MISS_ERROR);
+    * }
+    * }
+    * return this;
+     */
     @Override
     public Node addToRelationAt(int relationIndex, Node relatedNode) {
         if (relatedNode != null) {
+            if(_sender.isConnected()){
+                Long relationId = relationCount.getAndIncrement();
+                _sender.processMessage(_world, _time, _id, relationIndex, relationId, Type.RELATION, relatedNode.id());
+            }
+
             NodeState preciseState = this._resolver.alignState(this);
             if (preciseState != null) {
                 Relation relationArray = (Relation) preciseState.getOrCreateAt(relationIndex, Type.RELATION);
@@ -1078,9 +1103,29 @@ public class BaseNode implements Node {
         return removeFromRelationAt(this._resolver.stringToHash(relationName, false), relatedNode);
     }
 
+    /**
+     * @native ts
+     * if (relatedNode != null) {
+     * let preciseState: greycat.plugin.NodeState = this._resolver.alignState(this);
+     * if (preciseState != null) {
+     * let relationObj: greycat.struct.Relation = <greycat.struct.Relation>preciseState.getAt(relationIndex);
+     * if (relationObj != null) {
+     * relationObj.remove(relatedNode.id());
+     * }
+     * } else {
+     * throw new Error(greycat.Constants.CACHE_MISS_ERROR);
+     * }
+     * }
+     * return this;
+     */
     @Override
     public final Node removeFromRelationAt(int relationIndex, Node relatedNode) {
         if (relatedNode != null) {
+            if(_sender.isConnected()){
+                Long relationId = relationCount.getAndIncrement();
+                _sender.processMessage(_world, _time, _id, relationIndex, relationId, Type.REMOVERELATION, relatedNode.id());
+            }
+
             final NodeState preciseState = this._resolver.alignState(this);
             if (preciseState != null) {
                 final Relation relationObj = (Relation) preciseState.getAt(relationIndex);

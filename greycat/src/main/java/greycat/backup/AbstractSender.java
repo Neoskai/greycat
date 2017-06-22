@@ -94,7 +94,15 @@ public abstract class AbstractSender {
      */
     public void processMessage(long world, long time, long id, int index, long eventId, int type, Object value){
         Buffer buffer = bufferizeMessage(world, time, id, index, eventId, type, value);
-        sendMessage("Greycat", buffer.data());
+
+        switch(type){
+            case Type.RELATION :
+            case Type.REMOVERELATION :
+                sendMessage("Relation", buffer.data());
+                break;
+            default:
+                sendMessage("Greycat", buffer.data());
+        }
     }
 
     /**

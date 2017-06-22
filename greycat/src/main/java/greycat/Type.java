@@ -62,6 +62,7 @@ public class Type {
     }
 
     public static final int REMOVE = 28;
+    public static final int REMOVERELATION = 29;
 
     /**
      * Convert a type that represent a byte to a readable String representation
