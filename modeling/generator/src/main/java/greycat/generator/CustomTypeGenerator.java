@@ -112,7 +112,7 @@ public class CustomTypeGenerator {
                     .setVisibility(Visibility.PUBLIC)
                     .setFinal(true)
                     .setReturnTypeVoid()
-                    .setBody("this._backend.node(DEF_NODE).setAt(" + att.name().toUpperCase() + "_H," +
+                    .setBody("setAt(" + att.name().toUpperCase() + "_H," +
                             "greycat." + TypeManager.typeName(att.type()) + "," + att.name() + ");")
                     .addParameter(TypeManager.cassName(att.type()), att.name());
 

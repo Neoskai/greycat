@@ -130,12 +130,16 @@ public class Generator {
         }
     }
 
-    private void generateJS(String packageName, String pluginName, File target, String gcVersion, MavenProject mvnProject) {
-        // Generate TS
-
-
-        SourceTranslator transpiler = new SourceTranslator(Arrays.asList(target.getAbsolutePath()), target.getAbsolutePath() + "-ts", packageName);
-
+    private void generateJS(String packageName, String pluginName, File src, File target, String gcVersion, MavenProject mvnProject) {
+        File modelWeb = new File(target, "model");
+        if (!modelWeb.exists()) {
+            modelWeb.mkdirs();
+        }
+        File modelWebStarter = new File(target, "model-starter");
+        if (!modelWebStarter.exists()) {
+            modelWebStarter.mkdirs();
+        }
+        SourceTranslator transpiler = new SourceTranslator(Arrays.asList(src.getAbsolutePath()), modelWeb.getAbsolutePath(), packageName);
         if (mvnProject != null) {
             for (Artifact a : mvnProject.getArtifacts()) {
                 File file = a.getFile();
@@ -148,14 +152,11 @@ public class Generator {
         } else {
             addToTransClassPath(transpiler);
         }
-
         transpiler.process();
         transpiler.addHeader("import * as greycat from 'greycat';");
         transpiler.addHeader("import {java} from 'j2ts-jre';");
-
         transpiler.generate();
-
-        File tsGen = new File(target.getAbsolutePath() + "-ts" + File.separator + packageName + ".ts");
+        File tsGen = new File(modelWeb, packageName + ".ts");
         try {
             Files.write(tsGen.toPath(), ("export = " + packageName).getBytes(), StandardOpenOption.APPEND);
         } catch (IOException e) {
@@ -177,16 +178,22 @@ public class Generator {
                 "  ]\n" +
                 "}";
         try {
-            File tsConfig = new File(target.getAbsolutePath() + "-ts" + File.separator + "tsconfig.json");
+            File tsConfig = new File(modelWeb, "tsconfig.json");
             tsConfig.createNewFile();
             Files.write(tsConfig.toPath(), tsConfigContent.getBytes());
         } catch (IOException e) {
             e.printStackTrace();
         }
-
         boolean isSnaphot = (gcVersion.contains("SNAPSHOT"));
-        gcVersion = isSnaphot ? "../../../../../greycat/target/classes-npm" : "^" + gcVersion + ".0.0";
-
+        String tgzVersion = gcVersion.replace("-SNAPSHOT", "") + ".0.0";
+        File greycatTgz = null;
+        try {
+            greycatTgz = new File(new File(new File(src.getParentFile().getParentFile().getParentFile().getParentFile().getParentFile().getCanonicalFile(), "greycat"), "target"), "greycat-" + tgzVersion + ".tgz");
+            greycatTgz = greycatTgz.getCanonicalFile();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        gcVersion = isSnaphot ? greycatTgz.getAbsolutePath() : tgzVersion;
         String packageJsonContent = "{\n" +
                 "  \"name\": \"" + packageName + "\",\n" +
                 "  \"version\": \"1.0.0\",\n" +
@@ -201,25 +208,21 @@ public class Generator {
                 "    \"greycat\": \"" + gcVersion + "\"\n" +
                 "  },\n" +
                 "  \"devDependencies\": {\n" +
-                "    \"typescript\": \"^2.1.5\"\n" +
+                "    \"typescript\": \"2.3.4\"\n" +
                 "  }" +
                 "}";
         try {
-            File packageJson = new File(target.getAbsolutePath() + "-ts" + File.separator + "package.json");
+            File packageJson = new File(modelWeb, "package.json");
             packageJson.createNewFile();
             Files.write(packageJson.toPath(), packageJsonContent.getBytes());
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-
         // Generate a base of NPM project
-        File npmProject = new File(target.getAbsolutePath() + "-starter");
-        npmProject.mkdirs();
-        File mainJS = new File(npmProject, "main.js");
-        File packageJson2 = new File(npmProject, "package.json");
-        File readme = new File(npmProject, "readme.md");
-        File mainTS = new File(npmProject, "main2.ts");
+        File mainJS = new File(modelWebStarter, "main.js");
+        File packageJson2 = new File(modelWebStarter, "package.json");
+        File readme = new File(modelWebStarter, "readme.md");
+        File mainTS = new File(modelWebStarter, "main2.ts");
         try {
             mainJS.createNewFile();
             Files.write(mainJS.toPath(), ("var greycat = require(\"greycat\");\n" +
@@ -246,11 +249,11 @@ public class Generator {
                     "  \"license\":\"UNLICENSED\"," +
                     "  \"dependencies\": {\n" +
                     "    \"greycat\": \"" + gcVersion + "\",\n" +
-                    "    \"" + packageName + "\": \"../greycat-modeling-ts\"\n" +
+                    "    \"" + packageName + "\": \"" + new File(modelWeb, "model-1.0.0.tgz").getAbsolutePath() + "\"\n" +
                     "  },\n" +
                     "  \"devDependencies\": {\n" +
-                    "    \"typescript\": \"^2.1.5\",\n" +
-                    "    \"ts-node\": \"^3.0.4\"\n" +
+                    "    \"typescript\": \"2.3.4\",\n" +
+                    "    \"ts-node\": \"3.0.4\"\n" +
                     "  }" +
                     "}").getBytes());
 
@@ -283,37 +286,42 @@ public class Generator {
             e.printStackTrace();
         }
 
-        File workingDFir = new File(target.getAbsolutePath() + "-ts");
         // Install required package in TS
         ProcessBuilder processBuilder = new ProcessBuilder("npm", "install");
-        processBuilder.directory(workingDFir);
+        processBuilder.directory(modelWeb);
         processBuilder.inheritIO();
         // Run TSC
         ProcessBuilder processBuilder2 = new ProcessBuilder("node", "node_modules/typescript/lib/tsc.js");
-        processBuilder2.directory(workingDFir);
+        processBuilder2.directory(modelWeb);
         processBuilder2.inheritIO();
-        //Install required packaged in JS project
-        ProcessBuilder processBuilder3 = new ProcessBuilder("npm", "install");
-        processBuilder3.directory(npmProject);
+        // Pack Model
+        ProcessBuilder processBuilder3 = new ProcessBuilder("npm", "pack");
+        processBuilder3.directory(modelWeb);
         processBuilder3.inheritIO();
+        //Install required packaged in JS project
+        ProcessBuilder processBuilder4 = new ProcessBuilder("npm", "install");
+        processBuilder4.directory(modelWebStarter);
+        processBuilder4.inheritIO();
         try {
             processBuilder.start().waitFor();
             processBuilder2.start().waitFor();
             processBuilder3.start().waitFor();
+            processBuilder4.start().waitFor();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public void mvnGenerate(String packageName, String pluginName, File target, boolean generateJava, boolean generateJS, String gcVersion, MavenProject project) {
+    public void mvnGenerate(String packageName, String pluginName, File target, File targetWeb, boolean generateJava, boolean generateJS, String gcVersion, MavenProject project) {
         if (generateJava || generateJS) {
             generateJava(packageName, pluginName, target);
         }
         if (generateJS) {
-            generateJS(packageName, pluginName, target, gcVersion, project);
+            generateJS(packageName, pluginName, target, targetWeb, gcVersion, project);
         }
     }
 
+    /*
     public void generate(String packageName, String pluginName, File target, boolean generateJava, boolean generateJS, String gcVersion) {
         if (generateJava || generateJS) {
             generateJava(packageName, pluginName, target);
@@ -322,7 +330,7 @@ public class Generator {
         if (generateJS) {
             generateJS(packageName, pluginName, target, gcVersion, null);
         }
-    }
+    }*/
 
     private void addToTransClassPath(SourceTranslator transpiler) {
         String classPath = System.getProperty("java.class.path");

@@ -324,13 +324,31 @@ public class CoreTask implements Task {
         return this;
     }
 
+    private static ActionRegistry offlineParsing = null;
+
     @Override
     public final Task parse(final String flat, final Graph graph) {
         if (flat == null) {
             throw new RuntimeException("flat should not be null");
         }
         final Map<Integer, Task> contextTasks = new HashMap<Integer, Task>();
-        sub_parse(new CoreTaskReader(flat, 0), graph, contextTasks);
+
+        final boolean shouldCrashIfAbscent;
+        final ActionRegistry registry;
+        if (graph != null) {
+            registry = graph.actionRegistry();
+            shouldCrashIfAbscent = true;
+        } else {
+            if (offlineParsing == null) {
+                registry = new CoreActionRegistry();
+                CoreTask.fillDefault(registry);
+                offlineParsing = registry;
+            } else {
+                registry = offlineParsing;
+            }
+            shouldCrashIfAbscent = false;
+        }
+        sub_parse(new CoreTaskReader(flat, 0), registry, contextTasks, shouldCrashIfAbscent);
         return this;
     }
 
@@ -353,8 +371,7 @@ public class CoreTask implements Task {
         return buf.toString();
     }
 
-    private void sub_parse(final CoreTaskReader reader, final Graph graph, final Map<Integer, Task> contextTasks) {
-        final ActionRegistry registry = graph.actionRegistry();
+    private void sub_parse(final CoreTaskReader reader, final ActionRegistry registry, final Map<Integer, Task> contextTasks, boolean crashIfUndeclared) {
         int cursor = 0;
         int flatSize = reader.available();
         int previous = 0;
@@ -457,11 +474,7 @@ public class CoreTask implements Task {
                             params = shrinked;
                         }
                     }
-                    if (graph == null) {
-                        then(new ActionNamed(actionName, params));
-                    } else {
-                        then(loadAction(registry, actionName, params, contextTasks));
-                    }
+                    then(loadAction(registry, actionName, params, contextTasks, crashIfUndeclared));
                     actionName = null;
                     previous = cursor + 1;
                     isClosed = true;
@@ -514,7 +527,7 @@ public class CoreTask implements Task {
                         } else {
                             subTask = new CoreTask();
                         }
-                        subTask.sub_parse(subReader, graph, contextTasks);
+                        subTask.sub_parse(subReader, registry, contextTasks, crashIfUndeclared);
                         cursor = cursor + subReader.end() + 1;
                         previous = cursor + 1; //to skip the string param
                         Integer hash = subTask.hashCode();
@@ -536,13 +549,9 @@ public class CoreTask implements Task {
             final String getName = reader.extract(previous, flatSize);
             if (getName.length() > 0) {
                 if (actionName != null) {
-                    if (graph == null) {
-                        then(new ActionNamed(actionName, params));
-                    } else {
-                        final String[] singleParam = new String[1];
-                        singleParam[0] = getName;
-                        then(loadAction(registry, actionName, singleParam, contextTasks));
-                    }
+                    final String[] singleParam = new String[1];
+                    singleParam[0] = getName;
+                    then(loadAction(registry, actionName, singleParam, contextTasks, crashIfUndeclared));
                 } else {
                     then(new ActionTraverseOrAttribute(false, true, getName.trim()));//default action
                 }
@@ -550,14 +559,14 @@ public class CoreTask implements Task {
         }
     }
 
-    static Action loadAction(final ActionRegistry registry, final String actionName, final String[] params, final Map<Integer, Task> contextTasks) {
+    static Action loadAction(final ActionRegistry registry, final String actionName, final String[] params, final Map<Integer, Task> contextTasks, boolean crashIfUndeclared) {
         final ActionDeclaration declaration = registry.declaration(actionName);
         if (declaration == null || declaration.factory() == null) {
-            /*
-            final String[] varargs = params;
+            if (crashIfUndeclared) {
+                throw new RuntimeException("Action '" + actionName + "' not found in registry.");
+            }
+            final String[] varargs = params;//J2TS tricks
             return new ActionNamed(actionName, varargs);
-            */
-            throw new RuntimeException("Action '" + actionName + "' not found in registry.");
         } else {
             final ActionFactory factory = declaration.factory();
             final int[] declaredParams = declaration.params();

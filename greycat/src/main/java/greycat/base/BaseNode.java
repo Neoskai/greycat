@@ -1039,13 +1039,13 @@ public class BaseNode implements Node {
                 this._resolver.lookupAll(_world, _time, ids, new Callback<Node[]>() {
                     @Override
                     public void on(Node[] result) {
-                        callback.on((A) (Object )result);
+                        callback.on((A) (Object) result);
                     }
                 });
                 break;
             case Type.TASK:
                 final Task t = (Task) getAt(indexToTraverse);
-                t.prepare(_graph, this, new Callback<TaskResult>() {
+                final TaskContext tc = t.prepare(_graph, this, new Callback<TaskResult>() {
                     @Override
                     public void on(TaskResult result) {
                         if (result.size() == 1) {
@@ -1055,6 +1055,7 @@ public class BaseNode implements Node {
                         }
                     }
                 });
+                t.executeUsing(tc);
                 break;
             default:
                 callback.on(null);

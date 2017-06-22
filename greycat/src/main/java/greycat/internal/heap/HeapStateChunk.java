@@ -288,7 +288,7 @@ class HeapStateChunk implements StateChunk, HeapContainer {
     }
 
     @Override
-    public int type(final String key) {
+    public final int type(final String key) {
         return typeAt(_space.graph().resolver().stringToHash(key, false));
     }
 

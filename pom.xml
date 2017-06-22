@@ -15,7 +15,8 @@
     limitations under the License.
 
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.datathings</groupId>
     <artifactId>greycat-parent</artifactId>
@@ -102,60 +103,16 @@
         <module>plugins/websocket</module>
         <module>plugins/ml</module>
 
+        <!-- Modelling environment-->
+        <module>modeling/language</module>
+        <module>modeling/generator</module>
+        <module>modeling/mavenplugin</module>
+
+        <!--Examples-->
+        <module>examples/modeling</module>
 
         <module>plugins/backup</module>
         <module>plugins/backupexposer</module>
-
-        <!-- Examples-->
-
-        <!--
-        <module>examples/modeling</module>
-        -->
-
-        <!--
-        <module>plugins/sparkey</module>
-        <module>plugins/aerospike</module>
-        <module>plugins/nsq-hook</module>
-        -->
-
-        <!--
-        <module>plugins/memory</module>
-        -->
-        <!--
-        <module>plugins/taskide</module>
-        -->
-        <!--
-        <module>plugins/model</module>
-        <module>plugins/search</module>
-        -->
-
-
-        <!--
-        <module>plugins/model</module>
-        -->
-        <!-- Plugins Java & JS -->
-
-        <!--
-        <module>plugins/rest</module>
-        <module>plugins/storage/dyno</module>
-        <module>plugins/storage/nats</module>
-        <module>plugins/storage/riak</module>
-        <module>plugins/storage/cassandra</module>
-        <module>plugins/storage/voldemort</module>
-        <module>plugins/storage/hbase</module>
-        <module>plugins/hazelcast</module>
-        <module>plugins/mlext</module>
-        <module>plugins/rest</module>
-        <module>plugins/debug</module>
-        <module>plugins/visualizer</module>
-        <module>plugins/mlx</module>
-        <module>plugins/benchmark</module>
-        <module>plugins/search</module>
-        -->
-
-        <!-- <module>modeling/language</module> -->
-        <!-- <module>modeling/generator</module> -->
-        <!-- <module>modeling/mavenplugin</module> -->
     </modules>
 
     <build>

@@ -29,10 +29,13 @@ type GPSPosition {
     att lng : Double
 }
 
-index Buildings of Building using name
-index BuildingsTime with time of Building using name,height
+index Buildings : Building using name
 
 const GLOBAL_CONSTANT : Double = "4.5d"
 const ANOTHER_GLOBAL_CONSTANT : String = "my_constant"
 const CONSTANT_TO_OVERRIDE : String
 const TASK_CONSTANT : Task
+
+const listNodeNames : Task = readIndex("nodes").name
+
+const isStatic : Boolean

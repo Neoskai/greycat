@@ -37,11 +37,12 @@ public class GlobalConstantGenerator {
         final JavaClassSource javaClass = Roaster.create(JavaClassSource.class);
         javaClass.setPackage(packageName);
         javaClass.setName(CONSTANT_CLASS_NAME);
-
         // constants
         for (Constant constant : globalConstants) {
             String value = constant.value();
-            if (!constant.type().equals("String") && value != null) {
+            if (constant.type().equals("Task") && value != null) {
+                value = "greycat.Tasks.newTask().parse(\"" + value.replaceAll("\"", "'").trim() + "\",null);";
+            } else if (!constant.type().equals("String") && value != null) {
                 value = value.replaceAll("\"", "");
             }
             FieldSource field = javaClass.addField()
@@ -53,9 +54,7 @@ public class GlobalConstantGenerator {
             if (value != null) {
                 field.setFinal(true);
             }
-
         }
-
         return javaClass;
     }
 }

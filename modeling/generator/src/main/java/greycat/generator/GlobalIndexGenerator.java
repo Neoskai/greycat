@@ -16,7 +16,7 @@
 package greycat.generator;
 
 import greycat.language.Attribute;
-import greycat.language.GlobalIndex;
+import greycat.language.Index;
 import greycat.language.Model;
 import org.jboss.forge.roaster.Roaster;
 import org.jboss.forge.roaster.model.Visibility;
@@ -36,12 +36,12 @@ public class GlobalIndexGenerator {
         return sources;
     }
 
-    private static JavaSource generateGlobalIndexes(String packageName, GlobalIndex globalIndex) {
+    private static JavaSource generateGlobalIndexes(String packageName, Index index) {
         final JavaClassSource javaClass = Roaster.create(JavaClassSource.class);
         javaClass.setPackage(packageName);
-        javaClass.setName(globalIndex.name());
+        javaClass.setName(index.name());
 
-        String indexName = globalIndex.name();
+        String indexName = index.name();
         String indexConstant = "INDEX_NAME";
 
         // index name constant
@@ -54,7 +54,7 @@ public class GlobalIndexGenerator {
                 .setStatic(true);
 
         // attribute constants
-        for (Attribute att : globalIndex.attributes()) {
+        for (Attribute att : index.attributes()) {
             javaClass.addField()
                     .setVisibility(Visibility.PUBLIC)
                     .setFinal(true)
@@ -65,14 +65,15 @@ public class GlobalIndexGenerator {
         }
 
         StringBuilder indexedAttributes = new StringBuilder();
-        for (Attribute att : globalIndex.attributes()) {
+        for (Attribute att : index.attributes()) {
             indexedAttributes.append(att.name().toUpperCase());
             indexedAttributes.append(",");
         }
         indexedAttributes.deleteCharAt(indexedAttributes.length() - 1);
 
         // declare index
-        if (globalIndex.isWithTime()) {
+        /*
+        if (index.isWithTime()) {
             MethodSource<JavaClassSource> declareIndex = javaClass.addMethod()
                     .setName("declareTimedIndex")
                     .setReturnTypeVoid()
@@ -96,6 +97,7 @@ public class GlobalIndexGenerator {
 
             declareIndex.setBody(declareIndexBody.toString());
         } else {
+        */
             MethodSource<JavaClassSource> declareIndex = javaClass.addMethod()
                     .setName("declareIndex")
                     .setReturnTypeVoid()
@@ -117,7 +119,7 @@ public class GlobalIndexGenerator {
             declareIndexBody.append("}, " + indexedAttributes.toString() + ");");
 
             declareIndex.setBody(declareIndexBody.toString());
-        }
+        //}
 
         // find method
         MethodSource find = javaClass.addMethod()
@@ -129,10 +131,10 @@ public class GlobalIndexGenerator {
         find.addParameter("Graph", "graph");
         find.addParameter("long", "world");
         find.addParameter("long", "time");
-        find.addParameter("greycat.Callback<" + globalIndex.type()+ "[]>", "callback");
+        find.addParameter("greycat.Callback<" + index.type()+ "[]>", "callback");
 
         StringBuilder paramsBuilder = new StringBuilder();
-        for (Attribute att : globalIndex.attributes()) {
+        for (Attribute att : index.attributes()) {
             find.addParameter("String", att.name());
             paramsBuilder.append(att.name());
             paramsBuilder.append(",");
@@ -146,7 +148,7 @@ public class GlobalIndexGenerator {
         findBody.append("result.findFrom(new Callback<greycat.Node[]>() {");
         findBody.append("@Override\n");
         findBody.append("public void on(greycat.Node[] result) {");
-        findBody.append(globalIndex.type() + "[] typedResult = new " + globalIndex.type() + "[result.length];");
+        findBody.append(index.type() + "[] typedResult = new " + index.type() + "[result.length];");
         findBody.append("java.lang.System.arraycopy(result, 0, typedResult, 0, result.length);");
         findBody.append("callback.on(typedResult);");
         findBody.append("}");
@@ -166,7 +168,7 @@ public class GlobalIndexGenerator {
         updateIndex.addParameter("greycat.Graph", "graph");
         updateIndex.addParameter("long", "world");
         updateIndex.addParameter("long", "time");
-        updateIndex.addParameter(globalIndex.type(), globalIndex.type().toLowerCase());
+        updateIndex.addParameter(index.type(), index.type().toLowerCase());
         updateIndex.addParameter("greycat.Callback<Boolean>", "callback");
 
         StringBuilder updateIndexBody = new StringBuilder();
@@ -193,7 +195,7 @@ public class GlobalIndexGenerator {
         unindex.addParameter("greycat.Graph", "graph");
         unindex.addParameter("long", "world");
         unindex.addParameter("long", "time");
-        unindex.addParameter(globalIndex.type(), globalIndex.type().toLowerCase());
+        unindex.addParameter(index.type(), index.type().toLowerCase());
         unindex.addParameter("greycat.Callback<Boolean>", "callback");
 
         StringBuilder unindexBody = new StringBuilder();

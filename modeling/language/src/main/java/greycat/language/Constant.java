@@ -20,8 +20,6 @@ public class Constant extends ASTNode {
     private final String type;
     private final String value;
 
-    private boolean isGlobal;
-
     public Constant(String name, String type, String value) {
         this.name = name;
         this.type = type;
@@ -30,14 +28,6 @@ public class Constant extends ASTNode {
 
     public String name() {
         return name;
-    }
-
-    public boolean isGlobal() {
-        return isGlobal;
-    }
-
-    public void setIsGlobal(boolean isGlobal) {
-        this.isGlobal = isGlobal;
     }
 
     public String type() {

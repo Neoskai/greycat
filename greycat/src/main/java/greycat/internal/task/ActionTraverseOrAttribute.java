@@ -18,13 +18,19 @@ package greycat.internal.task;
 import greycat.*;
 import greycat.base.BaseNode;
 import greycat.Action;
+import greycat.plugin.Job;
 import greycat.plugin.NodeState;
 import greycat.plugin.Resolver;
 import greycat.struct.Buffer;
 import greycat.struct.Relation;
 import greycat.TaskContext;
 import greycat.TaskResult;
+import greycat.utility.HashHelper;
 import greycat.utility.LArray;
+import greycat.utility.Tuple;
+
+import java.util.ArrayList;
+import java.util.List;
 
 class ActionTraverseOrAttribute implements Action {
 
@@ -46,7 +52,9 @@ class ActionTraverseOrAttribute implements Action {
         final Resolver resolver = ctx.graph().resolver();
         final TaskResult finalResult = ctx.newResult();
         final String flatName = ctx.template(_name);
+        final int flatHash = HashHelper.hash(flatName);
         final TaskResult previousResult = ctx.result();
+        List<Tuple<Node, Task>> tasks = null;
         if (previousResult != null) {
             final int previousSize = previousResult.size();
             final LArray worlds = new LArray();
@@ -73,9 +81,9 @@ class ActionTraverseOrAttribute implements Action {
                 //TODO manage eNode here
                 if (loop instanceof BaseNode) {
                     final Node casted = (Node) loop;
-                    switch (casted.type(flatName)) {
+                    switch (casted.typeAt(flatHash)) {
                         case Type.RELATION:
-                            Relation relation = (Relation) casted.get(flatName);
+                            Relation relation = (Relation) casted.getAt(flatHash);
                             if (relation != null) {
                                 int relSize = relation.size();
                                 for (int k = 0; k < relSize; k++) {
@@ -86,7 +94,7 @@ class ActionTraverseOrAttribute implements Action {
                             }
                             break;
                         case Type.INDEX:
-                            final Index relationIndexed = (Index) casted.get(flatName);
+                            final Index relationIndexed = (Index) casted.getAt(flatHash);
                             if (relationIndexed != null) {
                                 if (query != null) {
                                     final long[] candidates = relationIndexed.selectByQuery(query);
@@ -105,6 +113,12 @@ class ActionTraverseOrAttribute implements Action {
                                 }
                             }
                             break;
+                        case Type.TASK:
+                            if (tasks == null) {
+                                tasks = new ArrayList<Tuple<Node, Task>>();
+                            }
+                            tasks.add(new Tuple<Node, Task>(ctx.graph().cloneNode(casted), (Task) casted.getAt(flatHash)));
+                            break;
                         default:
                             Object resolved = casted.get(flatName);
                             if (resolved != null) {
@@ -117,62 +131,95 @@ class ActionTraverseOrAttribute implements Action {
                     finalResult.add(loop);
                 }
             }
-            if (ids.size() == 0) {
-                previousResult.clear();
-                ctx.continueWith(finalResult);
-            } else {
-                resolver.lookupBatch(worlds.all(), times.all(), ids.all(), new Callback<Node[]>() {
-                    @Override
-                    public void on(Node[] result) {
-                        for (int i = 0; i < result.length; i++) {
-                            final Node resolvedNode = result[i];
-                            if (resolvedNode != null) {
-                                if (query == null) {
-                                    finalResult.add(resolvedNode);
-                                } else {
-                                    final NodeState resolvedState = resolver.resolveState(resolvedNode);
-                                    boolean exact = true;
-                                    for (int j = 0; j < query.attributes().length; j++) {
-                                        Object obj = resolvedState.getAt(query.attributes()[j]);
-                                        if (query.values()[j] == null) {
-                                            if (obj != null) {
-                                                exact = false;
-                                                break;
-                                            }
+            Callback secondStep = new Callback() {
+                @Override
+                public void on(Object result) {
+                    if (ids.size() == 0) {
+                        previousResult.clear();
+                        ctx.continueWith(finalResult);
+                    } else {
+                        resolver.lookupBatch(worlds.all(), times.all(), ids.all(), new Callback<Node[]>() {
+                            @Override
+                            public void on(Node[] result) {
+                                for (int i = 0; i < result.length; i++) {
+                                    final Node resolvedNode = result[i];
+                                    if (resolvedNode != null) {
+                                        if (query == null) {
+                                            finalResult.add(resolvedNode);
                                         } else {
-                                            if (obj == null) {
-                                                exact = false;
-                                                break;
-                                            } else {
-                                                if (obj instanceof long[]) {
-                                                    if (query.values()[j] instanceof long[]) {
-                                                        if (!Constants.longArrayEquals((long[]) query.values()[j], (long[]) obj)) {
-                                                            exact = false;
-                                                            break;
-                                                        }
-                                                    } else {
+                                            final NodeState resolvedState = resolver.resolveState(resolvedNode);
+                                            boolean exact = true;
+                                            for (int j = 0; j < query.attributes().length; j++) {
+                                                Object obj = resolvedState.getAt(query.attributes()[j]);
+                                                if (query.values()[j] == null) {
+                                                    if (obj != null) {
                                                         exact = false;
                                                         break;
                                                     }
                                                 } else {
-                                                    if (!Constants.equals(query.values()[j].toString(), obj.toString())) {
+                                                    if (obj == null) {
                                                         exact = false;
                                                         break;
+                                                    } else {
+                                                        if (obj instanceof long[]) {
+                                                            if (query.values()[j] instanceof long[]) {
+                                                                if (!Constants.longArrayEquals((long[]) query.values()[j], (long[]) obj)) {
+                                                                    exact = false;
+                                                                    break;
+                                                                }
+                                                            } else {
+                                                                exact = false;
+                                                                break;
+                                                            }
+                                                        } else {
+                                                            if (!Constants.equals(query.values()[j].toString(), obj.toString())) {
+                                                                exact = false;
+                                                                break;
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
+                                            if (exact) {
+                                                finalResult.add(resolvedNode);
+                                            }
                                         }
                                     }
-                                    if (exact) {
-                                        finalResult.add(resolvedNode);
-                                    }
                                 }
+                                previousResult.clear();
+                                ctx.continueWith(finalResult);
                             }
-                        }
-                        previousResult.clear();
-                        ctx.continueWith(finalResult);
+                        });
+                    }
+                }
+            };
+            if (tasks != null) {
+                DeferCounter deferCounter = ctx.graph().newCounter(tasks.size());
+                deferCounter.then(new Job() {
+                    @Override
+                    public void run() {
+                        secondStep.on(null);
                     }
                 });
+                for (int i = 0; i < tasks.size(); i++) {
+                    Tuple<Node, Task> tt = tasks.get(i);
+                    final TaskContext taskContext = tt.right().prepare(ctx.graph(), tt.left(), new Callback<TaskResult>() {
+                        @Override
+                        public void on(TaskResult result) {
+                            tt.left().free();
+                            if (result.size() == 1) {
+                                finalResult.add(result.get(0));
+                            } else {
+                                finalResult.add(result);
+                            }
+                            deferCounter.count();
+                        }
+                    });
+                    tt.right().executeUsing(taskContext);
+                }
+
+            } else {
+                secondStep.on(null);
             }
         } else {
             ctx.continueTask();

@@ -18,19 +18,15 @@ package greycat.language;
 import java.util.Collection;
 import java.util.LinkedList;
 
-public class GlobalIndex {
+public class Index {
     private final String name;
     private final String type;
     private final Collection<Attribute> attributes;
 
-    private boolean withTime;
-
-
-    public GlobalIndex(String name, String type) {
+    public Index(String name, String type) {
         this.name = name;
         this.type = type;
         this.attributes = new LinkedList<>();
-        this.withTime = false;
     }
 
     public Collection<Attribute> attributes() {
@@ -50,11 +46,4 @@ public class GlobalIndex {
         return this.type;
     }
 
-    public boolean isWithTime() {
-        return this.withTime;
-    }
-
-    public void setWithTime(boolean withTime) {
-        this.withTime = withTime;
-    }
 }

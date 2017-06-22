@@ -65,6 +65,12 @@ public class GeneratorPlugin extends AbstractMojo {
     @Parameter(defaultValue = "${project.build.directory}/generated-sources/greycat-modeling")
     private File targetGen;
 
+    /**
+     * Folder in which the files should be generated
+     */
+    @Parameter(defaultValue = "${project.build.directory}/generated-sources-web")
+    private File targetGenJS;
+
     @Parameter(defaultValue = "${project}", required = true, readonly = true)
     private MavenProject project;
 
@@ -101,7 +107,7 @@ public class GeneratorPlugin extends AbstractMojo {
                 break;
             }
         }
-        generator.mvnGenerate(packageName, pluginName, targetGen, generateJava, generateJS, gcVersion, project);
+        generator.mvnGenerate(packageName, pluginName, targetGen, targetGenJS, generateJava, generateJS, gcVersion, project);
         project.addCompileSourceRoot(targetGen.getAbsolutePath());
     }
 }
