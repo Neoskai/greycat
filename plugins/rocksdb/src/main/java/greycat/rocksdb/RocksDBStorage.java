@@ -71,6 +71,8 @@ public class RocksDBStorage implements Storage {
     @Override
     public BackupEntry createBackup() {
         try {
+            _graph.save(null);
+
             File backupFolder = new File(_storagePath + "/backup");
             if(!backupFolder.exists()){
                 backupFolder.mkdir();
@@ -126,6 +128,12 @@ public class RocksDBStorage implements Storage {
         return null;
     }
 
+    /**
+     * List all files in a folder
+     * @param fileNames List to fill in
+     * @param dir Path of the dir
+     * @return THe filled list
+     */
     private List<String> getFiles(List<String> fileNames, Path dir) {
         try(DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
             for (Path path : stream) {
@@ -165,27 +173,30 @@ public class RocksDBStorage implements Storage {
         return null;
     }
 
+    /**
+     * Downloads the latest backup if it is on the configured DFS
+     */
     private void retrieveLastBackup(){
         try {
-            // Retrieve the highest local backup
-            List<String> localBackups = new ArrayList<>();
-            File backupFolder = new File(_storagePath + "/data/backup/meta");
-            if(backupFolder.exists()){
-                getFiles(localBackups, Paths.get(backupFolder.getPath()));
-            }
-
             int topLocal = -1;
             int topExternal = -1;
 
-            for (String local : localBackups) {
-                String fileNumber = local.substring(local.lastIndexOf("/") + 1, local.length());
-                if (Integer.parseInt(fileNumber) > topLocal) {
-                    topLocal = Integer.parseInt(fileNumber);
+            // Retrieve the highest local backup
+            List<String> localBackups = new ArrayList<>();
+            File backupFolder = new File(_storagePath + "/data/backup/meta");
+
+            if(backupFolder.exists()){
+                getFiles(localBackups, Paths.get(backupFolder.getPath()));
+
+                for (String local : localBackups) {
+                    String fileNumber = local.substring(local.lastIndexOf("/") + 1, local.length());
+                    if (Integer.parseInt(fileNumber) > topLocal) {
+                        topLocal = Integer.parseInt(fileNumber);
+                    }
                 }
             }
 
             // Compare with the highest backup in the bucket
-
             MinioClient minioClient = new MinioClient(BackupOptions.minioPath(),
                     BackupOptions.accessKey(),
                     BackupOptions.secretKey());
@@ -204,6 +215,7 @@ public class RocksDBStorage implements Storage {
                 }
             }
 
+            // If the latest backup is on DFS
             if(topExternal > topLocal){
                 String metaName =   "backup/meta/" + topExternal;
 
@@ -229,10 +241,8 @@ public class RocksDBStorage implements Storage {
                     minioClient.getObject(BackupOptions.dbBucket(), name, _storagePath+ "/" + name);
                 }
             }
-
         } catch (Exception e){
-            System.err.println(e);
-            System.err.println("Could not retrieve last backup for DFS");
+            System.err.println("Could not retrieve last backup from DFS");
         }
 
 
