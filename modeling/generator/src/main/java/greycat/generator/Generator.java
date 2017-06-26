@@ -15,6 +15,7 @@
  */
 package greycat.generator;
 
+import greycat.language.Checker;
 import greycat.language.Model;
 import java2typescript.SourceTranslator;
 import org.apache.maven.artifact.Artifact;
@@ -313,6 +314,8 @@ public class Generator {
     }
 
     public void mvnGenerate(String packageName, String pluginName, File target, File targetWeb, boolean generateJava, boolean generateJS, String gcVersion, MavenProject project) {
+        model.consolidate();
+        Checker.check(model);
         if (generateJava || generateJS) {
             generateJava(packageName, pluginName, target);
         }

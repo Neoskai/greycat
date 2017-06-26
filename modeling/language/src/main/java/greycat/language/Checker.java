@@ -15,5 +15,20 @@
  */
 package greycat.language;
 
-public abstract class ASTNode {
+public class Checker {
+
+    public static void check(Model model) {
+        //check that all attributes have a type
+        model.classes.values().forEach(aClass -> {
+            aClass.properties().forEach(o -> {
+                if (o instanceof Attribute) {
+                    Attribute attribute = (Attribute) o;
+                    if (attribute.type() == null) {
+                        throw new RuntimeException("Untyped attribute " + attribute.name() + " contained in " + attribute.parent());
+                    }
+                }
+            });
+        });
+    }
+
 }

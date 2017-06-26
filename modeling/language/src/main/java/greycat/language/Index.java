@@ -15,27 +15,20 @@
  */
 package greycat.language;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 
 public class Index {
+
     private final String name;
-    private final String type;
-    private final Collection<Attribute> attributes;
+    private final Collection<AttributeRef> attributes;
 
-    public Index(String name, String type) {
+    private String type;
+
+    public Index(String name) {
         this.name = name;
-        this.type = type;
-        this.attributes = new LinkedList<>();
-    }
-
-    public Collection<Attribute> attributes() {
-        return this.attributes;
-    }
-
-
-    public void addAttribute(Attribute attribute) {
-        this.attributes.add(attribute);
+        this.attributes = new ArrayList<AttributeRef>();
     }
 
     public String name() {
@@ -44,6 +37,18 @@ public class Index {
 
     public String type() {
         return this.type;
+    }
+
+    public Collection<AttributeRef> attributes() {
+        return this.attributes;
+    }
+
+    void addAttributeRef(AttributeRef attribute) {
+        this.attributes.add(attribute);
+    }
+
+    void setType(String type) {
+        this.type = type;
     }
 
 }

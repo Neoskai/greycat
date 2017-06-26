@@ -19,45 +19,44 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CustomType extends ASTNode {
-    private final String name;
-    private final Map<String, Attribute> attributes;
-    private final Map<String, Constant> constants;
+public class CustomType implements Container {
 
-    public CustomType(String name) {
+    private final String name;
+    private final Map<String, Object> properties;
+
+    CustomType(String name) {
         this.name = name;
-        this.attributes = new HashMap<>();
-        this.constants = new HashMap<>();
+        this.properties = new HashMap<String, Object>();
     }
 
-    public String name() {
+    public final Collection<Object> properties() {
+        return properties.values();
+    }
+
+    public final String name() {
         return name;
     }
 
-
-    public Collection<Constant> constants() {
-        return this.constants.values();
-    }
-
-    public void addConstant(Constant constant) {
-        this.constants.put(constant.name(), constant);
-    }
-
-
-    public Collection<Attribute> attributes() {
-        return attributes.values();
-    }
-
-    public Attribute getAttribute(String name) {
-        for (Attribute att : attributes()) {
-            if (att.name().equals(name)) {
-                return att;
-            }
+    Attribute getOrCreateAttribute(String name) {
+        Object att = properties.get(name);
+        if (att == null) {
+            att = new Attribute(name, this);
+            properties.put(name, att);
+        } else if (!(att instanceof Attribute)) {
+            throw new RuntimeException("Property name conflict attribute name conflict with " + att);
         }
-        return null;
+        return (Attribute) att;
     }
 
-    public void addAttribute(Attribute att) {
-        attributes.put(att.name(), att);
+    Constant getOrCreateConstant(String name) {
+        Object att = properties.get(name);
+        if (att == null) {
+            att = new Constant(name);
+            properties.put(name, att);
+        } else if (!(att instanceof Constant)) {
+            throw new RuntimeException("Property name conflict constant name conflict with " + att);
+        }
+        return (Constant) att;
     }
+
 }

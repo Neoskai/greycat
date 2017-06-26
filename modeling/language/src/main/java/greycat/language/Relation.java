@@ -15,14 +15,12 @@
  */
 package greycat.language;
 
-
-public class Relation extends ASTNode {
+public class Relation {
     private final String name;
-    private final String type;
+    private String type;
 
-    public Relation(String name, String type) {
+    Relation(String name) {
         this.name = name;
-        this.type = type;
     }
 
     public String name() {
@@ -31,6 +29,10 @@ public class Relation extends ASTNode {
 
     public String type() {
         return type;
+    }
+
+    void setType(String type) {
+        this.type = type;
     }
 
 }

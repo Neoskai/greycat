@@ -15,106 +15,118 @@
  */
 package greycat.language;
 
-
 import java.util.*;
 
-public class Class extends ASTNode {
-    private final String name;
-    private final Map<String, Attribute> attributes;
-    private final Map<String, Relation> relations;
-    private final Map<String, Reference> references;
-    private final Map<String, LocalIndex> localIndexes;
-    private final Map<String, Constant> constants;
+public class Class implements Container {
 
+    private final String name;
+    final Map<String, Object> properties;
     private Class parent;
 
-    public Class(String name) {
+    Class(String name) {
         this.name = name;
-        this.attributes = new HashMap<>();
-        this.relations = new HashMap<>();
-        this.references = new HashMap<>();
-        this.localIndexes = new HashMap<>();
-        this.constants = new HashMap<>();
+        this.properties = new HashMap<String, Object>();
     }
 
-
-    public Collection<Constant> constants() {
-        return this.constants.values();
-    }
-
-    public void addConstant(Constant constant) {
-        this.constants.put(constant.name(), constant);
-    }
-
-    public Collection<LocalIndex> localIndexes() {
-        return this.localIndexes.values();
-    }
-
-    public void addLocalIndex(LocalIndex localIndex) {
-        localIndexes.put(localIndex.name(), localIndex);
-    }
-
-    public Collection<Attribute> attributes() {
-        return attributes.values();
-    }
-
-    public Attribute getAttribute(String name) {
-        for (Attribute att : attributes()) {
-            if (att.name().equals(name)) {
-                return att;
-            }
-        }
-        return null;
-    }
-
-    public void addAttribute(Attribute att) {
-        attributes.put(att.name(), att);
-    }
-
-    public Collection<Relation> relations() {
-        return relations.values();
-    }
-
-    public Relation getRelation(String name) {
-        for (Relation rel : relations()) {
-            if (rel.name().equals(name)) {
-                return rel;
-            }
-        }
-        return null;
-    }
-
-    public void addRelation(Relation rel) {
-        relations.put(rel.name(), rel);
-    }
-
-    public Collection<Reference> references() {
-        return references.values();
-    }
-
-    public Reference getReference(String name) {
-        for (Reference ref : references()) {
-            if (ref.name().equals(name)) {
-                return ref;
-            }
-        }
-        return null;
-    }
-
-    public void addReference(Reference ref) {
-        references.put(ref.name(), ref);
-    }
-
-
-    public Class parent() {
+    public final Class parent() {
         return parent;
     }
 
-    public void setParent(Class parent) {
+    public final String name() {
+        return name;
+    }
+
+    public final Collection<Object> properties() {
+        return properties.values();
+    }
+
+    Attribute getOrCreateAttribute(String name) {
+        Object att = properties.get(name);
+        if (att == null) {
+            att = new Attribute(name, this);
+            properties.put(name, att);
+        } else if (!(att instanceof Attribute)) {
+            throw new RuntimeException("Property name conflict attribute name conflict with " + att);
+        }
+        return (Attribute) att;
+    }
+
+    Constant getOrCreateConstant(String name) {
+        Object att = properties.get(name);
+        if (att == null) {
+            att = new Constant(name);
+            properties.put(name, att);
+        } else if (!(att instanceof Constant)) {
+            throw new RuntimeException("Property name conflict constant name conflict with " + att);
+        }
+        return (Constant) att;
+    }
+
+    Relation getOrCreateRelation(String name) {
+        Object att = properties.get(name);
+        if (att == null) {
+            att = new Relation(name);
+            properties.put(name, att);
+        } else if (!(att instanceof Relation)) {
+            throw new RuntimeException("Property name conflict relation name conflict with " + att);
+        }
+        return (Relation) att;
+    }
+
+    Reference getOrCreateReference(String name) {
+        Object att = properties.get(name);
+        if (att == null) {
+            att = new Reference(name);
+            properties.put(name, att);
+        } else if (!(att instanceof Relation)) {
+            throw new RuntimeException("Property name conflict relation name conflict with " + att);
+        }
+        return (Reference) att;
+    }
+
+    Index getOrCreateIndex(String name) {
+        Object att = properties.get(name);
+        if (att == null) {
+            att = new Index(name);
+            properties.put(name, att);
+        } else if (!(att instanceof Constant)) {
+            throw new RuntimeException("Property name conflict index name conflict with " + att);
+        }
+        return (Index) att;
+    }
+
+    void setParent(Class parent) {
+        //check parent cycle
+        boolean cycle = false;
+        Class loop_parent = parent;
+        while (loop_parent != null) {
+            if (loop_parent == this) {
+                throw new RuntimeException("Inheritance cycle " + parent + " and " + this);
+            }
+            loop_parent = loop_parent.parent;
+        }
         this.parent = parent;
     }
 
-    public String name() {
-        return name;
+    Attribute attributeFromParent(String name) {
+        Object found;
+        Class loop_parent = parent;
+        while (loop_parent != null) {
+            found = loop_parent.properties.get(name);
+            if (found != null) {
+                if (found instanceof Attribute) {
+                    return (Attribute) found;
+                } else {
+                    throw new RuntimeException("Inconsistency error in " + this.name + " -> " + found + " already present in parents with another type in " + this.name);
+                }
+            }
+            loop_parent = loop_parent.parent;
+        }
+        return null;
+    }
+
+    @Override
+    public String toString() {
+        return "Class(" + name + ")";
     }
 }

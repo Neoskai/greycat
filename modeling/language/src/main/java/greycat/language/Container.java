@@ -15,36 +15,5 @@
  */
 package greycat.language;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class Attribute {
-
-    private final String name;
-    private final Container parent;
-    final List<AttributeRef> references = new ArrayList<AttributeRef>();
-
-    private String type;
-
-    Attribute(final String name, Container parent) {
-        this.name = name;
-        this.parent = parent;
-    }
-
-    public final String name() {
-        return name;
-    }
-
-    public final String type() {
-        return type;
-    }
-
-    public final Container parent() {
-        return parent;
-    }
-
-    final void setType(String type) {
-        this.type = type;
-    }
-
+public interface Container {
 }

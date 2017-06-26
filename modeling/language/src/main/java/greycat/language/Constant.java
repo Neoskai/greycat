@@ -15,15 +15,14 @@
  */
 package greycat.language;
 
-public class Constant extends ASTNode {
-    private final String name;
-    private final String type;
-    private final String value;
+public class Constant {
 
-    public Constant(String name, String type, String value) {
+    private final String name;
+    private String type;
+    private String value;
+
+    Constant(String name) {
         this.name = name;
-        this.type = type;
-        this.value = value;
     }
 
     public String name() {
@@ -37,6 +36,15 @@ public class Constant extends ASTNode {
     public String value() {
         return value;
     }
+
+    void setType(String type) {
+        this.type = type;
+    }
+
+    void setValue(String value) {
+        this.value = value;
+    }
+
 }
 
 

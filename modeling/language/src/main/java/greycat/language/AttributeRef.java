@@ -15,36 +15,21 @@
  */
 package greycat.language;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+public class AttributeRef {
 
-public class LocalIndex extends ASTNode {
-    private final String name;
-    private final String type;
-    private List<String> attributes;
+    private Attribute ref;
 
-
-    public LocalIndex(String name, String type) {
-        this.attributes = new ArrayList<>();
-        this.name = name;
-        this.type = type;
+    AttributeRef(Attribute initial) {
+        ref = initial;
+        ref.references.add(this);
     }
 
-    public String name() {
-        return this.name;
+    public void update(Attribute new_ref) {
+        ref = new_ref;
+        ref.references.add(this);
     }
 
-    public String type() {
-        return this.type;
+    public final Attribute ref() {
+        return ref;
     }
-
-    public List<String> attributes() {
-        return this.attributes;
-    }
-
-    public void addAttribute(String attribute) {
-        this.attributes.add(attribute);
-    }
-
 }

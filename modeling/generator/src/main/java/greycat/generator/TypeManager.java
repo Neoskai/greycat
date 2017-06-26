@@ -31,6 +31,9 @@ public class TypeManager {
         String typeName;
 
         switch (type) {
+            case "Boolean":
+                typeName = "Type.BOOL";
+                break;
             case "Bool":
                 typeName = "Type.BOOL";
                 break;
@@ -39,6 +42,9 @@ public class TypeManager {
                 break;
             case "Long":
                 typeName = "Type.LONG";
+                break;
+            case "Integer":
+                typeName = "Type.INT";
                 break;
             case "Int":
                 typeName = "Type.INT";

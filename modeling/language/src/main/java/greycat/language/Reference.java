@@ -15,14 +15,13 @@
  */
 package greycat.language;
 
-public class Reference extends ASTNode {
+public class Reference {
 
     private final String name;
-    private final String type;
+    private String type;
 
-    public Reference(String name, String type) {
+    Reference(String name) {
         this.name = name;
-        this.type = type;
     }
 
     public String name() {
@@ -33,4 +32,7 @@ public class Reference extends ASTNode {
         return type;
     }
 
+    void setType(String type) {
+        this.type = type;
+    }
 }
