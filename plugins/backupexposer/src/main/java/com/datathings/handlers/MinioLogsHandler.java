@@ -26,6 +26,7 @@ import io.minio.messages.Item;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +35,9 @@ public class MinioLogsHandler implements HttpHandler{
     @Override
     public void handleRequest(HttpServerExchange httpServerExchange) throws Exception {
         httpServerExchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
+        httpServerExchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Origin"), "*");
+        httpServerExchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Methods"),
+                "GET, POST, PUT, DELETE, OPTIONS");
         httpServerExchange.getResponseSender().send(getLogs());
     }
 

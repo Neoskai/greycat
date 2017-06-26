@@ -19,60 +19,6 @@ import {Treebeard, decorators} from 'react-treebeard';
 
 import './Logs.css';
 
-const data = {
-    name: 'root',
-    toggled: true,
-    children: [
-        {
-            name: 'parent',
-            children: [
-                { name: 'child1' },
-                { name: 'child2' }
-            ]
-        },
-        {
-            name: 'loading parent',
-            loading: true,
-            children: []
-        },
-        {
-            name: 'parent',
-            children: [
-                {
-                    name: 'nested parent',
-                    children: [
-                        { name: 'nested child 1' },
-                        { name: 'nested child 2' }
-                    ]
-                }
-            ]
-        }
-    ]
-};
-
-
-function getLogs(tree){
-    var Minio = require('minio');
-
-    var minioClient = new Minio.Client({
-        endPoint: 'localhost',
-        port: 9000,
-        secure: false,
-        accessKey: 'QZEIXYIYB22HADEYYC1X',
-        secretKey: '15d4CYxNHAR12tKjxN/1q5HIgIo4KbzC1twzozwZ'
-    });
-
-    var stream = minioClient.listObjectsV2('logs','', true);
-
-    stream.on('data', function(obj) {
-        buildTree(obj.name.split('/'), tree);
-    } );
-    stream.on('error', function(err) {
-        console.log(err)
-    } );
-
-}
-
 function buildTree(parts,treeNode) {
     if(parts.length === 0)
     {
@@ -90,8 +36,6 @@ function buildTree(parts,treeNode) {
     treeNode.push(newNode);
     buildTree(parts.splice(1,parts.length),newNode.children);
 }
-
-
 
 decorators.Header = (props) => {
     const style = props.style;
@@ -122,13 +66,35 @@ export default class Logs extends Component{
         this.setState({ cursor: node });
     }
 
+    componentDidMount(){
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', "http://localhost:8080/logs", true);
+        xhr.send();
+
+        xhr.onreadystatechange = processRequest.bind(this);
+
+        function processRequest(e) {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                var tree = [];
+                var elems = JSON.parse(e.target.response);
+
+                for(var i = 0; i < elems.length; i++){
+                    buildTree(elems[i].split("/"), tree)
+                }
+
+                console.log(tree);
+                this.setState({logData: tree})
+            }
+        }
+    }
+
     render(){
         return (
             <div className="BackupList component">
                 <h1>Log Structure </h1>
                 <br />
                 <Treebeard
-                    data={data}
+                    data={this.state.logData}
                     onToggle={this.onToggle}
                     decorators={decorators}
                 />

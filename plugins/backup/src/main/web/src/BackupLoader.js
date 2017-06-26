@@ -69,10 +69,6 @@ export default class BackupLoader extends Component {
         var xhr = new XMLHttpRequest();
         xhr.open('GET', finalQuery, true);
 
-        xhr.setRequestHeader('Access-Control-Allow-Headers', '*');
-        xhr.setRequestHeader('Content-type', 'application/ecmascript');
-        xhr.setRequestHeader('Access-Control-Allow-Origin', '*');
-
         xhr.send();
 
         xhr.onreadystatechange = processRequest;
@@ -99,10 +95,6 @@ export default class BackupLoader extends Component {
         var xhr = new XMLHttpRequest();
         xhr.open('GET', finalQuery, true);
 
-        xhr.setRequestHeader('Access-Control-Allow-Headers', '*');
-        xhr.setRequestHeader('Content-type', 'application/ecmascript');
-        xhr.setRequestHeader('Access-Control-Allow-Origin', '*');
-
         xhr.send();
 
         xhr.onreadystatechange = processRequest;
@@ -117,10 +109,6 @@ export default class BackupLoader extends Component {
     launchBackup(){
         var xhr = new XMLHttpRequest();
         xhr.open('GET', "http://localhost:8080/backup/full", true);
-
-        xhr.setRequestHeader('Access-Control-Allow-Headers', '*');
-        xhr.setRequestHeader('Content-type', 'application/ecmascript');
-        xhr.setRequestHeader('Access-Control-Allow-Origin', '*');
 
         xhr.send();
 

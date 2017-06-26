@@ -50,9 +50,6 @@ function getItems(){
     xhr.open('GET', url, true);
 
     xhr.responseType = 'json';
-    xhr.setRequestHeader('Access-Control-Allow-Headers', '*');
-    xhr.setRequestHeader('Content-type', 'application/ecmascript');
-    xhr.setRequestHeader('Access-Control-Allow-Origin', '*');
 
     xhr.send();
 
@@ -104,10 +101,10 @@ class App extends Component {
                                 <Col xs={3} md={3}>
                                     <Snapshot list={getItems()} />
                                 </Col>
-                                <Col xs={6} md={6} className="mainContent">
+                                <Col xs={5} md={5} className="mainContent">
                                     <BackupLoader />
                                 </Col>
-                                <Col xs={3} md={3} className="BackupList">
+                                <Col xs={4} md={4} className="BackupList">
                                     <Logs />
                                 </Col>
                             </Row>
