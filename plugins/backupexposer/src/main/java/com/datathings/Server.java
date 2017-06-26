@@ -43,8 +43,8 @@ public class Server
                 .addHttpListener(_port, "0.0.0.0")
                 .setHandler(
                         path()
-                                .addPrefixPath("/database", new DatabaseHandler(_basePath))
-                                .addPrefixPath("/logs", new LogHandler(_basePath))
+                                .addPrefixPath("/database", new MinioDBHandler())
+                                .addPrefixPath("/logs", new MinioLogsHandler())
                                 .addPrefixPath("/backup/full", new FullBackupHandler(_basePath))
                                 .addPrefixPath("/backup/partial", new PartialBackupHandler(_basePath))
                                 .addPrefixPath("/backup/nodes", new NodeBackupHandler(_basePath))
