@@ -20,7 +20,7 @@ import {Treebeard, decorators} from 'react-treebeard';
 import './Logs.css';
 
 function buildTree(parts,treeNode) {
-    if(parts.length === 0)
+    if(parts.length === 0 || parts[0].length <= 1)
     {
         return;
     }
