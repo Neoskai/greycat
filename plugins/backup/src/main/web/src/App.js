@@ -45,6 +45,7 @@ function timeToDate(timestamp){
 }
 
 function getItems(){
+    var elems = [];
     var xhr = new XMLHttpRequest();
     var url = "http://localhost:8080/database";
     xhr.open('GET', url, true);
@@ -57,11 +58,16 @@ function getItems(){
 
     function processRequest(e) {
         if (xhr.readyState === 4 && xhr.status === 200) {
-            return xhr.response
+            xhr.response.map(function(listValue){
+                var ctString = 'Snapshot ' + listValue.id;
+                elems.push({id: listValue.id, start: timeToDate(listValue.timestamp), content:ctString, type:'box'});
+            })
         }
     }
 
-    return [
+    return elems;
+
+    /*return [
         {
             id: 1,
             start: timeToDate(1496321093),
@@ -74,7 +80,7 @@ function getItems(){
             content: 'Major Snapshot 2',
             type: 'box'
         },
-    ]
+    ]*/
 }
 
 function onSelect(event){
@@ -83,6 +89,31 @@ function onSelect(event){
 }
 
 class App extends Component {
+    constructor(props){
+        super(props);
+        this.state = {snapshots: []};
+    }
+
+    componentDidMount(){
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', "http://localhost:8080/database", true);
+        xhr.send();
+
+        xhr.onreadystatechange = processRequest.bind(this);
+
+        function processRequest(e) {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+
+                var elems = JSON.parse(e.target.response);
+                elems.map(function(listValue){
+                    var ctString = 'Snapshot ' + listValue.id;
+                    var elem = {id: listValue.id, start: timeToDate(listValue.timestamp), content:ctString, type:'box'};
+                    this.setState({snapshots: this.state.snapshots.concat([elem])})
+                }.bind(this));
+            }
+        }
+    }
+
     render() {
         return (
             <div className="App">
@@ -92,14 +123,14 @@ class App extends Component {
 
                 <div className="App-content">
                     <Timeline options={options}
-                              items={getItems()}
+                              items={this.state.snapshots}
                               selectHandler={onSelect}
                     />
                     <div className="content">
                         <Grid>
                             <Row>
                                 <Col xs={3} md={3}>
-                                    <Snapshot list={getItems()} />
+                                    <Snapshot list={this.state.snapshots} />
                                 </Col>
                                 <Col xs={5} md={5} className="mainContent">
                                     <BackupLoader />

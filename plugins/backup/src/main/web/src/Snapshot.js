@@ -19,14 +19,36 @@ import React, { Component } from 'react';
 import './Snapshot.css';
 
 export default class Snapshot extends Component{
+    constructor(props){
+        super(props);
+        this.state = {snapshots: []};
+    }
+
+    componentDidMount(){
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', "http://localhost:8080/database", true);
+        xhr.send();
+
+        xhr.onreadystatechange = processRequest.bind(this);
+
+        function processRequest(e) {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                var elems = JSON.parse(e.target.response);
+
+                this.setState({snapshots: elems})
+            }
+        }
+    }
+
+
     render(){
         return (
             <div className="Snapshot list4">
                 <h1>RocksDB </h1>
                 <br />
                 <ul>
-                    {this.props.list.map(function(listValue){
-                        return <li><a href="#"><strong> {listValue.start.toLocaleString()} </strong> ID: {listValue.id}<br /></a></li>;
+                    {this.state.snapshots.map(function(listValue){
+                        return <li><a href="#"><strong> {new Date(listValue.timestamp*1000).toLocaleString()} </strong> ID: {listValue.id}<br /></a></li>;
                     })}
                 </ul>
             </div>
