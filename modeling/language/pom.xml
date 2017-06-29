@@ -39,6 +39,11 @@
             <artifactId>antlr4-runtime</artifactId>
             <version>${antlr.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.datathings</groupId>
+            <artifactId>greycat</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
     </dependencies>
 
     <build>

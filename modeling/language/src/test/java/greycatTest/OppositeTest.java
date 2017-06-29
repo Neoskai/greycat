@@ -13,35 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package greycat.language;
+package greycatTest;
 
-public class Reference {
+import greycat.language.Checker;
+import greycat.language.Model;
+import org.junit.Test;
 
-    private final String name;
-    private String type;
-    private Opposite opposite;
+import java.io.IOException;
 
-    Reference(String name) {
-        this.name = name;
-    }
-
-    public String name() {
-        return name;
-    }
-
-    public String type() {
-        return type;
-    }
-
-    public Opposite opposite() {
-        return opposite;
-    }
-
-    void setType(String type) {
-        this.type = type;
-    }
-
-    void setOpposite(Opposite opposite) {
-        this.opposite = opposite;
+public class OppositeTest {
+    @Test
+    public void testOpposite() throws IOException {
+        Model model = new Model();
+        model.parseResource("opposite.gcm", this.getClass().getClassLoader());
+        model.consolidate();
+        Checker.check(model);
     }
 }

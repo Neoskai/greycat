@@ -29,6 +29,8 @@ import greycat.TaskHook;
 import greycat.utility.Base64;
 import greycat.utility.KeyHelper;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CoreGraph implements Graph {
@@ -51,6 +53,7 @@ public class CoreGraph implements Graph {
     private final TypeRegistry _typeRegistry;
     private MemoryFactory _memoryFactory;
     private TaskHook[] _taskHooks;
+    private List<Callback<Callback<Boolean>>> _connectHooks;
 
     public CoreGraph(final Storage p_storage, final long memorySize, final long batchSize, final Scheduler p_scheduler, final Plugin[] p_plugins, final boolean deepPriority) {
         //initiate the two registry
@@ -63,6 +66,7 @@ public class CoreGraph implements Graph {
         this._plugins = p_plugins;
         final Graph selfPointer = this;
         //First round, find relevant
+        _connectHooks = new ArrayList<Callback<Callback<Boolean>>>();
         TaskHook[] temp_hooks = new TaskHook[0];
         if (p_plugins != null) {
             for (int i = 0; i < p_plugins.length; i++) {
@@ -70,13 +74,13 @@ public class CoreGraph implements Graph {
                 loopPlugin.start(this);
             }
         }
-        //Second round, initialize all mandatory elements
+        //Third round, initialize all mandatory elements
         _taskHooks = temp_hooks;
         _storage = p_storage;
         _space = _memoryFactory.newSpace(memorySize, batchSize, selfPointer, deepPriority);
         _resolver = new MWResolver(_storage, _space, selfPointer);
         _scheduler = p_scheduler;
-        //Third round, initialize all taskActions and nodeTypes
+        //Fourth round, initialize all taskActions and nodeTypes
         CoreTask.fillDefault(this._actionRegistry);
 
         //Register default Custom Types
@@ -265,6 +269,12 @@ public class CoreGraph implements Graph {
     }
 
     @Override
+    public final Graph addConnectHook(Callback<Callback<Boolean>> onConnect) {
+        _connectHooks.add(onConnect);
+        return this;
+    }
+
+    @Override
     public final <A extends Node> void lookup(long world, long time, long id, Callback<A> callback) {
         if (!_isConnected.get()) {
             throw new RuntimeException(CoreConstants.DISCONNECTED_ERROR);
@@ -404,7 +414,29 @@ public class CoreGraph implements Graph {
                                             payloads.free();
                                             selfPointer._lock.set(true);
                                             if (HashHelper.isDefined(callback)) {
-                                                callback.on(noError);
+                                                if (_connectHooks == null || _connectHooks.size() == 0) {
+                                                    callback.on(noError);
+                                                } else {
+                                                    final Boolean finalNoError = noError;
+                                                    final int cbs_size = _connectHooks.size();
+                                                    final int[] cursor = new int[1];
+                                                    cursor[0] = 0;
+                                                    final Callback[] cbs = new Callback[1];
+                                                    cbs[0] = new Callback<Boolean>() {
+                                                        @Override
+                                                        public void on(final Boolean result) {
+                                                            cursor[0]++;
+                                                            if (cursor[0] < cbs_size) {
+                                                                final Callback<Callback<Boolean>> cb = _connectHooks.get(cursor[0]);
+                                                                cb.on(cbs[0]);
+                                                            } else {
+                                                                callback.on(finalNoError);
+                                                            }
+                                                        }
+                                                    };
+                                                    final Callback<Callback<Boolean>> cb = _connectHooks.get(cursor[0]);
+                                                    cb.on(cbs[0]);
+                                                }
                                             }
                                         } else {
                                             selfPointer._lock.set(true);

@@ -40,6 +40,25 @@ public class Class implements Container {
         return properties.values();
     }
 
+    public final Collection<Object> allProperties() {
+        if (parent == null) {
+            return properties();
+        } else {
+            Map<String, Object> aggregator = new HashMap<String, Object>();
+            aggregator.putAll(this.properties);
+            Class loop_parent = parent;
+            while (loop_parent != null) {
+                loop_parent.properties.forEach((s, o) -> {
+                    if (!aggregator.containsKey(s)) {
+                        aggregator.put(s, o);
+                    }
+                });
+                loop_parent = loop_parent.parent;
+            }
+            return aggregator.values();
+        }
+    }
+
     Attribute getOrCreateAttribute(String name) {
         Object att = properties.get(name);
         if (att == null) {
@@ -78,7 +97,7 @@ public class Class implements Container {
         if (att == null) {
             att = new Reference(name);
             properties.put(name, att);
-        } else if (!(att instanceof Relation)) {
+        } else if (!(att instanceof Reference)) {
             throw new RuntimeException("Property name conflict relation name conflict with " + att);
         }
         return (Reference) att;
@@ -89,7 +108,7 @@ public class Class implements Container {
         if (att == null) {
             att = new Index(name);
             properties.put(name, att);
-        } else if (!(att instanceof Constant)) {
+        } else if (!(att instanceof Index)) {
             throw new RuntimeException("Property name conflict index name conflict with " + att);
         }
         return (Index) att;
@@ -97,7 +116,6 @@ public class Class implements Container {
 
     void setParent(Class parent) {
         //check parent cycle
-        boolean cycle = false;
         Class loop_parent = parent;
         while (loop_parent != null) {
             if (loop_parent == this) {

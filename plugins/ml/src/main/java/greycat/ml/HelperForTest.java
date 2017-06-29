@@ -15,9 +15,6 @@
  */
 package greycat.ml;
 
-/**
- * Created by assaad on 21/06/2017.
- */
 public class HelperForTest {
     public static boolean assertArrayEquals(double[] p1, double[] p2, double eps){
         if(p1.length!=p2.length){

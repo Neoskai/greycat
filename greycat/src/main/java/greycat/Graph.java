@@ -277,4 +277,6 @@ public interface Graph {
 
     Graph addGlobalTaskHook(TaskHook taskHook);
 
+    Graph addConnectHook(Callback<Callback<Boolean>> onConnect);
+
 }

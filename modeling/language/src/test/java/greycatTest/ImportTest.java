@@ -13,35 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package greycat.language;
+package greycatTest;
 
-public class Reference {
+import greycat.language.Checker;
+import greycat.language.Model;
+import org.junit.Assert;
+import org.junit.Test;
 
-    private final String name;
-    private String type;
-    private Opposite opposite;
+public class ImportTest {
 
-    Reference(String name) {
-        this.name = name;
+    @Test
+    public void importTest() throws Exception {
+        Model model = new Model();
+        model.parseResource("import.gcm", this.getClass().getClassLoader());
+        //model.parse(new File("/Users/duke/Documents/datathings/greycat/modeling/language/src/test/resources/import.gcm"));
+        model.consolidate();
+        Checker.check(model);
+        Assert.assertEquals(1, model.classes().length);
+        Assert.assertEquals(1, model.globalConstants().length);
     }
 
-    public String name() {
-        return name;
-    }
-
-    public String type() {
-        return type;
-    }
-
-    public Opposite opposite() {
-        return opposite;
-    }
-
-    void setType(String type) {
-        this.type = type;
-    }
-
-    void setOpposite(Opposite opposite) {
-        this.opposite = opposite;
-    }
 }

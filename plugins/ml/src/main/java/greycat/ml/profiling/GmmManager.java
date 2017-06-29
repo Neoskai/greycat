@@ -19,9 +19,6 @@ import greycat.struct.EGraph;
 import greycat.struct.ENode;
 import greycat.struct.NDManager;
 
-/**
- * Created by assaad on 21/06/2017.
- */
 public class GmmManager implements NDManager {
 
     EGraph _backend;

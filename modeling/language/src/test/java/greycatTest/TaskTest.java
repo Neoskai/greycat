@@ -21,20 +21,12 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class FullParsingTest {
+public class TaskTest {
 
     @Test
     public void testFull() throws IOException {
         Model model = new Model();
-        model.parseStream(this.getClass().getClassLoader().getResourceAsStream("full.gcm"));
-        model.consolidate();
-        Checker.check(model);
-    }
-
-    @Test
-    public void testMedium() throws IOException {
-        Model model = new Model();
-        model.parseStream(this.getClass().getClassLoader().getResourceAsStream("medium.gcm"));
+        model.parseResource("task.gcm", this.getClass().getClassLoader());
         model.consolidate();
         Checker.check(model);
     }

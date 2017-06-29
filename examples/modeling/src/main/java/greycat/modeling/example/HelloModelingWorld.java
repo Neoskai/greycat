@@ -16,6 +16,7 @@
 package greycat.modeling.example;
 
 import greycat.*;
+import greycat.struct.LongLongArrayMap;
 import model.*;
 import model.Constants;
 
@@ -68,6 +69,13 @@ public class HelloModelingWorld {
                     System.out.println("found " + rooms.length + " room with local index");
                 });
 
+                building.findAllLocalIndex(new Callback<Room[]>() {
+                    @Override
+                    public void on(Room[] result) {
+                        System.out.println("findAll local index: " + result.length);
+                    }
+                });
+
                 // global index
                 Buildings.declareIndex(graph, 0, new Callback<Boolean>() {
                     @Override
@@ -75,21 +83,59 @@ public class HelloModelingWorld {
                         Buildings.updateIndex(graph, 0, 0, building, new Callback<Boolean>() {
                             @Override
                             public void on(Boolean result) {
-                                Buildings.find(graph, 0, 0, new Callback<Building[]>() {
+                                Buildings.find(graph, 0, 0, "building", new Callback<Building[]>() {
                                     @Override
                                     public void on(Building[] result) {
-                                        System.out.println("found " + result.length + " building with global index");
+                                        System.out.println("find: found " + result.length + " building with global index");
 
                                     }
-                                }, "building");
+                                });
+                                Buildings.findAll(graph, 0, 0, new Callback<Building[]>() {
+                                    @Override
+                                    public void on(Building[] result) {
+                                        System.out.println("findAll: found " + result.length + " building with global index");
+                                    }
+                                });
                             }
                         });
                     }
                 });
 
-
                 // override constant
                 Constants.CONSTANT_TO_OVERRIDE = "new value";
+
+                // complex types
+                LongLongArrayMap llam = building.getLongToLongArrayMap();
+                llam.put(5, 5);
+                System.out.println(llam.get(5)[0]);
+
+                LongLongArrayMap llam2 = building.getLongToLongArrayMap();
+                System.out.println(llam2.get(5)[0]);
+
+                // opposite relations
+                A a1 = A.create(0, 0, graph);
+                a1.setName("a1");
+                B b1 = B.create(0, 0, graph);
+                b1.setName("b1");
+
+                B b2 = B.create(0, 0, graph);
+                b2.setName("b2");
+
+                a1.addToBRel(b1);
+                b1.getARef(new Callback<A>() {
+                    @Override
+                    public void on(A result) {
+                        System.out.println("opposite found: " + result.getName());
+                    }
+                });
+
+                b2.setARef(a1);
+                a1.getBRel(new Callback<B[]>() {
+                    @Override
+                    public void on(B[] result) {
+                        System.out.println("number of elems in rel: " + result.length);
+                    }
+                });
 
             }
         });

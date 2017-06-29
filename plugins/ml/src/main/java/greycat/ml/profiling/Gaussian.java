@@ -22,9 +22,6 @@ import greycat.struct.DMatrix;
 import greycat.struct.DoubleArray;
 import greycat.struct.Relation;
 
-/**
- * Created by assaad on 20/02/2017.
- */
 public class Gaussian {
     public static final String NULL = "profile_null";
     public static final String REJECT = "profile_reject";

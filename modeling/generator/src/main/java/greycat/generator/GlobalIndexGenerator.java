@@ -15,7 +15,6 @@
  */
 package greycat.generator;
 
-import greycat.language.Attribute;
 import greycat.language.AttributeRef;
 import greycat.language.Index;
 import greycat.language.Model;
@@ -132,7 +131,6 @@ public class GlobalIndexGenerator {
         find.addParameter("Graph", "graph");
         find.addParameter("long", "world");
         find.addParameter("long", "time");
-        find.addParameter("greycat.Callback<" + index.type() + "[]>", "callback");
 
         StringBuilder paramsBuilder = new StringBuilder();
         for (AttributeRef att : index.attributes()) {
@@ -141,23 +139,24 @@ public class GlobalIndexGenerator {
             paramsBuilder.append(",");
         }
         paramsBuilder.deleteCharAt(paramsBuilder.length() - 1);
-
-        StringBuilder findBody = new StringBuilder();
-        findBody.append(" graph.index(world, time, " + indexConstant + ", new Callback<greycat.NodeIndex>() {");
-        findBody.append("@Override\n");
-        findBody.append("public void on(greycat.NodeIndex result) {");
-        findBody.append("result.findFrom(new Callback<greycat.Node[]>() {");
-        findBody.append("@Override\n");
-        findBody.append("public void on(greycat.Node[] result) {");
-        findBody.append(index.type() + "[] typedResult = new " + index.type() + "[result.length];");
-        findBody.append("java.lang.System.arraycopy(result, 0, typedResult, 0, result.length);");
-        findBody.append("callback.on(typedResult);");
-        findBody.append("}");
-        findBody.append("}, " + paramsBuilder.toString() + ");");
-        findBody.append("}");
-        findBody.append("});");
-
+        find.addParameter("greycat.Callback<" + index.type() + "[]>", "callback");
+        StringBuilder findBody = createFindMethodBody(index, indexConstant, paramsBuilder);
         find.setBody(findBody.toString());
+
+        // findAll method
+        MethodSource findAll = javaClass.addMethod()
+                .setName("findAll")
+                .setVisibility(Visibility.PUBLIC)
+                .setReturnTypeVoid()
+                .setFinal(true)
+                .setStatic(true);
+        findAll.addParameter("Graph", "graph");
+        findAll.addParameter("long", "world");
+        findAll.addParameter("long", "time");
+        findAll.addParameter("greycat.Callback<" + index.type() + "[]>", "callback");
+        StringBuilder findAllBody = createFindMethodBody(index, indexConstant, null);
+        findAll.setBody(findAllBody.toString());
+
 
         // update index method
         MethodSource updateIndex = javaClass.addMethod()
@@ -216,5 +215,28 @@ public class GlobalIndexGenerator {
 
         return javaClass;
     }
+
+    private static StringBuilder createFindMethodBody(Index index, String indexConstant, StringBuilder paramsBuilder) {
+        StringBuilder findBody = new StringBuilder();
+        findBody.append(" graph.index(world, time, " + indexConstant + ", new Callback<greycat.NodeIndex>() {");
+        findBody.append("@Override\n");
+        findBody.append("public void on(greycat.NodeIndex result) {");
+        findBody.append("result.findFrom(new Callback<greycat.Node[]>() {");
+        findBody.append("@Override\n");
+        findBody.append("public void on(greycat.Node[] result) {");
+        findBody.append(index.type() + "[] typedResult = new " + index.type() + "[result.length];");
+        findBody.append("java.lang.System.arraycopy(result, 0, typedResult, 0, result.length);");
+        findBody.append("callback.on(typedResult);");
+        findBody.append("}");
+        if (paramsBuilder == null) {
+            findBody.append("});");
+        } else {
+            findBody.append("}, " + paramsBuilder.toString() + ");");
+        }
+        findBody.append("}");
+        findBody.append("});");
+        return findBody;
+    }
+
 
 }

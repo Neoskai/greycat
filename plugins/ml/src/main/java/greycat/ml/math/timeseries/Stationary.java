@@ -15,9 +15,6 @@
  */
 package greycat.ml.math.timeseries;
 
-/**
- * Created by assaad on 20/06/2017.
- */
 public class Stationary {
 
 

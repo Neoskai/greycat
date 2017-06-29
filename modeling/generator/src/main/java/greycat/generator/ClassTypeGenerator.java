@@ -16,7 +16,6 @@
 package greycat.generator;
 
 import greycat.Graph;
-import greycat.Index;
 import greycat.Type;
 import greycat.language.*;
 import greycat.language.Class;
@@ -40,30 +39,24 @@ class ClassTypeGenerator {
         final JavaClassSource javaClass = Roaster.create(JavaClassSource.class);
         javaClass.setPackage(packageName);
         javaClass.setName(classType.name());
-
         if (classType.parent() != null) {
             javaClass.setSuperType(packageName + "." + classType.parent().name());
         } else {
             javaClass.setSuperType("greycat.base.BaseNode");
         }
 
-        // constants
+        StringBuilder TS_GET_SET = new StringBuilder();
         classType.properties().forEach(o -> {
-            if (o instanceof Constant) {
-                Constant constant = (Constant) o;
-                String value = constant.value();
-                if (!constant.type().equals("String")) {
-                    value = value.replaceAll("\"", "");
+            if(o instanceof Attribute){
+                Attribute attribute = (Attribute) o;
+                if(TypeManager.isPrimitive(attribute.type())){
+                    TS_GET_SET.append("get "+attribute.name()+"() : "+TypeManager.cassTsName(attribute.type())+" {return this.get"+Generator.upperCaseFirstChar(attribute.name())+"();}\n");
+                    TS_GET_SET.append("set "+attribute.name()+"(p : "+TypeManager.cassTsName(attribute.type())+"){ this.set"+Generator.upperCaseFirstChar(attribute.name())+"(p);}\n");
                 }
-                javaClass.addField()
-                        .setVisibility(Visibility.PUBLIC)
-                        .setFinal(true)
-                        .setName(constant.name())
-                        .setType(TypeManager.cassName(constant.type()))
-                        .setLiteralInitializer(value)
-                        .setStatic(true);
             }
         });
+        //generate TS getter and setter
+        javaClass.getJavaDoc().setFullText("<pre>{@extend ts\n"+TS_GET_SET+"\n}\n</pre>");
 
         // create method
         MethodSource<JavaClassSource> create = javaClass.addMethod()
@@ -99,7 +92,21 @@ class ClassTypeGenerator {
 
         // attributes
         classType.properties().forEach(o -> {
-            if (o instanceof Attribute) {
+            // constants
+            if (o instanceof Constant) {
+                Constant constant = (Constant) o;
+                String value = constant.value();
+                if (!constant.type().equals("String")) {
+                    value = value.replaceAll("\"", "");
+                }
+                javaClass.addField()
+                        .setVisibility(Visibility.PUBLIC)
+                        .setFinal(true)
+                        .setName(constant.name())
+                        .setType(TypeManager.cassName(constant.type()))
+                        .setLiteralInitializer(value)
+                        .setStatic(true);
+            } else if (o instanceof Attribute) {
                 Attribute att = (Attribute) o;
                 javaClass.addField()
                         .setVisibility(Visibility.PUBLIC)
@@ -133,14 +140,16 @@ class ClassTypeGenerator {
                 }
 
                 // setter
-                javaClass.addMethod()
-                        .setVisibility(Visibility.PUBLIC).setFinal(true)
-                        .setName("set" + Generator.upperCaseFirstChar(att.name()))
-                        .setReturnType(classType.name())
-                        .setBody("super.set(" + att.name().toUpperCase() + ", " + att.name().toUpperCase()
-                                + "_TYPE,value);\nreturn this;"
-                        )
-                        .addParameter(TypeManager.cassName(att.type()), "value");
+                if (TypeManager.isPrimitive(att.type())) {
+                    javaClass.addMethod()
+                            .setVisibility(Visibility.PUBLIC).setFinal(true)
+                            .setName("set" + Generator.upperCaseFirstChar(att.name()))
+                            .setReturnType(classType.name())
+                            .setBody("super.set(" + att.name().toUpperCase() + ", " + att.name().toUpperCase()
+                                    + "_TYPE,value);\nreturn this;"
+                            )
+                            .addParameter(TypeManager.cassName(att.type()), "value");
+                }
             } else if (o instanceof Relation) {
                 Relation rel = (Relation) o;
                 // field
@@ -164,11 +173,15 @@ class ClassTypeGenerator {
                         "this.traverse(" + rel.name().toUpperCase() + ",new greycat.Callback<greycat.Node[]>() {\n" +
                                 "@Override\n" +
                                 "public void on(greycat.Node[] nodes) {\n" +
+                                "if(nodes != null) {\n" +
                                 resultType + "[] result = new " + resultType + "[nodes.length];\n" +
                                 "for(int i=0;i<result.length;i++) {\n" +
                                 "result[i] = (" + resultType + ") nodes[i];\n" +
                                 "}\n" +
-                                "callback.on(result);" +
+                                "callback.on(result);\n" +
+                                "} else {\n" +
+                                "callback.on(new " + resultType + "[0]);\n" +
+                                "}\n" +
                                 "}\n" +
                                 "});"
                 );
@@ -181,6 +194,13 @@ class ClassTypeGenerator {
                 add.setReturnType(classType.name());
                 add.addParameter(rel.type(), "value");
                 addToBodyBuilder.append("super.addToRelation(").append(rel.name().toUpperCase()).append(", value);");
+                if (rel.opposite() != null) {
+                    String oppositeName = rel.opposite().isReference() ? rel.opposite().reference().name() : rel.opposite().relation().name();
+                    if (rel.opposite().isReference()) {
+                        addToBodyBuilder.append("value.removeFromRelation(").append(rel.type()).append(".").append(oppositeName.toUpperCase()).append(", this);");
+                    }
+                    addToBodyBuilder.append("value.addToRelation(").append(rel.type()).append(".").append(oppositeName.toUpperCase()).append(", this);");
+                }
                 addToBodyBuilder.append("return this;");
                 add.setBody(addToBodyBuilder.toString());
 
@@ -192,6 +212,10 @@ class ClassTypeGenerator {
                 remove.setReturnType(classType.name());
                 remove.addParameter(rel.type(), "value");
                 removeFromBodyBuilder.append("super.removeFromRelation(").append(rel.name().toUpperCase()).append(", value);");
+                if (rel.opposite() != null) {
+                    String oppositeName = rel.opposite().isReference() ? rel.opposite().reference().name() : rel.opposite().relation().name();
+                    removeFromBodyBuilder.append("value.removeFromRelation(").append(rel.type()).append(".").append(oppositeName.toUpperCase()).append(", this);");
+                }
                 removeFromBodyBuilder.append("return this;");
                 remove.setBody(removeFromBodyBuilder.toString());
             } else if (o instanceof Reference) {
@@ -217,8 +241,12 @@ class ClassTypeGenerator {
                         "this.traverse(" + ref.name().toUpperCase() + ",new greycat.Callback<greycat.Node[]>() {\n" +
                                 "@Override\n" +
                                 "public void on(greycat.Node[] nodes) {\n" +
+                                "if(nodes != null) {\n" +
                                 resultType + " result = (" + resultType + ") nodes[0];\n" +
-                                "callback.on(result);" +
+                                "callback.on(result);\n" +
+                                "} else {\n" +
+                                "callback.on(null);\n" +
+                                "}\n" +
                                 "}\n" +
                                 "});"
                 );
@@ -232,6 +260,13 @@ class ClassTypeGenerator {
                 addToBodyBuilder.append("if(value != null) {");
                 addToBodyBuilder.append("super.removeFromRelation(").append(ref.name().toUpperCase()).append(", value );");
                 addToBodyBuilder.append("super.addToRelation(").append(ref.name().toUpperCase()).append(", value );");
+                if (ref.opposite() != null) {
+                    String oppositeName = ref.opposite().isReference() ? ref.opposite().reference().name() : ref.opposite().relation().name();
+                    if (ref.opposite().isReference()) {
+                        addToBodyBuilder.append("value.removeFromRelation(").append(ref.type()).append(".").append(oppositeName.toUpperCase()).append(", this);");
+                    }
+                    addToBodyBuilder.append("value.addToRelation(").append(ref.type()).append(".").append(oppositeName.toUpperCase()).append(", this);");
+                }
                 addToBodyBuilder.append("}");
                 addToBodyBuilder.append("return this;");
                 add.setBody(addToBodyBuilder.toString());
@@ -286,8 +321,8 @@ class ClassTypeGenerator {
                 indexBodyBuilder.append("if (index == null) {");
                 indexBodyBuilder.append("index = (greycat.Index) this.getOrCreate(" + indexConstant + ", Type.INDEX);");
                 indexBodyBuilder.append("index.declareAttributes(null, " + indexedAttBuilder.toString() + ");");
-                indexBodyBuilder.append("index.update(" + li.type().toLowerCase() + ");");
                 indexBodyBuilder.append("}");
+                indexBodyBuilder.append("index.update(" + li.type().toLowerCase() + ");");
                 indexBodyBuilder.append("return index;");
 
                 indexMethod.setBody(indexBodyBuilder.toString());
@@ -317,26 +352,23 @@ class ClassTypeGenerator {
                     find.addParameter("String", indexedAtt.ref().name());
                 }
                 find.addParameter("greycat.Callback<" + li.type() + "[]>", "callback");
-                StringBuilder findBodyBuilder = new StringBuilder();
-                findBodyBuilder.append("greycat.Index index = this.getIndex(" + indexConstant + ");\n");
-                findBodyBuilder.append("if (index != null) {");
-                findBodyBuilder.append("index.find(new Callback<greycat.Node[]>() {");
-                findBodyBuilder.append("@Override\n");
-                findBodyBuilder.append("public void on(greycat.Node[] result) {");
-                findBodyBuilder.append(li.type() + "[] typedResult = new " + li.type() + "[result.length];");
-                findBodyBuilder.append("java.lang.System.arraycopy(result, 0, typedResult, 0, result.length);");
-                findBodyBuilder.append("callback.on(typedResult);");
-                findBodyBuilder.append("}");
-                findBodyBuilder.append("},");
-                findBodyBuilder.append("this.world(), this.time(),");
+                StringBuilder paramsBuilder = new StringBuilder();
                 for (AttributeRef indexedAtt : li.attributes()) {
-                    findBodyBuilder.append(indexedAtt.ref().name() + ",");
+                    paramsBuilder.append(indexedAtt.ref().name() + ",");
                 }
-                findBodyBuilder.deleteCharAt(findBodyBuilder.length() - 1);
-                findBodyBuilder.append(");");
-                findBodyBuilder.append("}");
-
+                paramsBuilder.deleteCharAt(paramsBuilder.length() - 1);
+                StringBuilder findBodyBuilder = createFindMethodBody(li, indexConstant, paramsBuilder);
                 find.setBody(findBodyBuilder.toString());
+
+                // findAll method
+                MethodSource<JavaClassSource> findAll = javaClass.addMethod();
+                findAll.setVisibility(Visibility.PUBLIC).setFinal(true);
+                findAll.setName("findAll" + Generator.upperCaseFirstChar(indexName));
+                findAll.setReturnTypeVoid();
+                findAll.addParameter("greycat.Callback<" + li.type() + "[]>", "callback");
+                paramsBuilder = new StringBuilder("null");
+                StringBuilder findAllBodyBuilder = createFindMethodBody(li, indexConstant, paramsBuilder);
+                findAll.setBody(findAllBodyBuilder.toString());
             }
 
         });
@@ -344,6 +376,29 @@ class ClassTypeGenerator {
         return javaClass;
     }
 
+    private static StringBuilder createFindMethodBody(Index li, String indexConstant, StringBuilder paramsBuilder) {
+        StringBuilder findBodyBuilder = new StringBuilder();
+
+        findBodyBuilder.append("greycat.Index index = this.getIndex(" + indexConstant + ");\n");
+        findBodyBuilder.append("if (index != null) {");
+        findBodyBuilder.append("index.find(new Callback<greycat.Node[]>() {");
+        findBodyBuilder.append("@Override\n");
+        findBodyBuilder.append("public void on(greycat.Node[] result) {");
+        findBodyBuilder.append(li.type() + "[] typedResult = new " + li.type() + "[result.length];");
+        findBodyBuilder.append("java.lang.System.arraycopy(result, 0, typedResult, 0, result.length);");
+        findBodyBuilder.append("callback.on(typedResult);");
+        findBodyBuilder.append("}");
+        findBodyBuilder.append("},");
+        findBodyBuilder.append("this.world(), this.time(),");
+        findBodyBuilder.append(paramsBuilder.toString());
+        findBodyBuilder.append(");");
+        findBodyBuilder.append("}");
+        findBodyBuilder.append("else {");
+        findBodyBuilder.append("callback.on(null);");
+        findBodyBuilder.append("}");
+
+        return findBodyBuilder;
+    }
 
 }
 

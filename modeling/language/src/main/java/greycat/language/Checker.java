@@ -15,6 +15,8 @@
  */
 package greycat.language;
 
+import static greycat.Tasks.newTask;
+
 public class Checker {
 
     public static void check(Model model) {
@@ -26,9 +28,28 @@ public class Checker {
                     if (attribute.type() == null) {
                         throw new RuntimeException("Untyped attribute " + attribute.name() + " contained in " + attribute.parent());
                     }
+                } else if (o instanceof Constant) {
+                    final Constant constant = (Constant) o;
+                    if (constant.type().equals("Task") && constant.value() != null) {
+                        checkTask(constant.value());
+                    }
                 }
             });
         });
+        model.constants.values().forEach(constant -> {
+            if (constant.type().equals("Task") && constant.value() != null) {
+                checkTask(constant.value());
+            }
+        });
+    }
+
+    private static void checkTask(String value) {
+        try {
+            greycat.Task t = newTask().parse(value, null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Task parsing error");
+        }
     }
 
 }

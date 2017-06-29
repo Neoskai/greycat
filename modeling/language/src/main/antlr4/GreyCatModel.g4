@@ -25,12 +25,12 @@ NUMBER : [\-]?[0-9]+'.'?[0-9]*;
 WS : ([ \t\r\n]+ | SL_COMMENT) -> skip ; // skip spaces, tabs, newlines
 SL_COMMENT :  '//' ~('\r' | '\n')* ;
 
-modelDcl: (constDcl | classDcl | globalIndexDcl | customTypeDcl)*;
-
+modelDcl: (constDcl | classDcl | globalIndexDcl | customTypeDcl | importDcl)*;
+importDcl: 'import' STRING;
 constDcl: 'const' name=IDENT ':' typeDcl ('=' constValueDcl)?;
 constValueDcl: (simpleValueDcl | taskValueDcl);
-simpleValueDcl: (IDENT | STRING);
-taskValueDcl: actionValueDcl ('.' actionValueDcl);
+simpleValueDcl: (IDENT | STRING | NUMBER);
+taskValueDcl: actionValueDcl ('.' actionValueDcl)*;
 actionValueDcl: IDENT ('(' actionParam* ')')?;
 actionParam: STRING | NUMBER | subTask;
 subTask: '{' taskValueDcl '}';
@@ -40,15 +40,16 @@ parentDcl: 'extends' IDENT;
 attributeDcl: 'att' name=IDENT ':' typeDcl;
 typeDcl: (builtInTypeDcl | customBuiltTypeDcl);
 customBuiltTypeDcl: IDENT;
-builtInTypeDcl: ('Bool' | 'String' | 'Long' | 'Int' | 'Double' |
+builtInTypeDcl: ('Bool' | 'Boolean' | 'String' | 'Long' | 'Int' | 'Integer' | 'Double' |
                 'DoubleArray' | 'LongArray' | 'IntArray' | 'StringArray' |
                 'LongToLongMap' | 'LongToLongArrayMap' | 'StringToIntMap'|
                 'DMatrix' |'LMatrix' |'EGraph' |'ENode' | 'KDTree' | 'NDTree' |
                 'IntToIntMap' | 'IntToStringMap' | 'Task' | 'TaskArray' | 'Node');
-relationDcl: 'rel' name=IDENT ':' type=IDENT;
-referenceDcl : 'ref' name=IDENT ':' type=IDENT;
+relationDcl: 'rel' name=IDENT ':' type=IDENT (oppositeDcl)?;
+referenceDcl: 'ref' name=IDENT ':' type=IDENT (oppositeDcl)?;
+oppositeDcl: 'oppositeOf' name=IDENT;
 
-localIndexDcl: 'index' name=IDENT ':' type=IDENT 'using' indexAttributesDcl;
+localIndexDcl: 'index' name=IDENT ':' type=IDENT 'using' indexAttributesDcl (oppositeDcl)?;
 indexAttributesDcl: IDENT (',' IDENT)*;
 
 globalIndexDcl: 'index' name=IDENT ':' type=IDENT 'using' indexAttributesDcl;

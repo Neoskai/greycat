@@ -276,6 +276,11 @@ public class QueryTest implements Resolver, Graph {
     }
 
     @Override
+    public Graph addConnectHook(Callback<Callback<Boolean>> onConnect) {
+        return null;
+    }
+
+    @Override
     public NodeState resolveState(Node node) {
         return null;
     }

@@ -15,19 +15,16 @@
  */
 package greycat.language;
 
-import org.antlr.v4.runtime.ANTLRFileStream;
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.BufferedTokenStream;
-import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.*;
 
 public class Model {
 
@@ -44,11 +41,46 @@ public class Model {
     }
 
     public void parse(File content) throws Exception {
-        build(new ANTLRFileStream(content.getAbsolutePath()));
+        internal_parse(CharStreams.fromFileName(content.getAbsolutePath()), new Resolver() {
+            @Override
+            public CharStream resolver(String name) {
+                try {
+                    File subFile = new File(content.getParentFile().getCanonicalFile(), name);
+                    if (subFile.exists()) {
+                        return CharStreams.fromFileName(subFile.getAbsolutePath());
+                    } else {
+                        subFile = new File(content.getParentFile().getCanonicalFile(), name + ".gcm");
+                        if (subFile.exists()) {
+                            return CharStreams.fromFileName(subFile.getAbsolutePath());
+                        } else {
+                            return null;
+                        }
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return null;
+                }
+            }
+        });
     }
 
-    public void parseStream(InputStream is) throws IOException {
-        build(new ANTLRInputStream(is));
+    public void parseResource(String name, ClassLoader classLoader) throws IOException {
+        InputStream is = classLoader.getResourceAsStream(name);
+        Resolver resolver = new Resolver() {
+            @Override
+            public CharStream resolver(String name) {
+                InputStream sub = classLoader.getResourceAsStream(name);
+                if (sub != null) {
+                    try {
+                        return CharStreams.fromStream(sub);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                return null;
+            }
+        };
+        internal_parse(CharStreams.fromStream(is), resolver);
     }
 
     public Constant[] globalConstants() {
@@ -67,10 +99,61 @@ public class Model {
         return classes.values().toArray(new Class[classes.size()]);
     }
 
-    private void build(ANTLRInputStream in) {
+    private Set<String> alreadyLoaded = new HashSet<String>();
+
+    private MessageDigest md;
+
+    interface Resolver {
+        CharStream resolver(String name);
+    }
+
+    private static String convertToHex(byte[] data) {
+        StringBuilder buf = new StringBuilder();
+        for (int i = 0; i < data.length; i++) {
+            int halfbyte = (data[i] >>> 4) & 0x0F;
+            int two_halfs = 0;
+            do {
+                if ((0 <= halfbyte) && (halfbyte <= 9))
+                    buf.append((char) ('0' + halfbyte));
+                else
+                    buf.append((char) ('a' + (halfbyte - 10)));
+                halfbyte = data[i] & 0x0F;
+            } while (two_halfs++ < 1);
+        }
+        return buf.toString();
+    }
+
+    private void internal_parse(CharStream in, Resolver resolver) {
+        if (md == null) {
+            try {
+                md = MessageDigest.getInstance("SHA-1");
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+            }
+        }
+        String sha1 = convertToHex(md.digest(in.getText(new Interval(0, in.size())).getBytes()));
+        if (alreadyLoaded.contains(sha1)) {
+            return;
+        } else {
+            //circular dependency protection
+            alreadyLoaded.add(sha1);
+        }
         BufferedTokenStream tokens = new CommonTokenStream(new GreyCatModelLexer(in));
         GreyCatModelParser parser = new GreyCatModelParser(tokens);
         GreyCatModelParser.ModelDclContext modelDclCtx = parser.modelDcl();
+        //first subImport
+        modelDclCtx.importDcl().forEach(importDclContext -> {
+            String subPath = importDclContext.STRING().getText().replace("\"", "");
+            CharStream subStream = resolver.resolver(subPath);
+            if (subStream == null) {
+                throw new RuntimeException("Import not resolved " + subPath);
+            }
+            try {
+                internal_parse(subStream, resolver);
+            } catch (Exception e) {
+                throw new RuntimeException("Parse Error while parsing " + subPath, e);
+            }
+        });
         // constants
         for (GreyCatModelParser.ConstDclContext constDclCtx : modelDclCtx.constDcl()) {
             String const_name = constDclCtx.name.getText();
@@ -139,6 +222,48 @@ public class Model {
                 constant.setValue(value);
             }
         }
+
+        // opposite management
+        for (GreyCatModelParser.ClassDclContext classDclCtx : modelDclCtx.classDcl()) {
+            String classFqn = classDclCtx.name.getText();
+            Class classType = classes.get(classFqn);
+
+            // relations
+            for (GreyCatModelParser.RelationDclContext relDclCtx : classDclCtx.relationDcl()) {
+                if (relDclCtx.oppositeDcl() != null) {
+                    Relation rel = (Relation) classType.properties.get(relDclCtx.name.getText());
+                    Class oppositeClass = classes.get(rel.type());
+                    Object oppositeProperty = oppositeClass.properties.get(relDclCtx.oppositeDcl().name.getText());
+                    if (oppositeProperty instanceof Relation) {
+                        Relation oppositeRel = (Relation) oppositeProperty;
+                        rel.setOpposite(new Opposite(oppositeRel));
+                        oppositeRel.setOpposite(new Opposite(rel));
+                    } else if (oppositeProperty instanceof Reference) {
+                        Reference oppositeRef = (Reference) oppositeProperty;
+                        rel.setOpposite(new Opposite(oppositeRef));
+                        oppositeRef.setOpposite(new Opposite(rel));
+                    }
+                }
+            }
+            // references
+            for (GreyCatModelParser.ReferenceDclContext refDclCtx : classDclCtx.referenceDcl()) {
+                if (refDclCtx.oppositeDcl() != null) {
+                    Reference ref = (Reference) classType.properties.get(refDclCtx.name.getText());
+                    Class oppositeClass = classes.get(ref.type());
+                    Object oppositeProperty = oppositeClass.properties.get(refDclCtx.oppositeDcl().name.getText());
+                    if (oppositeProperty instanceof Relation) {
+                        Relation oppositeRel = (Relation) oppositeProperty;
+                        ref.setOpposite(new Opposite(oppositeRel));
+                        oppositeRel.setOpposite(new Opposite(ref));
+                    } else if (oppositeProperty instanceof Reference) {
+                        Reference oppositeRef = (Reference) oppositeProperty;
+                        ref.setOpposite(new Opposite(oppositeRef));
+                        oppositeRef.setOpposite(new Opposite(ref));
+                    }
+                }
+            }
+        }
+
         // indexes
         for (GreyCatModelParser.GlobalIndexDclContext globalIdxDclContext : modelDclCtx.globalIndexDcl()) {
             final String name = globalIdxDclContext.name.getText();
