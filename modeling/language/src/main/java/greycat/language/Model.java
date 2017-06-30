@@ -188,6 +188,9 @@ public class Model {
                 String name = attDcl.name.getText();
                 final Attribute attribute = newClass.getOrCreateAttribute(name);
                 attribute.setType(getType(attDcl.typeDcl()));
+                if (attDcl.attributeValueDcl() != null) {
+                    attribute.setValue(getAttributeValue(attDcl.attributeValueDcl()));
+                }
             }
             // relations
             for (GreyCatModelParser.RelationDclContext relDclCtx : classDclCtx.relationDcl()) {
@@ -234,14 +237,10 @@ public class Model {
                     Relation rel = (Relation) classType.properties.get(relDclCtx.name.getText());
                     Class oppositeClass = classes.get(rel.type());
                     Object oppositeProperty = oppositeClass.properties.get(relDclCtx.oppositeDcl().name.getText());
-                    if (oppositeProperty instanceof Relation) {
-                        Relation oppositeRel = (Relation) oppositeProperty;
-                        rel.setOpposite(new Opposite(oppositeRel));
-                        oppositeRel.setOpposite(new Opposite(rel));
-                    } else if (oppositeProperty instanceof Reference) {
-                        Reference oppositeRef = (Reference) oppositeProperty;
-                        rel.setOpposite(new Opposite(oppositeRef));
-                        oppositeRef.setOpposite(new Opposite(rel));
+                    if (oppositeProperty instanceof Edge) {
+                        Edge opposite = (Edge) oppositeProperty;
+                        rel.setOpposite(new Opposite(opposite));
+                        opposite.setOpposite(new Opposite(rel));
                     }
                 }
             }
@@ -251,14 +250,23 @@ public class Model {
                     Reference ref = (Reference) classType.properties.get(refDclCtx.name.getText());
                     Class oppositeClass = classes.get(ref.type());
                     Object oppositeProperty = oppositeClass.properties.get(refDclCtx.oppositeDcl().name.getText());
-                    if (oppositeProperty instanceof Relation) {
-                        Relation oppositeRel = (Relation) oppositeProperty;
-                        ref.setOpposite(new Opposite(oppositeRel));
-                        oppositeRel.setOpposite(new Opposite(ref));
-                    } else if (oppositeProperty instanceof Reference) {
-                        Reference oppositeRef = (Reference) oppositeProperty;
-                        ref.setOpposite(new Opposite(oppositeRef));
-                        oppositeRef.setOpposite(new Opposite(ref));
+                    if (oppositeProperty instanceof Edge) {
+                        Edge opposite = (Edge) oppositeProperty;
+                        ref.setOpposite(new Opposite(opposite));
+                        opposite.setOpposite(new Opposite(ref));
+                    }
+                }
+            }
+            // local indexes
+            for (GreyCatModelParser.LocalIndexDclContext idxDclCtx : classDclCtx.localIndexDcl()) {
+                if (idxDclCtx.oppositeDcl() != null) {
+                    Index idx = (Index) classType.properties.get(idxDclCtx.name.getText());
+                    Class oppositeClass = classes.get(idx.type());
+                    Object oppositeProperty = oppositeClass.properties.get(idxDclCtx.oppositeDcl().name.getText());
+                    if (oppositeProperty instanceof Edge) {
+                        Edge opposite = (Edge) oppositeProperty;
+                        idx.setOpposite(new Opposite(opposite));
+                        opposite.setOpposite(new Opposite(idx));
                     }
                 }
             }
@@ -301,6 +309,7 @@ public class Model {
                     }
                 }
                 constant.setValue(value);
+
             }
         }
     }
@@ -361,4 +370,50 @@ public class Model {
         return ct;
     }
 
+    private List<List<Object>> getAttributeValue(GreyCatModelParser.AttributeValueDclContext attValueDclCtx) {
+        List<List<Object>> attValues = new ArrayList<List<Object>>();
+
+        if (attValueDclCtx.complexAttributeValueDcl() != null) {
+            for (GreyCatModelParser.ComplexValueDclContext cvDclCtx : attValueDclCtx.complexAttributeValueDcl().complexValueDcl()) {
+                if (cvDclCtx.ntupleValueDlc() != null) {
+                    List<Object> identTuples = new ArrayList<Object>();
+                    for (TerminalNode ident : cvDclCtx.ntupleValueDlc().IDENT()) {
+                        identTuples.add(ident.getText());
+                    }
+                    attValues.add(identTuples);
+
+                    List<Object> strTuples = new ArrayList<Object>();
+                    for (TerminalNode str : cvDclCtx.ntupleValueDlc().STRING()) {
+                        strTuples.add(str.getText());
+                    }
+                    attValues.add(strTuples);
+
+                    List<Object> nbTuples = new ArrayList<Object>();
+                    for (TerminalNode nb : cvDclCtx.ntupleValueDlc().NUMBER()) {
+                        nbTuples.add(nb.getText());
+                    }
+                    attValues.add(nbTuples);
+
+                } else if (cvDclCtx.IDENT() != null) {
+                    attValues.add(Arrays.asList(cvDclCtx.IDENT().getText()));
+
+                } else if (cvDclCtx.STRING() != null) {
+                    attValues.add(Arrays.asList(cvDclCtx.STRING().getText()));
+
+                } else if (cvDclCtx.NUMBER() != null) {
+                    attValues.add(Arrays.asList(cvDclCtx.NUMBER().getText()));
+                }
+            }
+
+        } else if (attValueDclCtx.IDENT() != null) {
+            attValues.add(Arrays.asList(attValueDclCtx.IDENT().getText()));
+
+        } else if (attValueDclCtx.STRING() != null) {
+            attValues.add(Arrays.asList(attValueDclCtx.STRING().getText()));
+
+        } else if (attValueDclCtx.NUMBER() != null) {
+            attValues.add(Arrays.asList(attValueDclCtx.NUMBER().getText()));
+        }
+        return attValues;
+    }
 }

@@ -125,9 +125,9 @@ public class CustomTypeGenerator {
                         .setName("set" + Generator.upperCaseFirstChar(att.name()))
                         .setVisibility(Visibility.PUBLIC)
                         .setFinal(true)
-                        .setReturnTypeVoid()
+                        .setReturnType(customType.name())
                         .setBody("setAt(" + att.name().toUpperCase() + "_H," +
-                                "greycat." + TypeManager.typeName(att.type()) + "," + att.name() + ");")
+                                "greycat." + TypeManager.typeName(att.type()) + "," + att.name() + ");\nreturn this;")
                         .addParameter(TypeManager.cassName(att.type()), att.name());
 
             }
@@ -136,7 +136,7 @@ public class CustomTypeGenerator {
 
         // constructor
         MethodSource<JavaClassSource> constructor = javaClass.addMethod().setConstructor(true);
-        constructor.addParameter("greycat.struct.EGraph", "e");
+        constructor.addParameter("greycat.struct.EStructArray", "e");
         StringBuilder constructorBody = new StringBuilder();
         constructorBody.append("super(e);");
         constructor.setBody(constructorBody.toString());

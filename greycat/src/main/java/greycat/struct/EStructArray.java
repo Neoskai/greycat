@@ -15,37 +15,29 @@
  */
 package greycat.struct;
 
-import greycat.Container;
-import greycat.plugin.NodeStateCallback;
+import greycat.Graph;
 
-public interface ENode extends Container {
+public interface EStructArray {
 
-    /*
-    ENode set(String name, byte type, Object value);
+    EStruct root();
 
-    ENode setAt(int key, byte type, Object value);
+    EStruct newEStruct();
 
-    Object get(String name);
+    EStruct estruct(int index);
 
-    Object getAt(int key);
+    EStructArray setRoot(EStruct eStruct);
 
-    <A> A getWithDefault(String key, A defaultValue);
+    EStructArray drop(EStruct eStruct);
 
-    <A> A getAtWithDefault(int key, A defaultValue);
+    int size();
 
-    Object getOrCreate(final String key, final byte type);
+    /**
+     * Tag the object to be freed from the memory.
+     * Warning this method is not a clear EStructArray and is not supposed to be called manually in case of EStructArray attached to a GreyCat Node.
+     * This method is mainly for volatile EStructArray usages.
+     */
+    void free();
 
-    Object getOrCreateAt(final int key, final byte type);
-    */
-
-    void drop();
-
-    EGraph egraph();
-
-    void each(final NodeStateCallback callBack);
-
-    ENode clear();
-
-    int id();
+    Graph graph();
 
 }

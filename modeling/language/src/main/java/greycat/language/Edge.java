@@ -13,14 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package greycatTest.internal.heap;
+package greycat.language;
 
-import greycat.internal.heap.HeapMemoryFactory;
-import greycatTest.internal.chunk.AbstractEGraphTest;
+public interface Edge {
+    Opposite opposite();
 
-public class HeapEGraphTest extends AbstractEGraphTest {
+    void setOpposite(Opposite opposite);
 
-    public HeapEGraphTest() {
-        super(new HeapMemoryFactory());
-    }
 }

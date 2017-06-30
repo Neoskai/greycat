@@ -37,6 +37,9 @@ public class HelloModelingWorld {
                 building.setName("building");
                 System.out.println("building name " + building.getName());
 
+                // default values
+                System.out.println("houseNumber " + building.getHouseNumber());
+
                 Room r1 = Room.create(0, 0, graph);
                 r1.setName("room_1");
                 Room r2 = Room.create(0, 0, graph);
@@ -133,7 +136,9 @@ public class HelloModelingWorld {
                 a1.getBRel(new Callback<B[]>() {
                     @Override
                     public void on(B[] result) {
-                        System.out.println("number of elems in rel: " + result.length);
+                        for (B b : result) {
+                            System.out.println(b.getName());
+                        }
                     }
                 });
 

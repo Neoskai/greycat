@@ -16,6 +16,7 @@
 package greycat.internal.heap;
 
 import greycat.*;
+import greycat.base.BaseCustomType;
 import greycat.chunk.ChunkType;
 import greycat.chunk.StateChunk;
 import greycat.internal.CoreConstants;
@@ -175,8 +176,8 @@ class HeapStateChunk implements StateChunk, HeapContainer {
                     case Type.RELATION:
                     case Type.DMATRIX:
                     case Type.LMATRIX:
-                    case Type.EGRAPH:
-                    case Type.ENODE:
+                    case Type.ESTRUCT_ARRAY:
+                    case Type.ESTRUCT:
                     case Type.ERELATION:
                     case Type.TASK:
                     case Type.TASK_ARRAY:
@@ -187,9 +188,9 @@ class HeapStateChunk implements StateChunk, HeapContainer {
                         return result;
                         /*
                     case Type.NDTREE:
-                        return new NDTree((EGraph) result, new IndexManager());
+                        return new NDTree((EStructArray) result, new IndexManager());
                     case Type.KDTREE:
-                        return new KDTree((EGraph) result);
+                        return new KDTree((EStructArray) result);
                         */
                     default:
                         if (p_raw) {
@@ -199,7 +200,7 @@ class HeapStateChunk implements StateChunk, HeapContainer {
                             if (declaration == null) {
                                 return result;
                             } else {
-                                return declaration.factory().wrap((EGraph) result);
+                                return declaration.factory().wrap((EStructArray) result);
                             }
                         }
                 }
@@ -293,6 +294,16 @@ class HeapStateChunk implements StateChunk, HeapContainer {
     }
 
     @Override
+    public final Object getOrCreateCustom(final String name, final String typeName) {
+        return getOrCreateAt(HashHelper.hash(name), HashHelper.hash(typeName));
+    }
+
+    @Override
+    public final Object getOrCreateCustomAt(final int index, final String typeName) {
+        return getOrCreateAt(index, HashHelper.hash(typeName));
+    }
+
+    @Override
     public synchronized final Object getOrCreateAt(final int p_key, final int p_type) {
         final int found = internal_find(p_key);
         if (found != -1) {
@@ -354,18 +365,18 @@ class HeapStateChunk implements StateChunk, HeapContainer {
                 toSet = new HeapLongLongArrayMap(this);
                 toGet = toSet;
                 break;
-            case Type.EGRAPH:
-                toSet = new HeapEGraph(this, null, _space.graph());
+            case Type.ESTRUCT_ARRAY:
+                toSet = new HeapEStructArray(this, null, _space.graph());
                 toGet = toSet;
                 break;
                 /*
             case Type.KDTREE:
-                EGraph tempKD = new HeapEGraph(this, null, _space.graph());
+                EStructArray tempKD = new HeapEStructArray(this, null, _space.graph());
                 toSet = tempKD;
                 toGet = new KDTree(tempKD);
                 break;
             case Type.NDTREE:
-                EGraph tempND = new HeapEGraph(this, null, _space.graph());
+                EStructArray tempND = new HeapEStructArray(this, null, _space.graph());
                 toSet = tempND;
                 toGet = new NDTree(tempND, new IndexManager());
                 break;
@@ -373,13 +384,14 @@ class HeapStateChunk implements StateChunk, HeapContainer {
         }
         //Default, custom Type
         if (toSet == null) {
-            EGraph tempND = new HeapEGraph(this, null, _space.graph());
+            final EStructArray tempND = new HeapEStructArray(this, null, _space.graph());
             toSet = tempND;
             final TypeDeclaration typeDeclaration = graph().typeRegistry().declarationByHash(p_type);
             if (typeDeclaration == null) {
                 toGet = toSet;
             } else {
                 toGet = typeDeclaration.factory().wrap(tempND);
+                ((BaseCustomType) toGet).init();
             }
         }
         internal_set(p_key, p_type, toSet, true, false);
@@ -561,9 +573,9 @@ class HeapStateChunk implements StateChunk, HeapContainer {
                         break;
                    /* case Type.NDTREE:
                     case Type.KDTREE:*/
-                    /*case Type.EGRAPH:
-                        HeapEGraph castedEGraph = (HeapEGraph) loopValue;
-                        HeapENode[] eNodes = castedEGraph._nodes;
+                    /*case Type.ESTRUCT_ARRAY:
+                        HeapEStructArray castedEGraph = (HeapEStructArray) loopValue;
+                        HeapEStruct[] eNodes = castedEGraph._nodes;
                         int eGSize = castedEGraph.size();
                         Base64.encodeIntToBuffer(eGSize, buffer);
                         for (int j = 0; j < eGSize; j++) {
@@ -573,8 +585,8 @@ class HeapStateChunk implements StateChunk, HeapContainer {
                         castedEGraph._dirty = false;
                         break;*/
                     default:
-                        HeapEGraph castedEGraph = (HeapEGraph) loopValue;
-                        HeapENode[] eNodes = castedEGraph._nodes;
+                        HeapEStructArray castedEGraph = (HeapEStructArray) loopValue;
+                        HeapEStruct[] eNodes = castedEGraph._nodes;
                         int eGSize = castedEGraph.size();
                         Base64.encodeIntToBuffer(eGSize, buffer);
                         for (int j = 0; j < eGSize; j++) {
@@ -682,9 +694,9 @@ class HeapStateChunk implements StateChunk, HeapContainer {
                                 _v[i] = new HeapLMatrix(this, (HeapLMatrix) casted._v[i]);
                             }
                             break;
-                        case Type.EGRAPH:
+                        case Type.ESTRUCT_ARRAY:
                             if (casted._v[i] != null) {
-                                _v[i] = new HeapEGraph(this, (HeapEGraph) casted._v[i], _space.graph());
+                                _v[i] = new HeapEStructArray(this, (HeapEStructArray) casted._v[i], _space.graph());
                             }
                             break;
                         case Type.LONG_ARRAY:
@@ -712,7 +724,7 @@ class HeapStateChunk implements StateChunk, HeapContainer {
                                 _v[i] = casted._v[i];
                             } else {
                                 if (casted._v[i] != null) {
-                                    _v[i] = new HeapEGraph(this, (HeapEGraph) casted._v[i], _space.graph());
+                                    _v[i] = new HeapEStructArray(this, (HeapEStructArray) casted._v[i], _space.graph());
                                 }
                             }
                             break;
@@ -827,11 +839,11 @@ class HeapStateChunk implements StateChunk, HeapContainer {
                     case Type.LONG_TO_LONG_ARRAY_MAP:
                         param_elem = (LongLongArrayMap) p_unsafe_elem;
                         break;
-                    case Type.EGRAPH:
-                        param_elem = (EGraph) p_unsafe_elem;
+                    case Type.ESTRUCT_ARRAY:
+                        param_elem = (EStructArray) p_unsafe_elem;
                         break;
                     default:
-                        param_elem = (EGraph) p_unsafe_elem;
+                        param_elem = (EStructArray) p_unsafe_elem;
                         // throw new RuntimeException("Internal Exception, unknown type");
                 }
             } catch (Exception e) {
@@ -1244,8 +1256,8 @@ class HeapStateChunk implements StateChunk, HeapContainer {
                                 case Type.KDTREE:
                                 */
                                     /*
-                                case Type.EGRAPH:
-                                    HeapEGraph eGraph = new HeapEGraph(this, null, this.graph());
+                                case Type.ESTRUCT_ARRAY:
+                                    HeapEStructArray eGraph = new HeapEStructArray(this, null, this.graph());
                                     cursor++;
                                     cursor = eGraph.load(buffer, cursor, payloadSize);
                                     internal_set(read_key, read_type, eGraph, true, initial);
@@ -1259,7 +1271,7 @@ class HeapStateChunk implements StateChunk, HeapContainer {
                                     }
                                     break;*/
                                 default:
-                                    HeapEGraph eGraphDef = new HeapEGraph(this, null, this.graph());
+                                    HeapEStructArray eGraphDef = new HeapEStructArray(this, null, this.graph());
                                     cursor++;
                                     cursor = eGraphDef.load(buffer, cursor, payloadSize);
                                     internal_set(read_key, read_type, eGraphDef, true, initial);
@@ -1353,8 +1365,8 @@ class HeapStateChunk implements StateChunk, HeapContainer {
     }
 
     @Override
-    public final EGraph getEGraph(String name) {
-        return (EGraph) get(name);
+    public final EStructArray getEGraph(String name) {
+        return (EStructArray) get(name);
     }
 
     @Override

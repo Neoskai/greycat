@@ -13,32 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package greycat.struct;
+package greycatTest.internal.heap;
 
-import greycat.Container;
-import greycat.Graph;
+import greycat.internal.heap.HeapMemoryFactory;
+import greycatTest.internal.chunk.AbstractEGraphTest;
 
-public interface EGraph {
+public class HeapEStructArrayTest extends AbstractEGraphTest {
 
-    ENode root();
-
-    ENode newNode();
-
-    ENode node(int index);
-
-    EGraph setRoot(ENode eNode);
-
-    EGraph drop(ENode eNode);
-
-    int size();
-
-    /**
-     * Tag the object to be freed from the memory.
-     * Warning this method is not a clear EGraph and is not supposed to be called manually in case of EGraph attached to a GreyCat Node.
-     * This method is mainly for volatile EGraph usages.
-     */
-    void free();
-
-    Graph graph();
-
+    public HeapEStructArrayTest() {
+        super(new HeapMemoryFactory());
+    }
 }

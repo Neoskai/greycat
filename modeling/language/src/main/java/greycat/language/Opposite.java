@@ -16,31 +16,13 @@
 package greycat.language;
 
 public class Opposite {
-    private Relation rel;
-    private Reference ref;
+    private Edge edge;
 
-    public Opposite(Relation rel) {
-        this.rel = rel;
+    public Opposite(Edge edge) {
+        this.edge = edge;
     }
 
-    public Opposite(Reference ref) {
-        this.ref = ref;
+    public Edge edge() {
+        return edge;
     }
-
-    public Relation relation() {
-        return rel;
-    }
-
-    public Reference reference() {
-        return ref;
-    }
-
-    public boolean isReference() {
-        return ref != null;
-    }
-
-    public boolean isRelation() {
-        return rel != null;
-    }
-
 }

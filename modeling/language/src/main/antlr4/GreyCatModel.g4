@@ -22,8 +22,9 @@ fragment HEX : [0-9a-fA-F] ;
 STRING :  '"' (ESC | ~["\\])* '"' | '\'' (ESC | ~["\\])* '\'' ;
 IDENT : [a-zA-Z_][a-zA-Z_0-9]*;
 NUMBER : [\-]?[0-9]+'.'?[0-9]*;
-WS : ([ \t\r\n]+ | SL_COMMENT) -> skip ; // skip spaces, tabs, newlines
+WS : ([ \t\r\n]+ | SL_COMMENT | ML_COMMENT) -> skip ; // skip spaces, tabs, newlines
 SL_COMMENT :  '//' ~('\r' | '\n')* ;
+ML_COMMENT : '/*' .*? '*/' -> skip;
 
 modelDcl: (constDcl | classDcl | globalIndexDcl | customTypeDcl | importDcl)*;
 importDcl: 'import' STRING;
@@ -37,7 +38,8 @@ subTask: '{' taskValueDcl '}';
 
 classDcl: 'class' name=IDENT parentDcl? '{' (constDcl | attributeDcl | relationDcl | referenceDcl | localIndexDcl)* '}';
 parentDcl: 'extends' IDENT;
-attributeDcl: 'att' name=IDENT ':' typeDcl;
+attributeDcl: 'att' name=IDENT ':' typeDcl ('=' attributeValueDcl)?;
+
 typeDcl: (builtInTypeDcl | customBuiltTypeDcl);
 customBuiltTypeDcl: IDENT;
 builtInTypeDcl: ('Bool' | 'Boolean' | 'String' | 'Long' | 'Int' | 'Integer' | 'Double' |
@@ -45,6 +47,12 @@ builtInTypeDcl: ('Bool' | 'Boolean' | 'String' | 'Long' | 'Int' | 'Integer' | 'D
                 'LongToLongMap' | 'LongToLongArrayMap' | 'StringToIntMap'|
                 'DMatrix' |'LMatrix' |'EGraph' |'ENode' | 'KDTree' | 'NDTree' |
                 'IntToIntMap' | 'IntToStringMap' | 'Task' | 'TaskArray' | 'Node');
+
+attributeValueDcl: (IDENT | STRING | NUMBER | complexAttributeValueDcl);
+complexAttributeValueDcl: '(' complexValueDcl (',' complexValueDcl)* ')';
+complexValueDcl: (IDENT | STRING | NUMBER | ntupleValueDlc);
+ntupleValueDlc: '(' (IDENT | STRING | NUMBER) (',' (IDENT | STRING | NUMBER))* ')';
+
 relationDcl: 'rel' name=IDENT ':' type=IDENT (oppositeDcl)?;
 referenceDcl: 'ref' name=IDENT ':' type=IDENT (oppositeDcl)?;
 oppositeDcl: 'oppositeOf' name=IDENT;

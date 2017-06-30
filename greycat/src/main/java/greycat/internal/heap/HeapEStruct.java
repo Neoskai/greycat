@@ -21,17 +21,18 @@ import greycat.plugin.NodeStateCallback;
 import greycat.plugin.Resolver;
 import greycat.struct.*;
 import greycat.utility.Base64;
+import greycat.utility.HashHelper;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-class HeapENode implements ENode, HeapContainer {
+class HeapEStruct implements EStruct, HeapContainer {
 
-    private final HeapEGraph _eGraph;
+    private final HeapEStructArray _eGraph;
     int _id;
 
-    HeapENode(final HeapEGraph p_egraph, final int p_id, final HeapENode origin) {
+    HeapEStruct(final HeapEStructArray p_egraph, final int p_id, final HeapEStruct origin) {
         _eGraph = p_egraph;
         _id = p_id;
         if (origin != null) {
@@ -140,7 +141,7 @@ class HeapENode implements ENode, HeapContainer {
     private boolean _dirty;
 
     @Override
-    public final ENode clear() {
+    public final EStruct clear() {
         _capacity = 0;
         _size = 0;
         _k = null;
@@ -175,8 +176,8 @@ class HeapENode implements ENode, HeapContainer {
                     final HeapERelation previousERel = (HeapERelation) _v[i];
                     previousERel.rebase(_eGraph);
                     break;
-                case Type.ENODE:
-                    final HeapENode previous = (HeapENode) _v[i];
+                case Type.ESTRUCT:
+                    final HeapEStruct previous = (HeapEStruct) _v[i];
                     _v[i] = _eGraph._nodes[previous._id];
                     break;
             }
@@ -298,8 +299,8 @@ class HeapENode implements ENode, HeapContainer {
                     case Type.ERELATION:
                         param_elem = (ERelation) p_unsafe_elem;
                         break;
-                    case Type.ENODE:
-                        param_elem = (ENode) p_unsafe_elem;
+                    case Type.ESTRUCT:
+                        param_elem = (EStruct) p_unsafe_elem;
                         break;
                     case Type.DOUBLE_ARRAY:
                         param_elem = (DoubleArray) p_unsafe_elem;
@@ -480,13 +481,13 @@ class HeapENode implements ENode, HeapContainer {
     }
 
     @Override
-    public ENode set(String name, int type, Object value) {
+    public EStruct set(String name, int type, Object value) {
         internal_set(_eGraph.graph().resolver().stringToHash(name, true), type, value, true, false);
         return this;
     }
 
     @Override
-    public ENode setAt(int key, int type, Object value) {
+    public EStruct setAt(int key, int type, Object value) {
         internal_set(key, type, value, true, false);
         return this;
     }
@@ -562,7 +563,7 @@ class HeapENode implements ENode, HeapContainer {
 
     @Override
     public Container rephase() {
-        //ENode proxy will take care
+        //EStruct proxy will take care
         return this;
     }
 
@@ -573,7 +574,7 @@ class HeapENode implements ENode, HeapContainer {
     }
 
     @Override
-    public EGraph egraph() {
+    public EStructArray egraph() {
         return _eGraph;
     }
 
@@ -642,7 +643,17 @@ class HeapENode implements ENode, HeapContainer {
     }
 
     @Override
-    public String toString() {
+    public final Object getOrCreateCustom(String name, String typeName) {
+        return getOrCreateAt(HashHelper.hash(name), HashHelper.hash(typeName));
+    }
+
+    @Override
+    public final Object getOrCreateCustomAt(int index, String typeName) {
+        return getOrCreateAt(index, HashHelper.hash(typeName));
+    }
+
+    @Override
+    public final String toString() {
         final StringBuilder builder = new StringBuilder();
         final boolean[] isFirst = {true};
         boolean isFirstField = true;
@@ -745,7 +756,7 @@ class HeapENode implements ENode, HeapContainer {
                             if (j != 0) {
                                 builder.append(",");
                             }
-                            builder.append(((HeapENode) castedERelArr.node(j))._id);
+                            builder.append(((HeapEStruct) castedERelArr.node(j))._id);
                         }
                         builder.append("]");
                         break;
@@ -933,15 +944,15 @@ class HeapENode implements ENode, HeapContainer {
                     buffer.write(CoreConstants.CHUNK_ESEP);
                     switch (_type[i]) {
                         //additional types for embedded
-                        case Type.ENODE:
-                            Base64.encodeIntToBuffer(((HeapENode) loopValue)._id, buffer);
+                        case Type.ESTRUCT:
+                            Base64.encodeIntToBuffer(((HeapEStruct) loopValue)._id, buffer);
                             break;
                         case Type.ERELATION:
                             HeapERelation castedLongArrERel = (HeapERelation) loopValue;
                             Base64.encodeIntToBuffer(castedLongArrERel.size(), buffer);
                             for (int j = 0; j < castedLongArrERel.size(); j++) {
                                 buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                Base64.encodeIntToBuffer(((HeapENode) castedLongArrERel.node(j))._id, buffer);
+                                Base64.encodeIntToBuffer(((HeapEStruct) castedLongArrERel.node(j))._id, buffer);
                             }
                             break;
                         //common types
@@ -1144,7 +1155,7 @@ class HeapENode implements ENode, HeapContainer {
                             case Type.DOUBLE:
                             case Type.LONG:
                             case Type.STRING:
-                            case Type.ENODE:
+                            case Type.ESTRUCT:
                                 state = LOAD_WAITING_VALUE;
                                 cursor++;
                                 previous = cursor;
@@ -1388,7 +1399,7 @@ class HeapENode implements ENode, HeapContainer {
             case Type.STRING:
                 internal_set(read_key, read_type, Base64.decodeToStringWithBounds(buffer, previous, cursor), true, initial);
                 break;
-            case Type.ENODE:
+            case Type.ESTRUCT:
                 internal_set(read_key, read_type, _eGraph.nodeByIndex(Base64.decodeToIntWithBounds(buffer, previous, cursor), true), true, initial);
                 break;
         }
@@ -1424,8 +1435,8 @@ class HeapENode implements ENode, HeapContainer {
     }
 
     @Override
-    public final EGraph getEGraph(String name) {
-        return (EGraph) get(name);
+    public final EStructArray getEGraph(String name) {
+        return (EStructArray) get(name);
     }
 
     @Override

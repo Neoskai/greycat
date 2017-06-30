@@ -107,6 +107,8 @@
         <module>modeling/language</module>
         <module>modeling/generator</module>
         <module>modeling/mavenplugin</module>
+        <module>modeling/gradleplugin</module>
+        <module>modeling/cli</module>
 
         <!--Examples-->
         <module>examples/modeling</module>
