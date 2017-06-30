@@ -97,7 +97,6 @@ public class ShardLoader extends Thread{
                                         if (value.type() == Type.REMOVE) {
                                             result.removeAt(value.index());
                                         } else {
-                                            //System.out.println("Current system: " + value.index() + " " + value.type() + " " + value.value());
                                             result.setAt(value.index(), value.type(), value.value());
                                         }
                                         result.free();

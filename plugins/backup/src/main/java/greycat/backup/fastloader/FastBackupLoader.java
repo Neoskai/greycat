@@ -48,7 +48,7 @@ public class FastBackupLoader {
 
     private List<String> _localFiles;
 
-    private int _poolSize;
+    private int _threadPool;
 
     public static final Object LOCK = new Object();
 
@@ -64,9 +64,9 @@ public class FastBackupLoader {
         _folderPath = folderPath;
         _graph = graphToUse;
 
-        _fileMap = new HashMap<>();
+        _threadPool = BackupOptions.threadPool();
 
-        _poolSize = BackupOptions.poolSize();
+        _fileMap = new HashMap<>();
         _localFiles = new ArrayList<>();
     }
 
@@ -82,7 +82,7 @@ public class FastBackupLoader {
 
             loadFiles(_folderPath);
 
-            ExecutorService es = Executors.newFixedThreadPool(4);
+            ExecutorService es = Executors.newFixedThreadPool(_threadPool);
             // For each shard
             for (Integer shardKey : _fileMap.keySet()) {
                 es.execute(new Runnable() {
@@ -118,7 +118,7 @@ public class FastBackupLoader {
 
             loadFileFromSequence(_folderPath, initialStamp, endStamp);
 
-            ExecutorService es = Executors.newFixedThreadPool(4);
+            ExecutorService es = Executors.newFixedThreadPool(_threadPool);
             // For each shard
             for (Integer shardKey : _fileMap.keySet()) {
                 es.execute(new Runnable() {
@@ -155,7 +155,7 @@ public class FastBackupLoader {
 
             loadFileFromSequence(_folderPath, initialStamp, endStamp);
 
-            ExecutorService es = Executors.newFixedThreadPool(_poolSize);
+            ExecutorService es = Executors.newFixedThreadPool(_threadPool);
             // For each shard
             for (Integer shardKey : _fileMap.keySet()) {
                 es.execute(new Runnable() {
@@ -188,7 +188,7 @@ public class FastBackupLoader {
 
             loadFiles(_folderPath);
 
-            ExecutorService es = Executors.newFixedThreadPool(_poolSize);
+            ExecutorService es = Executors.newFixedThreadPool(_threadPool);
             for (Integer shardKey : _fileMap.keySet()) {
                 es.execute(new Runnable() {
                     @Override
@@ -313,8 +313,6 @@ public class FastBackupLoader {
                 }
 
                 for(String name : missingItems){
-                    System.out.println("Downloading " + name);
-
                     File file = new File(name);
                     File parent = file.getParentFile();
                     if (!parent.exists() && !parent.mkdirs()) {

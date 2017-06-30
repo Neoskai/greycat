@@ -31,7 +31,7 @@ public class StorageValueChunk {
 
     private long world;
     private long time;
-    private byte type;
+    private int type;
     private Object value;
     private int index;
 
@@ -55,7 +55,7 @@ public class StorageValueChunk {
                         tuple.index = Base64.decodeToIntWithBounds(buffer, previous, cursor);
                         break;
                     case 3:
-                        tuple.type = buffer.slice(previous,cursor)[0];
+                        tuple.type = Base64.decodeToIntWithBounds(buffer, previous, cursor);
                         break;
                     case 4:
                         tuple.value= valueFromBuffer(buffer, previous, cursor, tuple.type);
@@ -98,7 +98,7 @@ public class StorageValueChunk {
      * @param type The type of the Object
      * @return The builded object from buffer
      */
-    public static Object valueFromBuffer(Buffer buffer, long begin, long end, byte type) {
+    public static Object valueFromBuffer(Buffer buffer, long begin, long end, int type) {
         switch (type){
             case Type.STRING:
                 return Base64.decodeToStringWithBounds(buffer,begin,end);
@@ -113,6 +113,7 @@ public class StorageValueChunk {
             case Type.REMOVE:
                 return null;
             default:
+                System.out.println("Type: " + type);
                 return deserialize(buffer.slice(begin,end));
         }
     }
@@ -133,7 +134,7 @@ public class StorageValueChunk {
         return null;
     }
 
-    public byte type(){
+    public int type(){
         return type;
     }
 
