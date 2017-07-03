@@ -54,8 +54,6 @@ public class Server
                                                 .setDirectoryListingEnabled(true))
 
                 )
-                //.setHandler(new SetHeaderHandler("Access-Control-Allow-Origin", "*"))
-                //.setHandler(new SetHeaderHandler("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE"))
                 .build();
 
         _server.start();

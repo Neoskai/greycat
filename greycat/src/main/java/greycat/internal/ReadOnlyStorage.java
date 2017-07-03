@@ -72,7 +72,7 @@ public class ReadOnlyStorage implements Storage {
     }
 
     @Override
-    public BackupEntry createBackup() {
+    public BackupEntry createBackup(boolean isFromBackup) {
         // @TODO
         return null;
     }

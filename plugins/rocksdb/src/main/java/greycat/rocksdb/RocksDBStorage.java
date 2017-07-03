@@ -69,7 +69,7 @@ public class RocksDBStorage implements Storage {
     }
 
     @Override
-    public BackupEntry createBackup() {
+    public BackupEntry createBackup(boolean isFromBackup) {
         try {
             _graph.save(null);
 
@@ -83,7 +83,10 @@ public class RocksDBStorage implements Storage {
             options.setShareFilesWithChecksum(false);
 
             BackupEngine backupEngine = BackupEngine.open( Env.getDefault(), options);
+
             backupEngine.createNewBackup(_db);
+
+            // @TODO : Find Metadata adaptation to Java or add external mark for Snapshot created from Backup process
 
             BackupInfo info = backupEngine.getBackupInfo().get(backupEngine.getBackupInfo().size()-1);
             BackupEntry entry = new BackupEntry();

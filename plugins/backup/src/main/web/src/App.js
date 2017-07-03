@@ -129,10 +129,10 @@ class App extends Component {
                     <div className="content">
                         <Grid>
                             <Row>
-                                <Col xs={3} md={3}>
+                                <Col xs={4} md={4}>
                                     <Snapshot list={this.state.snapshots} />
                                 </Col>
-                                <Col xs={5} md={5} className="mainContent">
+                                <Col xs={4} md={4} className="mainContent">
                                     <BackupLoader />
                                 </Col>
                                 <Col xs={4} md={4} className="BackupList">

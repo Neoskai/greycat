@@ -413,7 +413,7 @@ public class WSClient implements Storage, TaskExecutor {
     }
 
     @Override
-    public BackupEntry createBackup() {
+    public BackupEntry createBackup(boolean isFromBackup) {
         // @TODO
         return null;
     }

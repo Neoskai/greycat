@@ -167,7 +167,7 @@ public class MockStorage implements Storage {
     }
 
     @Override
-    public BackupEntry createBackup() {
+    public BackupEntry createBackup(boolean isFromBackup) {
         // @TODO
         return null;
     }

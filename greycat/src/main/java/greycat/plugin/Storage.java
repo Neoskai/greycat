@@ -101,9 +101,10 @@ public interface Storage {
 
     /**
      * Creates a backup of the current database version
+     * @param isFromBackup Is the snapshot created from a backup process (true) or not (false)
      * @return The id of the newly created backup
      */
-    BackupEntry createBackup();
+    BackupEntry createBackup(boolean isFromBackup);
 
     /**
      * Loads the latest backup for this database

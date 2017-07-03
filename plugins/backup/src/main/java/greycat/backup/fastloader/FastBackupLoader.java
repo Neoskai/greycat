@@ -52,6 +52,8 @@ public class FastBackupLoader {
 
     public static final Object LOCK = new Object();
 
+    private boolean _onlineStorage = false;
+
     public FastBackupLoader(String folderPath){
         this(folderPath,
                 new GraphBuilder()
@@ -68,6 +70,11 @@ public class FastBackupLoader {
 
         _fileMap = new HashMap<>();
         _localFiles = new ArrayList<>();
+    }
+
+    public FastBackupLoader(String folderPath, Graph graphToUse, boolean withOnlineStorage){
+        this(folderPath,graphToUse);
+        _onlineStorage = withOnlineStorage;
     }
 
     /**
@@ -96,6 +103,10 @@ public class FastBackupLoader {
 
             es.shutdown();
             es.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+
+            if(_onlineStorage) {
+                _graph.storage().createBackup(true);
+            }
 
             System.out.println("Backup took: " + ((System.currentTimeMillis() - initialBench) / 1000) + " s");
             _graph.disconnect(null);
@@ -261,8 +272,9 @@ public class FastBackupLoader {
                 _fileMap.put(shard, initialMap);
             }
         }
-
-        loadExternalFiles(startSeq,endSeq);
+        if(_onlineStorage){
+            loadExternalFiles(startSeq,endSeq);
+        }
     }
 
     /**

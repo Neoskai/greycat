@@ -64,7 +64,7 @@ public class BackupTest {
             }
         });
 
-        BackupEntry entry = graph.storage().createBackup();
+        BackupEntry entry = graph.storage().createBackup(false);
         assertNotEquals(null, entry);
 
         graph.disconnect(null);
@@ -107,7 +107,7 @@ public class BackupTest {
                     }
 
                     if(i%(valuesToInsert/5)==0) {
-                        graph.storage().createBackup();
+                        graph.storage().createBackup(false);
                     }
 
                     initialNode.free();
@@ -175,7 +175,7 @@ public class BackupTest {
                     }
 
                     if(i%(valuesToInsert/5)==0) {
-                        graph.storage().createBackup();
+                        graph.storage().createBackup(false);
                     }
 
                     initialNode.free();
