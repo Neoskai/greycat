@@ -16,9 +16,9 @@
 package greycatTest.internal.heap;
 
 import greycat.internal.heap.HeapMemoryFactory;
-import greycatTest.internal.chunk.AbstractEGraphTest;
+import greycatTest.internal.chunk.AbstractEStructArrayTest;
 
-public class HeapEStructArrayTest extends AbstractEGraphTest {
+public class HeapEStructArrayTest extends AbstractEStructArrayTest {
 
     public HeapEStructArrayTest() {
         super(new HeapMemoryFactory());

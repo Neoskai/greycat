@@ -419,7 +419,7 @@ class HeapStateChunk implements StateChunk, HeapContainer {
         for (int i = 0; i < _size; i++) {
             final Object loopValue = _v[i]; //there is a real value
             buffer.write(CoreConstants.CHUNK_SEP);
-            Base64.encodeIntToBuffer((int) _type[i], buffer);
+            Base64.encodeIntToBuffer(_type[i], buffer);
             buffer.write(CoreConstants.CHUNK_SEP);
             Base64.encodeIntToBuffer(_k[i], buffer);
             buffer.write(CoreConstants.CHUNK_SEP);
@@ -445,155 +445,43 @@ class HeapStateChunk implements StateChunk, HeapContainer {
                         Base64.encodeIntToBuffer((Integer) loopValue, buffer);
                         break;
                     case Type.DOUBLE_ARRAY:
-                        HeapDoubleArray doubleArray = (HeapDoubleArray) loopValue;
-                        Base64.encodeIntToBuffer(doubleArray.size(), buffer);
-                        for (int j = 0; j < doubleArray.size(); j++) {
-                            buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                            Base64.encodeDoubleToBuffer(doubleArray.get(j), buffer);
-                        }
+                        ((HeapDoubleArray) loopValue).save(buffer);
                         break;
                     case Type.LONG_ARRAY:
-                        HeapLongArray longArray = (HeapLongArray) loopValue;
-                        Base64.encodeIntToBuffer(longArray.size(), buffer);
-                        for (int j = 0; j < longArray.size(); j++) {
-                            buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                            Base64.encodeLongToBuffer(longArray.get(j), buffer);
-                        }
+                        ((HeapLongArray) loopValue).save(buffer);
                         break;
                     case Type.INT_ARRAY:
-                        HeapIntArray intArray = (HeapIntArray) loopValue;
-                        Base64.encodeIntToBuffer(intArray.size(), buffer);
-                        for (int j = 0; j < intArray.size(); j++) {
-                            buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                            Base64.encodeIntToBuffer(intArray.get(j), buffer);
-                        }
+                        ((HeapIntArray) loopValue).save(buffer);
                         break;
                     case Type.STRING_ARRAY:
-                        HeapStringArray stringArray = (HeapStringArray) loopValue;
-                        Base64.encodeIntToBuffer(stringArray.size(), buffer);
-                        for (int j = 0; j < stringArray.size(); j++) {
-                            buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                            Base64.encodeStringToBuffer(stringArray.get(j), buffer);
-                        }
+                        ((HeapStringArray) loopValue).save(buffer);
                         break;
                     case Type.RELATION:
-                        HeapRelation castedLongArrRel = (HeapRelation) loopValue;
-                        Base64.encodeIntToBuffer(castedLongArrRel.size(), buffer);
-                        for (int j = 0; j < castedLongArrRel.size(); j++) {
-                            buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                            Base64.encodeLongToBuffer(castedLongArrRel.unsafe_get(j), buffer);
-                        }
+                        ((HeapRelation) loopValue).save(buffer);
                         break;
                     case Type.DMATRIX:
-                        HeapDMatrix castedMatrix = (HeapDMatrix) loopValue;
-                        final double[] unsafeContent = castedMatrix.unsafe_data();
-                        if (unsafeContent != null) {
-                            Base64.encodeIntToBuffer(unsafeContent.length, buffer);
-                            for (int j = 0; j < unsafeContent.length; j++) {
-                                buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                Base64.encodeDoubleToBuffer(unsafeContent[j], buffer);
-                            }
-                        }
+                        ((HeapDMatrix) loopValue).save(buffer);
                         break;
                     case Type.LMATRIX:
-                        HeapLMatrix castedLMatrix = (HeapLMatrix) loopValue;
-                        final long[] unsafeLContent = castedLMatrix.unsafe_data();
-                        if (unsafeLContent != null) {
-                            Base64.encodeIntToBuffer(unsafeLContent.length, buffer);
-                            for (int j = 0; j < unsafeLContent.length; j++) {
-                                buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                Base64.encodeLongToBuffer(unsafeLContent[j], buffer);
-                            }
-                        }
+                        ((HeapLMatrix) loopValue).save(buffer);
                         break;
                     case Type.STRING_TO_INT_MAP:
-                        HeapStringIntMap castedStringLongMap = (HeapStringIntMap) loopValue;
-                        Base64.encodeIntToBuffer(castedStringLongMap.size(), buffer);
-                        castedStringLongMap.unsafe_each(new StringLongMapCallBack() {
-                            @Override
-                            public void on(final String key, final long value) {
-                                buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                Base64.encodeStringToBuffer(key, buffer);
-                                buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                Base64.encodeLongToBuffer(value, buffer);
-                            }
-                        });
+                        ((HeapStringIntMap) loopValue).save(buffer);
                         break;
                     case Type.LONG_TO_LONG_MAP:
-                        HeapLongLongMap castedLongLongMap = (HeapLongLongMap) loopValue;
-                        Base64.encodeIntToBuffer(castedLongLongMap.size(), buffer);
-                        castedLongLongMap.unsafe_each(new LongLongMapCallBack() {
-                            @Override
-                            public void on(final long key, final long value) {
-                                buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                Base64.encodeLongToBuffer(key, buffer);
-                                buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                Base64.encodeLongToBuffer(value, buffer);
-                            }
-                        });
+                        ((HeapLongLongMap) loopValue).save(buffer);
                         break;
                     case Type.INT_TO_INT_MAP:
-                        HeapIntIntMap castedIntIntMap = (HeapIntIntMap) loopValue;
-                        Base64.encodeIntToBuffer(castedIntIntMap.size(), buffer);
-                        castedIntIntMap.unsafe_each(new IntIntMapCallBack() {
-                            @Override
-                            public void on(final int key, final int value) {
-                                buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                Base64.encodeIntToBuffer(key, buffer);
-                                buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                Base64.encodeIntToBuffer(value, buffer);
-                            }
-                        });
+                        ((HeapIntIntMap) loopValue).save(buffer);
                         break;
                     case Type.INT_TO_STRING_MAP:
-                        HeapIntStringMap castedIntStringMap = (HeapIntStringMap) loopValue;
-                        Base64.encodeIntToBuffer(castedIntStringMap.size(), buffer);
-                        castedIntStringMap.unsafe_each(new IntStringMapCallBack() {
-                            @Override
-                            public void on(final int key, final String value) {
-                                buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                Base64.encodeIntToBuffer(key, buffer);
-                                buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                Base64.encodeStringToBuffer(value, buffer);
-                            }
-                        });
+                        ((HeapIntStringMap) loopValue).save(buffer);
                         break;
                     case Type.LONG_TO_LONG_ARRAY_MAP:
-                        HeapLongLongArrayMap castedLongLongArrayMap = (HeapLongLongArrayMap) loopValue;
-                        Base64.encodeIntToBuffer(castedLongLongArrayMap.size(), buffer);
-                        castedLongLongArrayMap.unsafe_each(new LongLongArrayMapCallBack() {
-                            @Override
-                            public void on(final long key, final long value) {
-                                buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                Base64.encodeLongToBuffer(key, buffer);
-                                buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                Base64.encodeLongToBuffer(value, buffer);
-                            }
-                        });
+                        ((HeapLongLongArrayMap) loopValue).save(buffer);
                         break;
-                   /* case Type.NDTREE:
-                    case Type.KDTREE:*/
-                    /*case Type.ESTRUCT_ARRAY:
-                        HeapEStructArray castedEGraph = (HeapEStructArray) loopValue;
-                        HeapEStruct[] eNodes = castedEGraph._nodes;
-                        int eGSize = castedEGraph.size();
-                        Base64.encodeIntToBuffer(eGSize, buffer);
-                        for (int j = 0; j < eGSize; j++) {
-                            buffer.write(CoreConstants.CHUNK_ENODE_SEP);
-                            eNodes[j].save(buffer);
-                        }
-                        castedEGraph._dirty = false;
-                        break;*/
                     default:
-                        HeapEStructArray castedEGraph = (HeapEStructArray) loopValue;
-                        HeapEStruct[] eNodes = castedEGraph._nodes;
-                        int eGSize = castedEGraph.size();
-                        Base64.encodeIntToBuffer(eGSize, buffer);
-                        for (int j = 0; j < eGSize; j++) {
-                            buffer.write(CoreConstants.CHUNK_ENODE_SEP);
-                            eNodes[j].save(buffer);
-                        }
-                        castedEGraph._dirty = false;
+                        ((HeapEStructArray) loopValue).save(buffer);
                         break;
                 }
             }
@@ -1283,7 +1171,6 @@ class HeapStateChunk implements StateChunk, HeapContainer {
                                             previous = cursor;
                                         }
                                     }
-                                    //throw new RuntimeException("Not implemented yet!!!");
                             }
                             break;
                         case LOAD_WAITING_VALUE:
@@ -1375,7 +1262,7 @@ class HeapStateChunk implements StateChunk, HeapContainer {
     }
 
     @Override
-    public IntArray getIntArray(String name) {
+    public final IntArray getIntArray(String name) {
         return (IntArray) get(name);
     }
 
@@ -1400,12 +1287,12 @@ class HeapStateChunk implements StateChunk, HeapContainer {
     }
 
     @Override
-    public IntIntMap getIntIntMap(String name) {
+    public final IntIntMap getIntIntMap(String name) {
         return (IntIntMap) get(name);
     }
 
     @Override
-    public IntStringMap getIntStringMap(String name) {
+    public final IntStringMap getIntStringMap(String name) {
         return (IntStringMap) get(name);
     }
 

@@ -16,6 +16,7 @@
 package greycat.generator;
 
 import greycat.*;
+import greycat.Type;
 import greycat.language.*;
 import greycat.language.Class;
 import greycat.language.Index;
@@ -52,8 +53,8 @@ class ClassTypeGenerator {
             if (o instanceof Attribute) {
                 Attribute attribute = (Attribute) o;
                 if (TypeManager.isPrimitive(attribute.type())) {
-                    TS_GET_SET.append("get " + attribute.name() + "() : " + TypeManager.cassTsName(attribute.type()) + " {return this.get" + Generator.upperCaseFirstChar(attribute.name()) + "();}\n");
-                    TS_GET_SET.append("set " + attribute.name() + "(p : " + TypeManager.cassTsName(attribute.type()) + "){ this.set" + Generator.upperCaseFirstChar(attribute.name()) + "(p);}\n");
+                    TS_GET_SET.append("get " + attribute.name() + "() : " + TypeManager.classTsName(attribute.type()) + " {return this.get" + Generator.upperCaseFirstChar(attribute.name()) + "();}\n");
+                    TS_GET_SET.append("set " + attribute.name() + "(p : " + TypeManager.classTsName(attribute.type()) + "){ this.set" + Generator.upperCaseFirstChar(attribute.name()) + "(p);}\n");
                 }
             }
         });
@@ -113,7 +114,7 @@ class ClassTypeGenerator {
                         .setVisibility(Visibility.PUBLIC)
                         .setFinal(true)
                         .setName(constant.name())
-                        .setType(TypeManager.cassName(constant.type()))
+                        .setType(TypeManager.className(constant.type()))
                         .setLiteralInitializer(value)
                         .setStatic(true);
             } else if (o instanceof Attribute) {
@@ -138,14 +139,14 @@ class ClassTypeGenerator {
                 // getter
                 MethodSource<JavaClassSource> getter = javaClass.addMethod();
                 getter.setVisibility(Visibility.PUBLIC).setFinal(true);
-                getter.setReturnType(TypeManager.cassName(att.type()));
+                getter.setReturnType(TypeManager.className(att.type()));
                 getter.setName("get" + Generator.upperCaseFirstChar(att.name()));
 
                 if (TypeManager.isPrimitive(att.type())) {
-                    getter.setBody("return (" + TypeManager.cassName(att.type()) + ") super.get(" + att.name().toUpperCase() + ");");
+                    getter.setBody("return (" + TypeManager.className(att.type()) + ") super.get(" + att.name().toUpperCase() + ");");
 
                 } else {
-                    getter.setBody("return (" + TypeManager.cassName(att.type()) + ") super.getOrCreate(" + att.name().toUpperCase() + ", " + att.name().toUpperCase() + "_TYPE);");
+                    getter.setBody("return (" + TypeManager.className(att.type()) + ") super.getOrCreate(" + att.name().toUpperCase() + ", " + att.name().toUpperCase() + "_TYPE);");
 
                 }
 
@@ -158,12 +159,12 @@ class ClassTypeGenerator {
                             .setBody("super.set(" + att.name().toUpperCase() + ", " + att.name().toUpperCase()
                                     + "_TYPE,value);\nreturn this;"
                             )
-                            .addParameter(TypeManager.cassName(att.type()), "value");
+                            .addParameter(TypeManager.className(att.type()), "value");
                 }
 
                 // init
                 if (att.value() != null) {
-                    initBodyBuilder.append(createDefaultValueBody(att).toString());
+                    initBodyBuilder.append(DefaultValueGenerator.createMethodBody(att).toString());
                 }
 
             } else if (o instanceof Relation) {
@@ -385,8 +386,7 @@ class ClassTypeGenerator {
                 findAll.setName("findAll" + Generator.upperCaseFirstChar(indexName));
                 findAll.setReturnTypeVoid();
                 findAll.addParameter("greycat.Callback<" + li.type() + "[]>", "callback");
-                paramsBuilder = new StringBuilder("null");
-                StringBuilder findAllBodyBuilder = createFindMethodBody(li, indexConstant, paramsBuilder);
+                StringBuilder findAllBodyBuilder = createFindMethodBody(li, indexConstant, null);
                 findAll.setBody(findAllBodyBuilder.toString());
             }
 
@@ -410,8 +410,10 @@ class ClassTypeGenerator {
         findBodyBuilder.append("callback.on(typedResult);");
         findBodyBuilder.append("}");
         findBodyBuilder.append("},");
-        findBodyBuilder.append("this.world(), this.time(),");
-        findBodyBuilder.append(paramsBuilder.toString());
+        findBodyBuilder.append("this.world(), this.time()");
+        if (paramsBuilder != null) {
+            findBodyBuilder.append(", " + paramsBuilder.toString());
+        }
         findBodyBuilder.append(");");
         findBodyBuilder.append("}");
         findBodyBuilder.append("else {");
@@ -475,24 +477,7 @@ class ClassTypeGenerator {
         return oppositeBodyBuilder;
     }
 
-    public static StringBuilder createDefaultValueBody(Attribute att) {
-        StringBuilder builder = new StringBuilder();
 
-        if (TypeManager.isPrimitive(att.type())) {
-            builder.append("super.set(").append(att.name().toUpperCase()).append(", ").
-                    append(att.name().toUpperCase()).append("_TYPE, ").append(att.value().get(0).get(0)).append(");");
-
-        } else if (TypeManager.isPrimitiveArray(att.type())) {
-            builder.append(TypeManager.cassName(att.type())).append(" ").append(att.name()).append(" = ");
-            builder.append("(").append(TypeManager.cassName(att.type())).append(")").append(" super.getOrCreate(").
-                    append(att.name().toUpperCase()).append(", ").append(att.name().toUpperCase()).append("_TYPE);");
-
-            for (List<Object> flatVal : att.value()) {
-                builder.append(att.name()).append(".addElement(").append(flatVal.get(0)).append(");");
-            }
-        }
-        return builder;
-    }
 
 }
 

@@ -28,6 +28,9 @@ import java.util.Set;
 public class TypeManager {
     private static Set<String> primitives = new HashSet<String>(Arrays.asList("Bool", "Boolean", "String", "Long", "Int", "Integer", "Double"));
     private static Set<String> primitiveArrays = new HashSet<String>(Arrays.asList("BoolArray", "BooleanArray", "StringArray", "LongArray", "IntArray", "IntegerArray", "DoubleArray"));
+    private static Set<String> maps = new HashSet<String>(Arrays.asList("LongToLongMap", "LongToLongArrayMap", "StringToIntMap", "IntToIntMap", "IntToStringMap"));
+    private static Set<String> matrices = new HashSet<String>(Arrays.asList("DMatrix", "LMatrix"));
+    private static Set<String> trees = new HashSet<String>(Arrays.asList("KDTree", "NDTree"));
 
 
     public static String typeName(String type) {
@@ -115,7 +118,7 @@ public class TypeManager {
         return typeName;
     }
 
-    static String cassTsName(String type) {
+    static String classTsName(String type) {
         switch (type) {
             case "Bool":
             case "Boolean":
@@ -131,7 +134,7 @@ public class TypeManager {
         return "any";
     }
 
-    public static String cassName(String type) {
+    public static String className(String type) {
         String className;
 
         switch (type) {
@@ -217,6 +220,26 @@ public class TypeManager {
 
     public static boolean isPrimitiveArray(String type) {
         return primitiveArrays.contains(type);
+    }
+
+    public static boolean isMap(String type) {
+        return maps.contains(type);
+    }
+
+    public static boolean isMatrix(String type) {
+        return matrices.contains(type);
+    }
+
+    public static boolean isTree(String type) {
+        return trees.contains(type);
+    }
+
+    public static boolean isNDTree(String type) {
+        return type.equals("NDTree");
+    }
+
+    public static boolean isKDTree(String type) {
+        return type.equals("KDTree");
     }
 
 }

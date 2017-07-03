@@ -16,9 +16,11 @@
 package greycat.internal.heap;
 
 import greycat.*;
+import greycat.base.BaseCustomType;
 import greycat.internal.CoreConstants;
 import greycat.plugin.NodeStateCallback;
 import greycat.plugin.Resolver;
+import greycat.plugin.TypeDeclaration;
 import greycat.struct.*;
 import greycat.utility.Base64;
 import greycat.utility.HashHelper;
@@ -29,11 +31,11 @@ import java.util.Set;
 
 class HeapEStruct implements EStruct, HeapContainer {
 
-    private final HeapEStructArray _eGraph;
+    private final HeapEStructArray _parent;
     int _id;
 
     HeapEStruct(final HeapEStructArray p_egraph, final int p_id, final HeapEStruct origin) {
-        _eGraph = p_egraph;
+        _parent = p_egraph;
         _id = p_id;
         if (origin != null) {
             _capacity = origin._capacity;
@@ -138,7 +140,6 @@ class HeapEStruct implements EStruct, HeapContainer {
     private Object[] _v;
     private int[] _next_hash;
     private int[] _type;
-    private boolean _dirty;
 
     @Override
     public final EStruct clear() {
@@ -158,15 +159,14 @@ class HeapEStruct implements EStruct, HeapContainer {
 
     @Override
     public final void declareDirty() {
-        if (!_dirty) {
-            _dirty = true;
-            _eGraph.declareDirty();
+        if (_parent != null) {
+            _parent.declareDirty();
         }
     }
 
     @Override
     public final Graph graph() {
-        return _eGraph.graph();
+        return _parent.graph();
     }
 
     final void rebase() {
@@ -174,11 +174,11 @@ class HeapEStruct implements EStruct, HeapContainer {
             switch (_type[i]) {
                 case Type.ERELATION:
                     final HeapERelation previousERel = (HeapERelation) _v[i];
-                    previousERel.rebase(_eGraph);
+                    previousERel.rebase(_parent);
                     break;
                 case Type.ESTRUCT:
                     final HeapEStruct previous = (HeapEStruct) _v[i];
-                    _v[i] = _eGraph._nodes[previous._id];
+                    _v[i] = _parent._nodes[previous._id];
                     break;
             }
         }
@@ -330,7 +330,7 @@ class HeapEStruct implements EStruct, HeapContainer {
                         param_elem = (LongLongArrayMap) p_unsafe_elem;
                         break;
                     default:
-                        throw new RuntimeException("Internal Exception, unknown type");
+                        param_elem = (EStructArray) p_unsafe_elem;
                 }
             } catch (Exception e) {
                 throw new RuntimeException("GreyCat usage error, set method called with type " + Type.typeName(p_type) + " while param object is " + p_unsafe_elem);
@@ -482,7 +482,7 @@ class HeapEStruct implements EStruct, HeapContainer {
 
     @Override
     public EStruct set(String name, int type, Object value) {
-        internal_set(_eGraph.graph().resolver().stringToHash(name, true), type, value, true, false);
+        internal_set(_parent.graph().resolver().stringToHash(name, true), type, value, true, false);
         return this;
     }
 
@@ -494,7 +494,7 @@ class HeapEStruct implements EStruct, HeapContainer {
 
     @Override
     public Container remove(String name) {
-        internal_set(_eGraph.graph().resolver().stringToHash(name, true), Type.INT, null, true, false);
+        internal_set(_parent.graph().resolver().stringToHash(name, true), Type.INT, null, true, false);
         return this;
     }
 
@@ -506,7 +506,7 @@ class HeapEStruct implements EStruct, HeapContainer {
 
     @Override
     public Object get(String name) {
-        return internal_get(_eGraph.graph().resolver().stringToHash(name, false));
+        return internal_get(_parent.graph().resolver().stringToHash(name, false));
     }
 
     @Override
@@ -533,7 +533,7 @@ class HeapEStruct implements EStruct, HeapContainer {
 
     @Override
     public int type(String name) {
-        return internal_type(_eGraph.graph().resolver().stringToHash(name, false));
+        return internal_type(_parent.graph().resolver().stringToHash(name, false));
     }
 
     @Override
@@ -570,12 +570,12 @@ class HeapEStruct implements EStruct, HeapContainer {
 
     @Override
     public void drop() {
-        _eGraph.drop(this);
+        _parent.drop(this);
     }
 
     @Override
     public EStructArray egraph() {
-        return _eGraph;
+        return _parent;
     }
 
     @Override
@@ -584,7 +584,7 @@ class HeapEStruct implements EStruct, HeapContainer {
         if (previous != null) {
             return previous;
         } else {
-            return getOrCreateAt(_eGraph.graph().resolver().stringToHash(key, true), type);
+            return getOrCreateAt(_parent.graph().resolver().stringToHash(key, true), type);
         }
     }
 
@@ -638,8 +638,24 @@ class HeapEStruct implements EStruct, HeapContainer {
                 toSet = new HeapLongLongArrayMap(this);
                 break;
         }
-        internal_set(key, type, toSet, true, false);
-        return toSet;
+        if (toSet == null) {
+            final Object toGet;
+            final Graph g = graph();
+            final EStructArray tempND = new HeapEStructArray(this, null, g);
+            toSet = tempND;
+            final TypeDeclaration typeDeclaration = g.typeRegistry().declarationByHash(type);
+            if (typeDeclaration == null) {
+                toGet = toSet;
+            } else {
+                toGet = typeDeclaration.factory().wrap(tempND);
+                ((BaseCustomType) toGet).init();
+            }
+            internal_set(key, type, toSet, true, false);
+            return toGet;
+        } else {
+            internal_set(key, type, toSet, true, false);
+            return toSet;
+        }
     }
 
     @Override
@@ -660,7 +676,7 @@ class HeapEStruct implements EStruct, HeapContainer {
         builder.append("{");
         for (int i = 0; i < _size; i++) {
             final Object elem = _v[i];
-            final Resolver resolver = _eGraph.graph().resolver();
+            final Resolver resolver = _parent.graph().resolver();
             final int attributeKey = _k[i];
             final int elemType = _type[i];
             if (elem != null) {
@@ -937,23 +953,18 @@ class HeapEStruct implements EStruct, HeapContainer {
             if (_v[i] != null) { //there is a real value
                 final Object loopValue = _v[i];
                 if (loopValue != null) {
-                    buffer.write(CoreConstants.CHUNK_ESEP);
+                    buffer.write(CoreConstants.CHUNK_SEP);
                     Base64.encodeIntToBuffer(_type[i], buffer);
-                    buffer.write(CoreConstants.CHUNK_ESEP);
+                    buffer.write(CoreConstants.CHUNK_SEP);
                     Base64.encodeIntToBuffer(_k[i], buffer);
-                    buffer.write(CoreConstants.CHUNK_ESEP);
+                    buffer.write(CoreConstants.CHUNK_SEP);
                     switch (_type[i]) {
                         //additional types for embedded
                         case Type.ESTRUCT:
                             Base64.encodeIntToBuffer(((HeapEStruct) loopValue)._id, buffer);
                             break;
                         case Type.ERELATION:
-                            HeapERelation castedLongArrERel = (HeapERelation) loopValue;
-                            Base64.encodeIntToBuffer(castedLongArrERel.size(), buffer);
-                            for (int j = 0; j < castedLongArrERel.size(); j++) {
-                                buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                Base64.encodeIntToBuffer(((HeapEStruct) castedLongArrERel.node(j))._id, buffer);
-                            }
+                            ((HeapERelation) loopValue).save(buffer);
                             break;
                         //common types
                         case Type.STRING:
@@ -976,139 +987,48 @@ class HeapEStruct implements EStruct, HeapContainer {
                             Base64.encodeIntToBuffer((Integer) loopValue, buffer);
                             break;
                         case Type.RELATION:
-                            HeapRelation castedLongArrRel = (HeapRelation) loopValue;
-                            Base64.encodeIntToBuffer(castedLongArrRel.size(), buffer);
-                            for (int j = 0; j < castedLongArrRel.size(); j++) {
-                                buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                Base64.encodeLongToBuffer(castedLongArrRel.unsafe_get(j), buffer);
-                            }
+                            ((HeapRelation) loopValue).save(buffer);
                             break;
                         case Type.DOUBLE_ARRAY:
-                            DoubleArray castedDoubleArr = (DoubleArray) loopValue;
-                            Base64.encodeIntToBuffer(castedDoubleArr.size(), buffer);
-                            for (int j = 0; j < castedDoubleArr.size(); j++) {
-                                buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                Base64.encodeDoubleToBuffer(castedDoubleArr.get(j), buffer);
-                            }
+                            ((HeapDoubleArray) loopValue).save(buffer);
                             break;
                         case Type.LONG_ARRAY:
-                            LongArray castedLongArr = (LongArray) loopValue;
-                            Base64.encodeIntToBuffer(castedLongArr.size(), buffer);
-                            for (int j = 0; j < castedLongArr.size(); j++) {
-                                buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                Base64.encodeLongToBuffer(castedLongArr.get(j), buffer);
-                            }
+                            ((HeapLongArray) loopValue).save(buffer);
                             break;
                         case Type.INT_ARRAY:
-                            IntArray castedIntArr = (IntArray) loopValue;
-                            Base64.encodeIntToBuffer(castedIntArr.size(), buffer);
-                            for (int j = 0; j < castedIntArr.size(); j++) {
-                                buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                Base64.encodeIntToBuffer(castedIntArr.get(j), buffer);
-                            }
+                            ((HeapIntArray) loopValue).save(buffer);
                             break;
                         case Type.STRING_ARRAY:
-                            StringArray castedStringArr = (StringArray) loopValue;
-                            Base64.encodeIntToBuffer(castedStringArr.size(), buffer);
-                            for (int j = 0; j < castedStringArr.size(); j++) {
-                                buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                Base64.encodeStringToBuffer(castedStringArr.get(j), buffer);
-                            }
+                            ((HeapStringArray) loopValue).save(buffer);
                             break;
                         case Type.DMATRIX:
-                            HeapDMatrix castedMatrix = (HeapDMatrix) loopValue;
-                            final double[] unsafeContent = castedMatrix.unsafe_data();
-                            if (unsafeContent != null) {
-                                Base64.encodeIntToBuffer(unsafeContent.length, buffer);
-                                for (int j = 0; j < unsafeContent.length; j++) {
-                                    buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                    Base64.encodeDoubleToBuffer(unsafeContent[j], buffer);
-                                }
-                            }
+                            ((HeapDMatrix) loopValue).save(buffer);
                             break;
                         case Type.LMATRIX:
-                            HeapLMatrix castedLMatrix = (HeapLMatrix) loopValue;
-                            final long[] unsafeLContent = castedLMatrix.unsafe_data();
-                            if (unsafeLContent != null) {
-                                Base64.encodeIntToBuffer(unsafeLContent.length, buffer);
-                                for (int j = 0; j < unsafeLContent.length; j++) {
-                                    buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                    Base64.encodeLongToBuffer(unsafeLContent[j], buffer);
-                                }
-                            }
+                            ((HeapLMatrix) loopValue).save(buffer);
                             break;
                         case Type.STRING_TO_INT_MAP:
-                            HeapStringIntMap castedStringLongMap = (HeapStringIntMap) loopValue;
-                            Base64.encodeIntToBuffer(castedStringLongMap.size(), buffer);
-                            castedStringLongMap.unsafe_each(new StringLongMapCallBack() {
-                                @Override
-                                public void on(final String key, final long value) {
-                                    buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                    Base64.encodeStringToBuffer(key, buffer);
-                                    buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                    Base64.encodeLongToBuffer(value, buffer);
-                                }
-                            });
+                            ((HeapStringIntMap) loopValue).save(buffer);
                             break;
                         case Type.LONG_TO_LONG_MAP:
-                            HeapLongLongMap castedLongLongMap = (HeapLongLongMap) loopValue;
-                            Base64.encodeIntToBuffer(castedLongLongMap.size(), buffer);
-                            castedLongLongMap.unsafe_each(new LongLongMapCallBack() {
-                                @Override
-                                public void on(final long key, final long value) {
-                                    buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                    Base64.encodeLongToBuffer(key, buffer);
-                                    buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                    Base64.encodeLongToBuffer(value, buffer);
-                                }
-                            });
+                            ((HeapLongLongMap) loopValue).save(buffer);
                             break;
                         case Type.INT_TO_INT_MAP:
-                            HeapIntIntMap castedIntIntMap = (HeapIntIntMap) loopValue;
-                            Base64.encodeIntToBuffer(castedIntIntMap.size(), buffer);
-                            castedIntIntMap.unsafe_each(new IntIntMapCallBack() {
-                                @Override
-                                public void on(final int key, final int value) {
-                                    buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                    Base64.encodeIntToBuffer(key, buffer);
-                                    buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                    Base64.encodeIntToBuffer(value, buffer);
-                                }
-                            });
+                            ((HeapIntIntMap) loopValue).save(buffer);
                             break;
                         case Type.INT_TO_STRING_MAP:
-                            HeapIntStringMap castedIntStringMap = (HeapIntStringMap) loopValue;
-                            Base64.encodeIntToBuffer(castedIntStringMap.size(), buffer);
-                            castedIntStringMap.unsafe_each(new IntStringMapCallBack() {
-                                @Override
-                                public void on(final int key, final String value) {
-                                    buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                    Base64.encodeIntToBuffer(key, buffer);
-                                    buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                    Base64.encodeStringToBuffer(value, buffer);
-                                }
-                            });
+                            ((HeapIntStringMap) loopValue).save(buffer);
                             break;
                         case Type.LONG_TO_LONG_ARRAY_MAP:
-                            HeapLongLongArrayMap castedLongLongArrayMap = (HeapLongLongArrayMap) loopValue;
-                            Base64.encodeIntToBuffer(castedLongLongArrayMap.size(), buffer);
-                            castedLongLongArrayMap.unsafe_each(new LongLongArrayMapCallBack() {
-                                @Override
-                                public void on(final long key, final long value) {
-                                    buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                    Base64.encodeLongToBuffer(key, buffer);
-                                    buffer.write(CoreConstants.CHUNK_VAL_SEP);
-                                    Base64.encodeLongToBuffer(value, buffer);
-                                }
-                            });
+                            ((HeapLongLongArrayMap) loopValue).save(buffer);
                             break;
                         default:
+                            ((HeapEStructArray) loopValue).save(buffer);
                             break;
                     }
                 }
             }
         }
-        _dirty = false;
     }
 
     private static final byte LOAD_WAITING_ALLOC = 0;
@@ -1128,9 +1048,9 @@ class HeapEStruct implements EStruct, HeapContainer {
         int read_key = -1;
         while (cursor < payloadSize) {
             byte current = buffer.read(cursor);
-            if (current == Constants.CHUNK_ENODE_SEP || current == Constants.CHUNK_SEP) {
+            if (current == Constants.BLOCK_CLOSE) {
                 break;
-            } else if (current == Constants.CHUNK_ESEP) {
+            } else if (current == Constants.CHUNK_SEP) {
                 switch (state) {
                     case LOAD_WAITING_ALLOC:
                         final int closePowerOfTwo = (int) Math.pow(2, Math.ceil(Math.log(Base64.decodeToIntWithBounds(buffer, previous, cursor)) / Math.log(2)));
@@ -1167,7 +1087,7 @@ class HeapEStruct implements EStruct, HeapContainer {
                                 internal_set(read_key, read_type, larray, true, initial);
                                 if (cursor < payloadSize) {
                                     current = buffer.read(cursor);
-                                    if (current == Constants.CHUNK_ESEP && cursor < payloadSize) {
+                                    if (current == Constants.CHUNK_SEP && cursor < payloadSize) {
                                         state = LOAD_WAITING_TYPE;
                                         cursor++;
                                         previous = cursor;
@@ -1181,7 +1101,7 @@ class HeapEStruct implements EStruct, HeapContainer {
                                 internal_set(read_key, read_type, darray, true, initial);
                                 if (cursor < payloadSize) {
                                     current = buffer.read(cursor);
-                                    if (current == Constants.CHUNK_ESEP && cursor < payloadSize) {
+                                    if (current == Constants.CHUNK_SEP && cursor < payloadSize) {
                                         state = LOAD_WAITING_TYPE;
                                         cursor++;
                                         previous = cursor;
@@ -1195,7 +1115,7 @@ class HeapEStruct implements EStruct, HeapContainer {
                                 internal_set(read_key, read_type, iarray, true, initial);
                                 if (cursor < payloadSize) {
                                     current = buffer.read(cursor);
-                                    if (current == Constants.CHUNK_ESEP && cursor < payloadSize) {
+                                    if (current == Constants.CHUNK_SEP && cursor < payloadSize) {
                                         state = LOAD_WAITING_TYPE;
                                         cursor++;
                                         previous = cursor;
@@ -1209,7 +1129,7 @@ class HeapEStruct implements EStruct, HeapContainer {
                                 internal_set(read_key, read_type, sarray, true, initial);
                                 if (cursor < payloadSize) {
                                     current = buffer.read(cursor);
-                                    if (current == Constants.CHUNK_ESEP && cursor < payloadSize) {
+                                    if (current == Constants.CHUNK_SEP && cursor < payloadSize) {
                                         state = LOAD_WAITING_TYPE;
                                         cursor++;
                                         previous = cursor;
@@ -1223,7 +1143,7 @@ class HeapEStruct implements EStruct, HeapContainer {
                                 internal_set(read_key, read_type, relation, true, initial);
                                 if (cursor < payloadSize) {
                                     current = buffer.read(cursor);
-                                    if (current == Constants.CHUNK_ESEP && cursor < payloadSize) {
+                                    if (current == Constants.CHUNK_SEP && cursor < payloadSize) {
                                         state = LOAD_WAITING_TYPE;
                                         cursor++;
                                         previous = cursor;
@@ -1237,7 +1157,7 @@ class HeapEStruct implements EStruct, HeapContainer {
                                 internal_set(read_key, read_type, matrix, true, initial);
                                 if (cursor < payloadSize) {
                                     current = buffer.read(cursor);
-                                    if (current == Constants.CHUNK_ESEP && cursor < payloadSize) {
+                                    if (current == Constants.CHUNK_SEP && cursor < payloadSize) {
                                         state = LOAD_WAITING_TYPE;
                                         cursor++;
                                         previous = cursor;
@@ -1251,7 +1171,7 @@ class HeapEStruct implements EStruct, HeapContainer {
                                 internal_set(read_key, read_type, lmatrix, true, initial);
                                 if (cursor < payloadSize) {
                                     current = buffer.read(cursor);
-                                    if (current == Constants.CHUNK_ESEP && cursor < payloadSize) {
+                                    if (current == Constants.CHUNK_SEP && cursor < payloadSize) {
                                         state = LOAD_WAITING_TYPE;
                                         cursor++;
                                         previous = cursor;
@@ -1265,7 +1185,7 @@ class HeapEStruct implements EStruct, HeapContainer {
                                 internal_set(read_key, read_type, l2lmap, true, initial);
                                 if (cursor < payloadSize) {
                                     current = buffer.read(cursor);
-                                    if (current == Constants.CHUNK_ESEP && cursor < payloadSize) {
+                                    if (current == Constants.CHUNK_SEP && cursor < payloadSize) {
                                         state = LOAD_WAITING_TYPE;
                                         cursor++;
                                         previous = cursor;
@@ -1279,7 +1199,7 @@ class HeapEStruct implements EStruct, HeapContainer {
                                 internal_set(read_key, read_type, i2imap, true, initial);
                                 if (cursor < payloadSize) {
                                     current = buffer.read(cursor);
-                                    if (current == Constants.CHUNK_ESEP && cursor < payloadSize) {
+                                    if (current == Constants.CHUNK_SEP && cursor < payloadSize) {
                                         state = LOAD_WAITING_TYPE;
                                         cursor++;
                                         previous = cursor;
@@ -1307,7 +1227,7 @@ class HeapEStruct implements EStruct, HeapContainer {
                                 internal_set(read_key, read_type, l2lrmap, true, initial);
                                 if (cursor < payloadSize) {
                                     current = buffer.read(cursor);
-                                    if (current == Constants.CHUNK_ESEP && cursor < payloadSize) {
+                                    if (current == Constants.CHUNK_SEP && cursor < payloadSize) {
                                         state = LOAD_WAITING_TYPE;
                                         cursor++;
                                         previous = cursor;
@@ -1321,7 +1241,7 @@ class HeapEStruct implements EStruct, HeapContainer {
                                 internal_set(read_key, read_type, s2lmap, true, initial);
                                 if (cursor < payloadSize) {
                                     current = buffer.read(cursor);
-                                    if (current == Constants.CHUNK_ESEP && cursor < payloadSize) {
+                                    if (current == Constants.CHUNK_SEP && cursor < payloadSize) {
                                         state = LOAD_WAITING_TYPE;
                                         cursor++;
                                         previous = cursor;
@@ -1329,40 +1249,32 @@ class HeapEStruct implements EStruct, HeapContainer {
                                 }
                                 break;
                             case Type.ERELATION:
-                                HeapERelation eRelation = null;
+                                HeapERelation eRelation = new HeapERelation(this, null);
                                 cursor++;
-                                previous = cursor;
-                                current = buffer.read(cursor);
-                                while (cursor < payloadSize && current != Constants.CHUNK_SEP && current != Constants.CHUNK_ENODE_SEP && current != Constants.CHUNK_ESEP) {
-                                    if (current == Constants.CHUNK_VAL_SEP) {
-                                        if (eRelation == null) {
-                                            eRelation = new HeapERelation(this, null);
-                                            eRelation.allocate(Base64.decodeToIntWithBounds(buffer, previous, cursor));
-                                        } else {
-                                            eRelation.add(_eGraph.nodeByIndex((int) Base64.decodeToLongWithBounds(buffer, previous, cursor), true));
-                                        }
-                                        previous = cursor + 1;
-                                    }
-                                    cursor++;
-                                    if (cursor < payloadSize) {
-                                        current = buffer.read(cursor);
-                                    }
-                                }
-                                if (eRelation == null) {
-                                    eRelation = new HeapERelation(this, null);
-                                    eRelation.allocate(Base64.decodeToIntWithBounds(buffer, previous, cursor));
-                                } else {
-                                    eRelation.add(_eGraph.nodeByIndex(Base64.decodeToIntWithBounds(buffer, previous, cursor), true));
-                                }
+                                cursor = eRelation.load(buffer, cursor, payloadSize);
                                 internal_set(read_key, read_type, eRelation, true, initial);
-                                if (current == Constants.CHUNK_ESEP && cursor < payloadSize) {
-                                    state = LOAD_WAITING_TYPE;
-                                    cursor++;
-                                    previous = cursor;
+                                if (cursor < payloadSize) {
+                                    current = buffer.read(cursor);
+                                    if (current == Constants.CHUNK_SEP && cursor < payloadSize) {
+                                        state = LOAD_WAITING_TYPE;
+                                        cursor++;
+                                        previous = cursor;
+                                    }
                                 }
                                 break;
                             default:
-                                throw new RuntimeException("Not implemented yet!!!");
+                                HeapEStructArray eGraphDef = new HeapEStructArray(this, null, this.graph());
+                                cursor++;
+                                cursor = eGraphDef.load(buffer, cursor, payloadSize);
+                                internal_set(read_key, read_type, eGraphDef, true, initial);
+                                if (cursor < payloadSize) {
+                                    current = buffer.read(cursor);
+                                    if (current == Constants.CHUNK_SEP && cursor < payloadSize) {
+                                        state = LOAD_WAITING_TYPE;
+                                        cursor++;
+                                        previous = cursor;
+                                    }
+                                }
                         }
                         break;
                     case LOAD_WAITING_VALUE:
@@ -1400,7 +1312,7 @@ class HeapEStruct implements EStruct, HeapContainer {
                 internal_set(read_key, read_type, Base64.decodeToStringWithBounds(buffer, previous, cursor), true, initial);
                 break;
             case Type.ESTRUCT:
-                internal_set(read_key, read_type, _eGraph.nodeByIndex(Base64.decodeToIntWithBounds(buffer, previous, cursor), true), true, initial);
+                internal_set(read_key, read_type, _parent.nodeByIndex(Base64.decodeToIntWithBounds(buffer, previous, cursor), true), true, initial);
                 break;
         }
     }

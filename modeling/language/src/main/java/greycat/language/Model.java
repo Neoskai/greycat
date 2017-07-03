@@ -286,6 +286,11 @@ public class Model {
         for (GreyCatModelParser.CustomTypeDclContext customTypeDclCtx : modelDclCtx.customTypeDcl()) {
             String customTypeName = customTypeDclCtx.name.getText();
             final CustomType newCustomType = getOrAddCustomType(customTypeName);
+            // parents
+            if (customTypeDclCtx.parentDcl() != null) {
+                final CustomType parentCustomType = getOrAddCustomType(customTypeDclCtx.parentDcl().IDENT().getText());
+                newCustomType.setParent(parentCustomType);
+            }
             // attributes
             for (GreyCatModelParser.AttributeDclContext attDcl : customTypeDclCtx.attributeDcl()) {
                 Attribute att = newCustomType.getOrCreateAttribute(attDcl.name.getText());
@@ -293,6 +298,9 @@ public class Model {
                     att.setType(attDcl.typeDcl().builtInTypeDcl().getText());
                 } else if (attDcl.typeDcl().customBuiltTypeDcl() != null) {
                     att.setType(attDcl.typeDcl().customBuiltTypeDcl().getText());
+                }
+                if (attDcl.attributeValueDcl() != null) {
+                    att.setValue(getAttributeValue(attDcl.attributeValueDcl()));
                 }
             }
             // constants
@@ -315,7 +323,11 @@ public class Model {
     }
 
     public void consolidate() {
-        classes.values().forEach(aClass -> {
+        Set<Type> types = new HashSet<>();
+        types.addAll(classes.values());
+        types.addAll(customTypes.values());
+
+        types.forEach(aClass -> {
             List<String> toRemove = new ArrayList<String>();
             aClass.properties().forEach(o -> {
                 if (o instanceof Attribute) {
@@ -376,23 +388,21 @@ public class Model {
         if (attValueDclCtx.complexAttributeValueDcl() != null) {
             for (GreyCatModelParser.ComplexValueDclContext cvDclCtx : attValueDclCtx.complexAttributeValueDcl().complexValueDcl()) {
                 if (cvDclCtx.ntupleValueDlc() != null) {
-                    List<Object> identTuples = new ArrayList<Object>();
-                    for (TerminalNode ident : cvDclCtx.ntupleValueDlc().IDENT()) {
-                        identTuples.add(ident.getText());
-                    }
-                    attValues.add(identTuples);
 
-                    List<Object> strTuples = new ArrayList<Object>();
-                    for (TerminalNode str : cvDclCtx.ntupleValueDlc().STRING()) {
-                        strTuples.add(str.getText());
-                    }
-                    attValues.add(strTuples);
+                    List<Object> tuple = new ArrayList<Object>();
+                    for (GreyCatModelParser.NtupleElementDlcContext tnupleElemDcl : cvDclCtx.ntupleValueDlc().ntupleElementDlc()) {
 
-                    List<Object> nbTuples = new ArrayList<Object>();
-                    for (TerminalNode nb : cvDclCtx.ntupleValueDlc().NUMBER()) {
-                        nbTuples.add(nb.getText());
+                        if (tnupleElemDcl.IDENT() != null) {
+                            tuple.add(tnupleElemDcl.IDENT().getText());
+
+                        } else if (tnupleElemDcl.STRING() != null) {
+                            tuple.add(tnupleElemDcl.STRING().getText());
+
+                        } else if (tnupleElemDcl.NUMBER() != null) {
+                            tuple.add(tnupleElemDcl.NUMBER().getText());
+                        }
                     }
-                    attValues.add(nbTuples);
+                    attValues.add(tuple);
 
                 } else if (cvDclCtx.IDENT() != null) {
                     attValues.add(Arrays.asList(cvDclCtx.IDENT().getText()));
@@ -416,4 +426,5 @@ public class Model {
         }
         return attValues;
     }
+
 }

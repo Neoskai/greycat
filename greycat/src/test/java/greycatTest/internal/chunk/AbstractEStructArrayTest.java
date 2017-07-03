@@ -29,11 +29,11 @@ import greycat.Type;
 import greycat.chunk.ChunkSpace;
 import greycat.scheduler.NoopScheduler;
 
-public abstract class AbstractEGraphTest {
+public abstract class AbstractEStructArrayTest {
 
     private MemoryFactory factory;
 
-    public AbstractEGraphTest(MemoryFactory factory) {
+    public AbstractEStructArrayTest(MemoryFactory factory) {
         this.factory = factory;
     }
 
@@ -41,7 +41,7 @@ public abstract class AbstractEGraphTest {
     public void simpleUsageTest() {
         Graph g = GraphBuilder.newBuilder().withScheduler(new NoopScheduler()).build();
         g.connect(null);
-        ChunkSpace space = factory.newSpace(100,-1, g, false);
+        ChunkSpace space = factory.newSpace(100, -1, g, false);
         StateChunk chunk = (StateChunk) space.createAndMark(ChunkType.STATE_CHUNK, 0, 0, 0);
         //test embedded graph attribute
         EStructArray egraph = (EStructArray) chunk.getOrCreateAt(0, Type.ESTRUCT_ARRAY);
@@ -75,7 +75,7 @@ public abstract class AbstractEGraphTest {
     public void setCostTest() {
         Graph g = GraphBuilder.newBuilder().withScheduler(new NoopScheduler()).build();
         g.connect(null);
-        ChunkSpace space = factory.newSpace(100,-1, g, false);
+        ChunkSpace space = factory.newSpace(100, -1, g, false);
         StateChunk chunk = (StateChunk) space.createAndMark(ChunkType.STATE_CHUNK, 0, 0, 0);
         EStructArray egraph = (EStructArray) chunk.getOrCreateAt(0, Type.ESTRUCT_ARRAY);
         EStruct eStruct = egraph.newEStruct();
@@ -91,15 +91,76 @@ public abstract class AbstractEGraphTest {
     }
 
     @Test
+    public void miniLoadSaveTest() {
+        Storage mock = new MockStorage();
+        Graph g = GraphBuilder.newBuilder().withScheduler(new NoopScheduler()).withStorage(mock).build();
+        g.connect(null);
+
+        StateChunk chunk = (StateChunk) g.space().createAndMark(ChunkType.STATE_CHUNK, 0, 0, 0);
+        EStructArray structArray = (EStructArray) chunk.getOrCreateAt(0, Type.ESTRUCT_ARRAY);
+        EStruct eStruct = structArray.newEStruct();
+        eStruct.set("name", Type.STRING, "hello");
+
+        g.save(null);
+        g.disconnect(null);
+
+        g = GraphBuilder.newBuilder().withScheduler(new NoopScheduler()).withStorage(mock).build();
+        g.connect(null);
+        g.space().getOrLoadAndMark(ChunkType.STATE_CHUNK, 0, 0, 0, res -> {
+            StateChunk loaded = (StateChunk) res;
+            EStructArray egraphLoaded = (EStructArray) loaded.getAt(0);
+            Assert.assertEquals(1, egraphLoaded.size());
+            Assert.assertEquals("hello", egraphLoaded.estruct(0).get("name"));
+        });
+
+    }
+
+    @Test
+    public void nestedTest() {
+        Storage mock = new MockStorage();
+        Graph g = GraphBuilder.newBuilder().withScheduler(new NoopScheduler()).withStorage(mock).build();
+        g.connect(null);
+
+        StateChunk chunk = (StateChunk) g.space().createAndMark(ChunkType.STATE_CHUNK, 0, 0, 0);
+        EStructArray structArray = (EStructArray) chunk.getOrCreateAt(0, Type.ESTRUCT_ARRAY);
+        EStruct eStruct = structArray.newEStruct();
+        eStruct.set("name", Type.STRING, "hello");
+
+        EStructArray nestedStructArray = (EStructArray) eStruct.getOrCreate("nested", Type.ESTRUCT_ARRAY);
+        EStruct nestedStruct = nestedStructArray.newEStruct();
+        nestedStruct.set("name", Type.STRING, "nestedStruct");
+        Assert.assertEquals(1, nestedStructArray.size());
+
+
+        g.save(null);
+        g.disconnect(null);
+
+        Buffer buf = g.newBuffer();
+        chunk.save(buf);
+
+        g = GraphBuilder.newBuilder().withScheduler(new NoopScheduler()).withStorage(mock).build();
+        g.connect(null);
+        g.space().getOrLoadAndMark(ChunkType.STATE_CHUNK, 0, 0, 0, res -> {
+            StateChunk loaded = (StateChunk) res;
+            EStructArray egraphLoaded = (EStructArray) loaded.getAt(0);
+            Assert.assertEquals(1, egraphLoaded.size());
+            EStruct firstStruct = egraphLoaded.estruct(0);
+            Assert.assertEquals("hello", firstStruct.get("name"));
+
+            EStructArray nested = firstStruct.getEGraph("nested");
+            Assert.assertEquals(1, nested.size());
+            EStruct firstNestedStruct = nested.estruct(0);
+            Assert.assertEquals("nestedStruct", firstNestedStruct.get("name"));
+
+        });
+
+    }
+
+    @Test
     public void loadSaveTest() {
 
         Storage mock = new MockStorage();
-
-        Graph g = GraphBuilder.newBuilder()
-                .withScheduler(new NoopScheduler())
-                .withStorage(mock)
-                .build();
-
+        Graph g = GraphBuilder.newBuilder().withScheduler(new NoopScheduler()).withStorage(mock).build();
         g.connect(null);
 
         StateChunk chunk = (StateChunk) g.space().createAndMark(ChunkType.STATE_CHUNK, 0, 0, 0);
