@@ -104,9 +104,9 @@ public class FastBackupLoader {
             es.shutdown();
             es.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
 
-            if(_onlineStorage) {
+            //if(_onlineStorage) {
                 _graph.storage().createBackup(true);
-            }
+            //}
 
             System.out.println("Backup took: " + ((System.currentTimeMillis() - initialBench) / 1000) + " s");
             _graph.disconnect(null);
