@@ -71,6 +71,8 @@ public class RocksDBStorage implements Storage {
     @Override
     public BackupEntry createBackup(boolean isFromBackup) {
         try {
+            retrieveLastBackup();
+
             _graph.save(null);
 
             File backupFolder = new File(_storagePath + "/backup");
