@@ -31,6 +31,7 @@ public class UTTSender extends AbstractSender{
     // https://github.com/mqtt/mqtt.github.io/wiki/public_brokers
 
     public UTTSender(){
+        super(true);
         try {
             _producer = new MqttClient(
                     "tcp://broker.mqttdashboard.com:1883", //URI

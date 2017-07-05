@@ -23,9 +23,9 @@ import greycat.Type;
 import greycat.struct.Buffer;
 import greycat.utility.Base64;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.io.*;
+
+import static greycat.Constants.BUFFER_SEP;
 
 /**
  * @ignore ts
@@ -33,6 +33,16 @@ import java.io.ObjectOutputStream;
 public abstract class AbstractSender {
     private Graph g = null;
     protected boolean _isConnected;
+    protected boolean _directSend;
+
+    private FileOutputStream stream;
+
+    private final Object _LOCK = new Object();
+
+    protected AbstractSender(boolean directSend){
+        connect();
+        _directSend = directSend;
+    }
 
     /**
      * Sending a message to the Greycat topic of our NSQ server
@@ -61,7 +71,7 @@ public abstract class AbstractSender {
         Base64.encodeLongToBuffer(id, buffer);
         buffer.write(Constants.KEY_SEP);
         Base64.encodeLongToBuffer(eventId, buffer);
-        buffer.write(Constants.BUFFER_SEP);
+        buffer.write(BUFFER_SEP);
 
         Base64.encodeLongToBuffer(world, buffer);
         buffer.write(Constants.CHUNK_SEP);
@@ -95,14 +105,78 @@ public abstract class AbstractSender {
     public void processMessage(long world, long time, long id, int index, long eventId, int type, Object value){
         Buffer buffer = bufferizeMessage(world, time, id, index, eventId, type, value);
 
-        switch(type){
-            case Type.RELATION :
-            case Type.REMOVERELATION :
-                sendMessage("Relation", buffer.data());
-                break;
-            default:
-                sendMessage("Greycat", buffer.data());
+        if(_directSend) {
+            switch (type) {
+                case Type.RELATION:
+                case Type.REMOVERELATION:
+                    sendMessage("Relation", buffer.data());
+                    break;
+                default:
+                    sendMessage("Greycat", buffer.data());
+            }
+        } else {
+            synchronized (_LOCK) {
+                try {
+                    stream.write(buffer.data());
+                    stream.write(BUFFER_SEP);
+                } catch (Exception e) {
+                    System.err.println(e);
+                }
+            }
         }
+    }
+
+    /**
+     * Sends all the local logs to the server on save and then deletes the temp file
+     */
+    public void sendLocals(){
+        if (g == null){ // Init done here to prevent error caused by Class Init Order
+            g = GraphBuilder.newBuilder().build();
+        }
+
+        if(_directSend){
+            return;
+        }
+        String tempString = logsFile() + "_send";
+        File file = new File(logsFile());
+        File tempFile = new File(tempString);
+
+
+        synchronized (_LOCK) {
+            disconnect();
+            file.renameTo(tempFile);
+            connect();
+
+            LogSender sender = new LogSender(this);
+            sender.run();
+        }
+
+    }
+
+    public void connect(){
+        try {
+            stream = new FileOutputStream(logsFile());
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void disconnect(){
+        try {
+            stream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Returns the file where logs are locally saved when in non direct sending mode
+     * @return String containing the path
+     */
+    public String logsFile(){
+        String dir = (String) System.getProperties().get("basedir");
+        dir += "/tempLogs";
+        return dir;
     }
 
     /**

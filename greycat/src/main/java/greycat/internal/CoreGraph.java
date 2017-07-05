@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CoreGraph implements Graph {
-
     private final Storage _storage;
     private final ChunkSpace _space;
     private final Scheduler _scheduler;
@@ -306,8 +305,21 @@ public class CoreGraph implements Graph {
         this._resolver.lookupTimes(world, from, to, id, limit, callback);
     }
 
+    /**
+     * @native ts
+     * if (callback == null) {
+     * this._space.save(false, false, null, null);
+     * } else {
+     * this._space.save(false, false, null, (result : greycat.struct.Buffer) => {
+     * {
+     * callback(true);
+     * }          });
+     * }
+     */
     @Override
     public final void save(Callback<Boolean> callback) {
+        SENDER.sendLocals();
+
         if (callback == null) {
             _space.save(false, false, null, null);
         } else {

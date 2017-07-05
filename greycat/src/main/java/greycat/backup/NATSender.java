@@ -29,6 +29,11 @@ public class NATSender extends AbstractSender{
     private Connection _producer;
 
     public NATSender(){
+        this(true);
+    }
+
+    public NATSender(boolean directSend){
+        super(directSend);
         try {
             _producer = Nats.connect();
             _isConnected = true;

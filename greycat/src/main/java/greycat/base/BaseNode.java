@@ -66,11 +66,6 @@ public class BaseNode implements Node {
     /**
      * @ignore ts
      */
-    private static NATSender _sender = new NATSender();
-
-    /**
-     * @ignore ts
-     */
     private static ConcurrentHashMap<Long, Long> eventCounts = new ConcurrentHashMap<Long, Long>();
 
     /**
@@ -356,9 +351,9 @@ public class BaseNode implements Node {
      */
     @Override
     public Node setAt(int index, int type, Object value) {
-        if(_sender.isConnected()){
+        if(Graph.SENDER.isConnected()){
             long eventId= eventCounts.get(_id);
-            _sender.processMessage(_world, _time, _id, index, eventId, type, value);
+            Graph.SENDER.processMessage(_world, _time, _id, index, eventId, type, value);
             eventCounts.put(_id, ++eventId);
         }
         final NodeState unPhasedState = this._resolver.resolveState(this);
@@ -1099,9 +1094,9 @@ public class BaseNode implements Node {
     @Override
     public Node addToRelationAt(int relationIndex, Node relatedNode) {
         if (relatedNode != null) {
-            if(_sender.isConnected()){
+            if(Graph.SENDER.isConnected()){
                 Long relationId = relationCount.getAndIncrement();
-                _sender.processMessage(_world, _time, _id, relationIndex, relationId, Type.RELATION, relatedNode.id());
+                Graph.SENDER.processMessage(_world, _time, _id, relationIndex, relationId, Type.RELATION, relatedNode.id());
             }
 
             NodeState preciseState = this._resolver.alignState(this);
@@ -1138,9 +1133,9 @@ public class BaseNode implements Node {
     @Override
     public final Node removeFromRelationAt(int relationIndex, Node relatedNode) {
         if (relatedNode != null) {
-            if(_sender.isConnected()){
+            if(Graph.SENDER.isConnected()){
                 Long relationId = relationCount.getAndIncrement();
-                _sender.processMessage(_world, _time, _id, relationIndex, relationId, Type.REMOVERELATION, relatedNode.id());
+                Graph.SENDER.processMessage(_world, _time, _id, relationIndex, relationId, Type.REMOVERELATION, relatedNode.id());
             }
 
             final NodeState preciseState = this._resolver.alignState(this);

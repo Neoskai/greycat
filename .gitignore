@@ -30,3 +30,4 @@ node_modules/
 /.gradle/
 /gradle/gen/java
 /gradle/gen/web
+tempLogs

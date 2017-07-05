@@ -28,6 +28,7 @@ public class NSQSender extends AbstractSender{
     private NSQProducer _producer;
 
     public NSQSender(String address, int port){
+        super(true);
         _producer = new NSQProducer().addAddress(address,port).start();
     }
 

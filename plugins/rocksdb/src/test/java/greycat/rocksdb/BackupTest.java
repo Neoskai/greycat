@@ -125,7 +125,7 @@ public class BackupTest {
                 .withStorage(new RocksDBStorage("db"))
                 .build();
 
-        newGraph.storage().loadBackup(2);
+        newGraph.storage().loadLatestBackup();
 
         newGraph.connect(null);
 

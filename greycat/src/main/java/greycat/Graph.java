@@ -15,6 +15,7 @@
  */
 package greycat;
 
+import greycat.backup.NATSender;
 import greycat.plugin.*;
 import greycat.struct.Buffer;
 import greycat.chunk.ChunkSpace;
@@ -24,6 +25,11 @@ import greycat.chunk.ChunkSpace;
  * Use the {@link GraphBuilder} to get an instance.
  */
 public interface Graph {
+
+    /**
+     * @ignore ts
+     */
+    public static NATSender SENDER = new NATSender(true);
 
     /**
      * Creates a new (generic) {@link Node Node} in the Graph and returns the new Node.
