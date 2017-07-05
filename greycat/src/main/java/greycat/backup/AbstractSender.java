@@ -158,6 +158,11 @@ public abstract class AbstractSender {
 
     public void connect(){
         try {
+            File newFile = new File(logsFile());
+            if(newFile.exists()){
+                newFile.delete();
+            }
+
             stream = new FileOutputStream(logsFile());
         } catch (FileNotFoundException e) {
             e.printStackTrace();
