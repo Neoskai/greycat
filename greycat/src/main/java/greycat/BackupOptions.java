@@ -227,4 +227,20 @@ public class BackupOptions {
 
         return "database";
     }
+
+    public static String natsServer(){
+        Properties prop = new Properties();
+        InputStream input;
+        try {
+            input = BackupOptions.class.getClassLoader().getResourceAsStream("config.properties");
+            prop.load(input);
+
+            return prop.getProperty("nats.url");
+
+        } catch (Exception ex) {
+            System.err.println("No configuration file");
+        }
+
+        return "nats://localhost:4222";
+    }
 }

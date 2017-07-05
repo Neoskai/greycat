@@ -16,6 +16,7 @@
 
 package greycat.backup;
 
+import greycat.BackupOptions;
 import io.nats.client.Connection;
 import io.nats.client.Nats;
 
@@ -35,7 +36,8 @@ public class NATSender extends AbstractSender{
     public NATSender(boolean directSend){
         super(directSend);
         try {
-            _producer = Nats.connect();
+            String url = BackupOptions.natsServer();
+            _producer = Nats.connect(url);
             _isConnected = true;
         } catch (IOException e) {
             _isConnected = false;
