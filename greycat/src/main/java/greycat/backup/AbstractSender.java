@@ -26,6 +26,7 @@ import greycat.utility.Base64;
 import java.io.*;
 
 import static greycat.Constants.BUFFER_SEP;
+import static greycat.Constants.CHUNK_ESEP;
 
 /**
  * @ignore ts
@@ -36,12 +37,14 @@ public abstract class AbstractSender {
     protected boolean _directSend;
 
     private FileOutputStream stream;
+    private int _logFileId;
 
     private final Object _LOCK = new Object();
 
     protected AbstractSender(boolean directSend){
         connect();
         _directSend = directSend;
+        _logFileId = 0;
     }
 
     /**
@@ -118,7 +121,7 @@ public abstract class AbstractSender {
             synchronized (_LOCK) {
                 try {
                     stream.write(buffer.data());
-                    stream.write(BUFFER_SEP);
+                    stream.write(CHUNK_ESEP);
                 } catch (Exception e) {
                     System.err.println(e);
                 }
@@ -137,7 +140,7 @@ public abstract class AbstractSender {
         if(_directSend){
             return;
         }
-        String tempString = logsFile() + "_send";
+        String tempString = logsFile() + "_send" + _logFileId++;
         File file = new File(logsFile());
         File tempFile = new File(tempString);
 
@@ -147,7 +150,7 @@ public abstract class AbstractSender {
             file.renameTo(tempFile);
             connect();
 
-            LogSender sender = new LogSender(this);
+            LogSender sender = new LogSender(this, tempString);
             sender.run();
         }
 
@@ -174,7 +177,7 @@ public abstract class AbstractSender {
      * @return String containing the path
      */
     public String logsFile(){
-        String dir = (String) System.getProperties().get("basedir");
+        String dir = (String) System.getProperties().get("user.dir");
         dir += "/tempLogs";
         return dir;
     }

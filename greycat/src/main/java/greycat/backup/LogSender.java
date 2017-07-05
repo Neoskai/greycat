@@ -25,21 +25,24 @@ import java.io.FileInputStream;
 import java.io.IOException;
 
 import static greycat.Constants.BUFFER_SEP;
+import static greycat.Constants.CHUNK_ESEP;
 
 /**
  * @ignore ts
  */
 public class LogSender implements Runnable {
     private AbstractSender _sender;
+    private String _logFile;
 
-    public LogSender(AbstractSender sender){
+    public LogSender(AbstractSender sender, String fileID){
         _sender = sender;
+        _logFile = fileID;
     }
 
     @Override
     public void run() {
         try {
-            String tempString = _sender.logsFile() + "_send";
+            String tempString = _logFile;
             File tempFile = new File(tempString);
 
             FileInputStream input = new FileInputStream(tempString);
@@ -49,8 +52,9 @@ public class LogSender implements Runnable {
             Buffer buffer = g.newBuffer();
 
             while ((content = input.read()) != -1) {
-                if (content == BUFFER_SEP) {
-                    _sender.sendMessage("Greycat", buffer.data());
+                if (content == CHUNK_ESEP) {
+                    byte[] data = buffer.data();
+                    _sender.sendMessage("Greycat", data);
                     buffer.free();
                 } else {
                     buffer.write((byte) content);

@@ -79,12 +79,12 @@ public class Constants {
      */
     //public static final byte CHUNK_ENODE_SEP = '$';
 
-    /*
+    /**
      * {@native ts
      * public static CHUNK_ESEP : number = "%".charCodeAt(0);
      * }
      */
-    //public static final byte CHUNK_ESEP = '%';
+    public static final byte CHUNK_ESEP = '%';
 
     /**
      * {@native ts
