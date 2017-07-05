@@ -11,6 +11,9 @@ const isStatic : Boolean
 
 
 class SmartCity {
+    const listNodeNames : Task = readIndex("nodes").name
+
+    att name : String
     att location : GPSPosition
 }
 
