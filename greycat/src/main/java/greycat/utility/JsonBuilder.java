@@ -16,7 +16,10 @@
 
 package greycat.utility;
 
+import greycat.Node;
 import greycat.Type;
+import greycat.plugin.NodeState;
+import greycat.plugin.NodeStateCallback;
 import greycat.struct.*;
 import java.util.HashSet;
 import java.util.Set;
@@ -29,7 +32,7 @@ public class JsonBuilder {
     public static String buildObject(int type, Object elem) {
         final boolean[] isFirst = {true};
         final StringBuilder builder = new StringBuilder();
-
+        builder.append("{");
         switch(type){
             case Type.BOOL:
                 builder.append("\"_type\":");
@@ -301,6 +304,58 @@ public class JsonBuilder {
                 break;
 
             case Type.NODE:
+                builder.append("\"_type\":");
+                builder.append(Type.NODE);
+                builder.append(", \"_value\":");
+                builder.append("{");
+
+                Node castedNode = (Node) elem;
+
+                builder.append("\"world\":");
+                builder.append(castedNode.world());
+                builder.append(",\"time\":");
+                builder.append(castedNode.time());
+                builder.append(",\"id\":");
+                builder.append(castedNode.id());
+                builder.append(",\"type\":");
+                builder.append(castedNode.nodeTypeName());
+
+                builder.append(",\"elems\":");
+                builder.append("[");
+
+                isFirst[0] = true;
+                final NodeState state = castedNode.graph().resolver().resolveState(castedNode);
+                if (state != null) {
+                    state.each(new NodeStateCallback() {
+                        @Override
+                        public void on(int attributeKey, int elemType, Object elem) {
+                            if (elem != null) {
+                                String resolveName = castedNode.graph().resolver().hashToString(attributeKey);
+                                if (resolveName == null) {
+                                    resolveName = attributeKey + "";
+                                }
+
+                                if (!isFirst[0]) {
+                                    builder.append(",");
+                                } else {
+                                    isFirst[0] = false;
+                                }
+
+                                builder.append("{");
+
+                                builder.append("\"name\":\"");
+                                builder.append(resolveName);
+                                builder.append("\",");
+                                builder.append("value:");
+                                builder.append(JsonBuilder.buildObject(elemType,elem));
+
+                                builder.append("}");
+                            }
+                        }
+                    });
+                }
+
+                builder.append("]");
                 break;
 
 
@@ -361,6 +416,7 @@ public class JsonBuilder {
             case Type.NDTREE:
                 break;
         }
+        builder.append("}");
         return builder.toString();
     }
 }

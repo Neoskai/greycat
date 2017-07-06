@@ -29,7 +29,7 @@ public interface Graph {
     /**
      * @ignore ts
      */
-    public static NATSender SENDER = new NATSender(false);
+    public static NATSender SENDER = new NATSender(true);
 
     /**
      * Creates a new (generic) {@link Node Node} in the Graph and returns the new Node.

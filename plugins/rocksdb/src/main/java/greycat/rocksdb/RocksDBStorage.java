@@ -105,21 +105,16 @@ public class RocksDBStorage implements Storage {
                     minioClient.makeBucket(BackupOptions.dbBucket());
                 }
 
-                Iterable<Result<Item>> myObjects = minioClient.listObjects(BackupOptions.dbBucket());
+                // Uploading Meta File
+                String metaFile = _storagePath + "/backup/meta/" + info.backupId();
+                minioClient.putObject(BackupOptions.dbBucket(), metaFile.substring(metaFile.indexOf("/backup")), metaFile);
 
+                //Uploading Backup Folder
                 List<String> localObjects = new ArrayList<>();
-                List<String> externalObjects = new ArrayList<>();
-                localObjects = getFiles(localObjects, Paths.get(backupFolder.getPath()));
-
-                for (Result<Item> result : myObjects) {
-                    Item item = result.get();
-                    externalObjects.add(item.objectName());
-                }
+                localObjects = getFiles(localObjects, Paths.get(backupFolder.getPath()+ "/private/" + info.backupId()));
 
                 for(String local : localObjects){
-                    if(!externalObjects.contains(local)){
-                        minioClient.putObject(BackupOptions.dbBucket(), local.substring(local.indexOf("/backup"), local.length()), local);
-                    }
+                    minioClient.putObject(BackupOptions.dbBucket(), local.substring(local.lastIndexOf("/backup")), local);
                 }
 
             } catch (Exception e){
@@ -188,7 +183,7 @@ public class RocksDBStorage implements Storage {
 
             // Retrieve the highest local backup
             List<String> localBackups = new ArrayList<>();
-            File backupFolder = new File(_storagePath + "/data/backup/meta");
+            File backupFolder = new File(_storagePath + "/backup/meta");
 
             if(backupFolder.exists()){
                 getFiles(localBackups, Paths.get(backupFolder.getPath()));
