@@ -32,7 +32,10 @@ public class FastLoaderTest {
     public void totalBackup() throws IOException {
         try {
             long initialBench = System.currentTimeMillis();
-            FastBackupLoader loader = new FastBackupLoader("data");
+
+            String sparkeyPath= getClass().getClassLoader().getResource("data").getFile()+"/logs";
+
+            FastBackupLoader loader = new FastBackupLoader(sparkeyPath);
             Graph g = loader.backup();
 
             System.out.println("Backup took: " + ((System.currentTimeMillis()-initialBench)/1000) + " s");
