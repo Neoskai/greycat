@@ -72,6 +72,7 @@ public class JsonBuilder {
                 builder.append((Double) elem);
                 break;
 
+
             case Type.DOUBLE_ARRAY:
                 builder.append("\"_type\":");
                 builder.append(Type.DOUBLE_ARRAY);
@@ -83,21 +84,6 @@ public class JsonBuilder {
                         builder.append(",");
                     }
                     builder.append(castedArr.get(j));
-                }
-                builder.append("]");
-                break;
-
-            case Type.RELATION:
-                builder.append("\"_type\":");
-                builder.append(Type.RELATION);
-                builder.append(", \"_value\":");
-                builder.append("[");
-                Relation castedRelArr = (Relation) elem;
-                for (int j = 0; j < castedRelArr.size(); j++) {
-                    if (j != 0) {
-                        builder.append(",");
-                    }
-                    builder.append(castedRelArr.get(j));
                 }
                 builder.append("]");
                 break;
@@ -132,6 +118,23 @@ public class JsonBuilder {
                 builder.append("]");
                 break;
 
+            case Type.STRING_ARRAY:
+                builder.append("\"_type\":");
+                builder.append(Type.STRING_ARRAY);
+                builder.append(", \"_value\":");
+                builder.append("[");
+                StringArray castedStrArr = (StringArray) elem;
+                for (int j = 0; j < castedStrArr.size(); j++) {
+                    if (j != 0) {
+                        builder.append(",");
+                    }
+                    builder.append("\"");
+                    builder.append(castedStrArr.get(j));
+                    builder.append("\"");
+                }
+                builder.append("]");
+
+
             case Type.LONG_TO_LONG_MAP:
                 builder.append("\"_type\":");
                 builder.append(Type.LONG_TO_LONG_MAP);
@@ -142,30 +145,6 @@ public class JsonBuilder {
                 castedMapL2L.each(new LongLongMapCallBack() {
                     @Override
                     public void on(long key, long value) {
-                        if (!isFirst[0]) {
-                            builder.append(",");
-                        } else {
-                            isFirst[0] = false;
-                        }
-                        builder.append("\"");
-                        builder.append(key);
-                        builder.append("\":");
-                        builder.append(value);
-                    }
-                });
-                builder.append("}");
-                break;
-
-            case Type.INT_TO_INT_MAP:
-                builder.append("\"_type\":");
-                builder.append(Type.INT_TO_INT_MAP);
-                builder.append(", \"_value\":");
-                builder.append("{");
-                IntStringMap castedMapI2I = (IntStringMap) elem;
-                isFirst[0] = true;
-                castedMapI2I.each(new IntStringMapCallBack() {
-                    @Override
-                    public void on(int key, String value) {
                         if (!isFirst[0]) {
                             builder.append(",");
                         } else {
@@ -242,8 +221,146 @@ public class JsonBuilder {
                 break;
 
 
-        }
+            case Type.RELATION:
+                builder.append("\"_type\":");
+                builder.append(Type.RELATION);
+                builder.append(", \"_value\":");
+                builder.append("[");
+                Relation castedRelArr = (Relation) elem;
+                for (int j = 0; j < castedRelArr.size(); j++) {
+                    if (j != 0) {
+                        builder.append(",");
+                    }
+                    builder.append(castedRelArr.get(j));
+                }
+                builder.append("]");
+                break;
 
+
+            case Type.DMATRIX:
+                builder.append("\"_type\":");
+                builder.append(Type.DMATRIX);
+                builder.append(", \"_value\":");
+                builder.append("[");
+
+                DMatrix castedDMat = (DMatrix) elem;
+                for(int i = 0 ; i < castedDMat.rows(); i++) {
+                    if(i != 0){
+                        builder.append(",");
+                    }
+                    builder.append("[");
+                    for(int j= 0; j < castedDMat.columns(); j++){
+                        if(j != 0){
+                            builder.append(",");
+                        }
+                        builder.append(castedDMat.get(i,j));
+                    }
+                    builder.append("]");
+                }
+                builder.append("]");
+                break;
+
+            case Type.LMATRIX:
+                builder.append("\"_type\":");
+                builder.append(Type.LMATRIX);
+                builder.append(", \"_value\":");
+                builder.append("[");
+
+                DMatrix castedLMat = (DMatrix) elem;
+                for(int i = 0 ; i < castedLMat.rows(); i++) {
+                    if(i != 0){
+                        builder.append(",");
+                    }
+                    builder.append("[");
+                    for(int j= 0; j < castedLMat.columns(); j++){
+                        if(j != 0){
+                            builder.append(",");
+                        }
+                        builder.append(castedLMat.get(i,j));
+                    }
+                    builder.append("]");
+                }
+                builder.append("]");
+                break;
+
+
+            case Type.ESTRUCT:
+                break;
+
+            case Type.ESTRUCT_ARRAY:
+                break;
+
+            case Type.ERELATION:
+                break;
+
+
+            case Type.TASK:
+                break;
+
+            case Type.TASK_ARRAY:
+                break;
+
+            case Type.NODE:
+                break;
+
+
+            case Type.INT_TO_INT_MAP:
+                builder.append("\"_type\":");
+                builder.append(Type.INT_TO_INT_MAP);
+                builder.append(", \"_value\":");
+                builder.append("{");
+                IntIntMap castedMapI2I = (IntIntMap) elem;
+                isFirst[0] = true;
+                castedMapI2I.each(new IntIntMapCallBack() {
+                    @Override
+                    public void on(int key, int value) {
+                        if (!isFirst[0]) {
+                            builder.append(",");
+                        } else {
+                            isFirst[0] = false;
+                        }
+                        builder.append("\"");
+                        builder.append(key);
+                        builder.append("\":");
+                        builder.append(value);
+                    }
+                });
+                builder.append("}");
+                break;
+
+            case Type.INT_TO_STRING_MAP:
+                builder.append("\"_type\":");
+                builder.append(Type.INT_TO_STRING_MAP);
+                builder.append(", \"_value\":");
+                builder.append("{");
+                IntStringMap castedMapI2S = (IntStringMap) elem;
+                isFirst[0] = true;
+                castedMapI2S.each(new IntStringMapCallBack() {
+                    @Override
+                    public void on(int key, String value) {
+                        if (!isFirst[0]) {
+                            builder.append(",");
+                        } else {
+                            isFirst[0] = false;
+                        }
+                        builder.append("\"");
+                        builder.append(key);
+                        builder.append("\":");
+                        builder.append(value);
+                    }
+                });
+                builder.append("}");
+                break;
+
+            case Type.INDEX:
+                break;
+
+            case Type.KDTREE:
+                break;
+
+            case Type.NDTREE:
+                break;
+        }
         return builder.toString();
     }
 }
