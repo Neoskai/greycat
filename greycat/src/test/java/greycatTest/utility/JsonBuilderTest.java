@@ -16,13 +16,9 @@
 
 package greycatTest.utility;
 
-import com.google.gson.Gson;
 import greycat.Type;
 import greycat.utility.JsonBuilder;
 import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 

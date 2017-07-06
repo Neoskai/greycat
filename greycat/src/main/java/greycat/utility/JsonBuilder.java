@@ -17,6 +17,7 @@
 package greycat.utility;
 
 import greycat.Node;
+import greycat.Task;
 import greycat.Type;
 import greycat.plugin.NodeState;
 import greycat.plugin.NodeStateCallback;
@@ -298,9 +299,33 @@ public class JsonBuilder {
 
 
             case Type.TASK:
+                builder.append("\"_type\":");
+                builder.append(Type.TASK);
+                builder.append(", \"_value\":");
+                builder.append("\"");
+
+                Task castedTask = (Task) elem;
+                builder.append(castedTask.toString());
+                builder.append("\"");
                 break;
 
             case Type.TASK_ARRAY:
+                builder.append("\"_type\":");
+                builder.append(Type.TASK_ARRAY);
+                builder.append(", \"_value\":");
+                builder.append("[");
+
+                Task[] castedTaskArr = (Task[]) elem;
+                for (int i = 0; i < castedTaskArr.length; i++){
+                    if(i != 0){
+                        builder.append(",");
+                    }
+                    builder.append("\"");
+                    builder.append(castedTaskArr[i].toString());
+                    builder.append("\"");
+                }
+
+                builder.append("]");
                 break;
 
             case Type.NODE:
