@@ -137,7 +137,7 @@ public class JsonBuilder {
                     builder.append("\"");
                 }
                 builder.append("]");
-
+                break;
 
             case Type.LONG_TO_LONG_MAP:
                 builder.append("\"_type\":");
@@ -289,12 +289,30 @@ public class JsonBuilder {
 
 
             case Type.ESTRUCT:
+                builder.append("\"_type\":");
+                builder.append(Type.ESTRUCT);
+                builder.append(", \"_value\":");
+
+                EStruct castedEStruct = (EStruct) elem;
+                builder.append(castedEStruct.toString());
                 break;
 
             case Type.ESTRUCT_ARRAY:
+                builder.append("\"_type\":");
+                builder.append(Type.ESTRUCT_ARRAY);
+                builder.append(", \"_value\":");
+
+                EStructArray castedEArr = (EStructArray) elem;
+                builder.append(castedEArr.toString());
                 break;
 
             case Type.ERELATION:
+                builder.append("\"_type\":");
+                builder.append(Type.ERELATION);
+                builder.append(", \"_value\":");
+
+                ERelation castedErel = (ERelation) elem;
+                builder.append(castedErel.toString());
                 break;
 
 
