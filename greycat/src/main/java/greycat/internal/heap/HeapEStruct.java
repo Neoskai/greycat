@@ -18,12 +18,14 @@ package greycat.internal.heap;
 import greycat.*;
 import greycat.base.BaseCustomType;
 import greycat.internal.CoreConstants;
+import greycat.plugin.NodeState;
 import greycat.plugin.NodeStateCallback;
 import greycat.plugin.Resolver;
 import greycat.plugin.TypeDeclaration;
 import greycat.struct.*;
 import greycat.utility.Base64;
 import greycat.utility.HashHelper;
+import greycat.utility.JsonBuilder;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -943,6 +945,46 @@ class HeapEStruct implements EStruct, HeapContainer {
             }
         }
         builder.append("}");
+        return builder.toString();
+    }
+
+    public final String toJson(){
+        StringBuilder builder = new StringBuilder();
+        boolean isFirstField = true;
+
+        builder.append("[");
+
+        for (int i = 0; i < _size; i++) {
+            final Object elem = _v[i];
+            final Resolver resolver = _parent.graph().resolver();
+            final int attributeKey = _k[i];
+            final int elemType = _type[i];
+            if (elem != null) {
+                String resolveName = resolver.hashToString(attributeKey);
+                if (resolveName == null) {
+                    resolveName = attributeKey + "";
+                }
+                if (isFirstField) {
+                    isFirstField = false;
+                } else {
+                    builder.append(",");
+                }
+
+                builder.append("{");
+
+                builder.append("\"name\":\"");
+                builder.append(resolveName);
+                builder.append("\",");
+                builder.append("\"value\":");
+                builder.append(JsonBuilder.buildJson(elemType,elem));
+
+                builder.append("}");
+            }
+        }
+
+        builder.append("]");
+
+
         return builder.toString();
     }
 

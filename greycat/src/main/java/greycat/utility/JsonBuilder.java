@@ -19,18 +19,22 @@ package greycat.utility;
 import greycat.Node;
 import greycat.Task;
 import greycat.Type;
+import greycat.internal.heap.HeapContainer;
 import greycat.plugin.NodeState;
 import greycat.plugin.NodeStateCallback;
 import greycat.struct.*;
-import java.util.HashSet;
-import java.util.Set;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.util.*;
+import java.util.Map;
 
 /**
  * @ignore ts
  */
 public class JsonBuilder {
 
-    public static String buildObject(int type, Object elem) {
+    public static String buildJson(int type, Object elem) {
         final boolean[] isFirst = {true};
         final StringBuilder builder = new StringBuilder();
         builder.append("{");
@@ -294,7 +298,7 @@ public class JsonBuilder {
                 builder.append(", \"_value\":");
 
                 EStruct castedEStruct = (EStruct) elem;
-                builder.append(castedEStruct.toString());
+                builder.append(castedEStruct.toJson());
                 break;
 
             case Type.ESTRUCT_ARRAY:
@@ -303,6 +307,7 @@ public class JsonBuilder {
                 builder.append(", \"_value\":");
 
                 EStructArray castedEArr = (EStructArray) elem;
+                // @Todo Switch from toString to toJson
                 builder.append(castedEArr.toString());
                 break;
 
@@ -312,6 +317,7 @@ public class JsonBuilder {
                 builder.append(", \"_value\":");
 
                 ERelation castedErel = (ERelation) elem;
+                // @Todo Switch from toString to toJson
                 builder.append(castedErel.toString());
                 break;
 
@@ -323,6 +329,7 @@ public class JsonBuilder {
                 builder.append("\"");
 
                 Task castedTask = (Task) elem;
+                // @Todo Switch from toString to toJson
                 builder.append(castedTask.toString());
                 builder.append("\"");
                 break;
@@ -339,6 +346,7 @@ public class JsonBuilder {
                         builder.append(",");
                     }
                     builder.append("\"");
+                    // @Todo Switch from toString to toJson
                     builder.append(castedTaskArr[i].toString());
                     builder.append("\"");
                 }
@@ -389,8 +397,8 @@ public class JsonBuilder {
                                 builder.append("\"name\":\"");
                                 builder.append(resolveName);
                                 builder.append("\",");
-                                builder.append("value:");
-                                builder.append(JsonBuilder.buildObject(elemType,elem));
+                                builder.append("\"value\":");
+                                builder.append(JsonBuilder.buildJson(elemType,elem));
 
                                 builder.append("}");
                             }
@@ -399,6 +407,7 @@ public class JsonBuilder {
                 }
 
                 builder.append("]");
+                builder.append("}");
                 break;
 
 
@@ -462,4 +471,206 @@ public class JsonBuilder {
         builder.append("}");
         return builder.toString();
     }
+
+    public static Object buildObject(String json, HeapContainer parent) {
+        Object obj = null;
+
+        JSONObject jsonObject = new JSONObject(json);
+        int type = jsonObject.getInt("_type");
+
+        switch (type) {
+            case Type.BOOL:
+                obj = jsonObject.getBoolean("_value");
+                break;
+
+            case Type.STRING:
+                obj = jsonObject.getString("_value");
+                break;
+
+            case Type.LONG:
+                obj = jsonObject.getLong("_value");
+                break;
+
+            case Type.INT:
+                obj = jsonObject.getInt("_value");
+                break;
+
+            case Type.DOUBLE:
+                obj = jsonObject.getDouble("_value");
+                break;
+
+
+            case Type.DOUBLE_ARRAY:
+                JSONArray jDArray = jsonObject.getJSONArray("_value");
+
+                double[] darray = new double[jDArray.length()];
+                for(int i=0; i < jDArray.length(); i++){
+                    darray[i] = jDArray.getDouble(i);
+                }
+
+
+                break;
+
+            case Type.LONG_ARRAY:
+                JSONArray jLArray = jsonObject.getJSONArray("_value");
+
+                long[] larray = new long[jLArray.length()];
+                for(int i=0; i < jLArray.length(); i++){
+                    larray[i] = jLArray.getLong(i);
+                }
+
+                break;
+
+            case Type.INT_ARRAY:
+                JSONArray jIArray = jsonObject.getJSONArray("_value");
+
+                int[] iarray = new int[jIArray.length()];
+                for(int i=0; i < jIArray.length(); i++){
+                    iarray[i] = jIArray.getInt(i);
+                }
+
+                break;
+
+            case Type.STRING_ARRAY:
+                JSONArray jSArray = jsonObject.getJSONArray("_value");
+
+                String[] sarray = new String[jSArray.length()];
+                for(int i=0; i < jSArray.length(); i++){
+                    sarray[i] = jSArray.getString(i);
+                }
+
+                break;
+
+            case Type.LONG_TO_LONG_MAP:
+                Map<Long, Long> llMap = new HashMap<>();
+
+                JSONObject llObject = jsonObject.getJSONObject("_value");
+
+                Iterator<String> keysItr = llObject.keys();
+                while(keysItr.hasNext()){
+                    String key = keysItr.next();
+
+                    Long keyLong = Long.parseLong(key);
+                    Long value = llObject.getLong(key);
+
+                    llMap.put(keyLong,value);
+                }
+
+
+                break;
+
+            case Type.LONG_TO_LONG_ARRAY_MAP:
+                Map<Long, Long[]> llaMap = new HashMap<>();
+
+                JSONObject llaObject = jsonObject.getJSONObject("_value");
+
+                Iterator<String> keysllaItr = llaObject.keys();
+                while(keysllaItr.hasNext()){
+                    String key = keysllaItr.next();
+
+                    Long keyLong = Long.parseLong(key);
+
+                    JSONArray array = llaObject.getJSONArray(key);
+                    Long[] values = new Long[array.length()];
+
+                    for(int i = 0; i < array.length(); i++){
+                        values[i] = array.getLong(i);
+                    }
+
+                    llaMap.put(keyLong,values);
+                }
+                break;
+
+            case Type.STRING_TO_INT_MAP:
+                Map<String, Integer> siMap = new HashMap<>();
+
+                JSONObject siObject = jsonObject.getJSONObject("_value");
+
+                Iterator<String> keysSiItr = siObject.keys();
+                while(keysSiItr.hasNext()){
+                    String key = keysSiItr.next();
+
+                    Integer value = siObject.getInt(key);
+
+                    siMap.put(key,value);
+                }
+                break;
+
+
+            case Type.RELATION:
+                break;
+
+
+            case Type.DMATRIX:
+                break;
+
+            case Type.LMATRIX:
+                break;
+
+
+            case Type.ESTRUCT:
+                break;
+
+            case Type.ESTRUCT_ARRAY:
+                break;
+
+            case Type.ERELATION:
+                break;
+
+
+            case Type.TASK:
+                break;
+
+            case Type.TASK_ARRAY:
+                break;
+
+            case Type.NODE:
+                break;
+
+
+            case Type.INT_TO_INT_MAP:
+                Map<Integer, Integer> iiMap = new HashMap<>();
+
+                JSONObject iiObject = jsonObject.getJSONObject("_value");
+
+                Iterator<String> keysIiItr = iiObject.keys();
+                while(keysIiItr.hasNext()){
+                    String key = keysIiItr.next();
+
+                    Integer iKey = Integer.parseInt(key);
+                    Integer value = iiObject.getInt(key);
+
+                    iiMap.put(iKey,value);
+                }
+                break;
+
+            case Type.INT_TO_STRING_MAP:
+                Map<Integer, String> isMap = new HashMap<>();
+
+                JSONObject isObject = jsonObject.getJSONObject("_value");
+
+                Iterator<String> keysIsItr = isObject.keys();
+                while(keysIsItr.hasNext()){
+                    String key = keysIsItr.next();
+
+                    Integer iKey = Integer.parseInt(key);
+                    String value = isObject.getString(key);
+
+                    isMap.put(iKey,value);
+                }
+                break;
+
+            case Type.INDEX:
+                break;
+
+            case Type.KDTREE:
+                break;
+
+            case Type.NDTREE:
+                break;
+        }
+
+        return obj;
+    }
+
 }

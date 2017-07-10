@@ -48,4 +48,5 @@ public interface EStruct extends Container {
 
     int id();
 
+    String toJson();
 }

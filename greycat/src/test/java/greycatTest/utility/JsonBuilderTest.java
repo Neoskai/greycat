@@ -29,23 +29,23 @@ public class JsonBuilderTest {
     @Test
     public void testBuilder(){
 
-        String boolJson = JsonBuilder.buildObject(Type.BOOL, true);
+        String boolJson = JsonBuilder.buildJson(Type.BOOL, true);
         String boolWriting = "{\"_type\":1, \"_value\":true}";
         assertEquals(boolJson, boolWriting);
 
-        String stringJson = JsonBuilder.buildObject(Type.STRING, "hello");
+        String stringJson = JsonBuilder.buildJson(Type.STRING, "hello");
         String stringWriting = "{\"_type\":2, \"_value\":\"hello\"}";
         assertEquals(stringJson, stringWriting);
 
-        String longJson =JsonBuilder.buildObject(Type.LONG, 1712771606L);
+        String longJson =JsonBuilder.buildJson(Type.LONG, 1712771606L);
         String longWriting = "{\"_type\":3, \"_value\":1712771606}";
         assertEquals(longJson, longWriting);
 
-        String intJson =JsonBuilder.buildObject(Type.INT, -70308288);
+        String intJson =JsonBuilder.buildJson(Type.INT, -70308288);
         String intWriting = "{\"_type\":4, \"_value\":-70308288}";
         assertEquals(intJson, intWriting);
 
-        String doubleJson =JsonBuilder.buildObject(Type.DOUBLE, 3973226699.47893);
+        String doubleJson =JsonBuilder.buildJson(Type.DOUBLE, 3973226699.47893);
         String doubleWriting = "{\"_type\":5, \"_value\":3.97322669947893E9}";
         assertEquals(doubleJson, doubleWriting);
     }
