@@ -12,9 +12,16 @@ const isStatic : Boolean
 
 class SmartCity {
     const listNodeNames : Task = readIndex("nodes").name
+    const derivedAtt : Task = executeExpression("x + y")
 
     att name : String
     att location : GPSPosition
+
+    att taskAtt : Task
+
+    att x : Double = 5.1
+    att y : Double = 1.5
+
 }
 
 class Building extends ASuperType {
@@ -61,11 +68,12 @@ class ASuperType {
 }
 
 type GPSPosition extends AGPSPosition {
+    const derivedAtt : Task = executeExpression("x + y")
+
     att lat : Double
     att lng : Double
 
     att i2strMap : IntToStringMap = ((1,"1"),(2,"2"))
-
 }
 
 type AGPSPosition {

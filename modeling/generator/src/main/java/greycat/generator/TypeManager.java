@@ -20,6 +20,7 @@ import greycat.Task;
 import greycat.internal.custom.KDTree;
 import greycat.internal.custom.NDTree;
 import greycat.struct.*;
+import greycat.utility.HashHelper;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -112,7 +113,7 @@ public class TypeManager {
                 typeName = "Type.NODE";
                 break;
             default:
-                typeName = type + ".TYPE_HASH";
+                typeName = "" + HashHelper.hash(type);
         }
 
         return typeName;
@@ -139,19 +140,19 @@ public class TypeManager {
 
         switch (type) {
             case "Bool":
-                className = boolean.class.getCanonicalName();
+                className = Boolean.class.getCanonicalName();
                 break;
             case "String":
                 className = String.class.getCanonicalName();
                 break;
             case "Long":
-                className = long.class.getCanonicalName();
+                className = Long.class.getCanonicalName();
                 break;
             case "Int":
-                className = int.class.getCanonicalName();
+                className = Integer.class.getCanonicalName();
                 break;
             case "Double":
-                className = double.class.getCanonicalName();
+                className = Double.class.getCanonicalName();
                 break;
             case "DoubleArray":
                 className = DoubleArray.class.getCanonicalName();

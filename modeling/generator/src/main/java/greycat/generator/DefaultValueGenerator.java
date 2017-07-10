@@ -25,14 +25,14 @@ public class DefaultValueGenerator {
         StringBuilder builder = new StringBuilder();
 
         if (TypeManager.isPrimitive(att.type())) {
-            builder.append("super.set(").append(att.name().toUpperCase()).append(", ").
-                    append(att.name().toUpperCase()).append("_TYPE, ").append(att.value().get(0).get(0)).append(");");
+            builder.append("super.set(").append(att.name().toUpperCase()).append(".name").append(", ").
+                    append(att.name().toUpperCase()).append(".type, ").append(att.value().get(0).get(0)).append(");");
 
         } else if (TypeManager.isPrimitiveArray(att.type())) {
             // primitive arrays
             builder.append(TypeManager.className(att.type())).append(" ").append(att.name()).append(" = ");
             builder.append("(").append(TypeManager.className(att.type())).append(")").append(" super.getOrCreate(").
-                    append(att.name().toUpperCase()).append(", ").append(att.name().toUpperCase()).append("_TYPE);");
+                    append(att.name().toUpperCase()).append(".name").append(", ").append(att.name().toUpperCase()).append(".type);");
 
             for (List<Object> val : att.value()) {
                 Object tuple1 = val.get(0);
@@ -43,7 +43,7 @@ public class DefaultValueGenerator {
             // maps
             builder.append(TypeManager.className(att.type())).append(" ").append(att.name()).append(" = ");
             builder.append("(").append(TypeManager.className(att.type())).append(")").append(" super.getOrCreate(").
-                    append(att.name().toUpperCase()).append(", ").append(att.name().toUpperCase()).append("_TYPE);");
+                    append(att.name().toUpperCase()).append(".name").append(", ").append(att.name().toUpperCase()).append(".type);");
 
             for (List<Object> val : att.value()) {
                 Object tuple1 = val.get(0);
@@ -55,7 +55,7 @@ public class DefaultValueGenerator {
             // matrices
             builder.append(TypeManager.className(att.type())).append(" ").append(att.name()).append(" = ");
             builder.append("(").append(TypeManager.className(att.type())).append(")").append(" super.getOrCreate(").
-                    append(att.name().toUpperCase()).append(", ").append(att.name().toUpperCase()).append("_TYPE);");
+                    append(att.name().toUpperCase()).append(".name").append(", ").append(att.name().toUpperCase()).append(".type);");
             for (List<Object> val : att.value()) {
                 Object row = val.get(0);
                 Object column = val.get(1);
@@ -67,7 +67,7 @@ public class DefaultValueGenerator {
             // trees
             builder.append(TypeManager.className(att.type())).append(" ").append(att.name()).append(" = ");
             builder.append("(").append(TypeManager.className(att.type())).append(")").append(" super.getOrCreate(").
-                    append(att.name().toUpperCase()).append(", ").append(att.name().toUpperCase()).append("_TYPE);");
+                    append(att.name().toUpperCase()).append(".name").append(", ").append(att.name().toUpperCase()).append(".type);");
             List<Object> keys = att.value().get(0);
             Object value = att.value().get(1).get(0);
 

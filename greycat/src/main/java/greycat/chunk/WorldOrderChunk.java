@@ -32,5 +32,5 @@ public interface WorldOrderChunk extends Chunk, LongLongMap {
     long type();
 
     void setType(long extraValue);
-
+    
 }

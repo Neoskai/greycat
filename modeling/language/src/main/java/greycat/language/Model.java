@@ -162,7 +162,7 @@ public class Model {
                 c = new Constant(const_name);
                 constants.put(const_name, c);
             }
-            c.setType(getType(constDclCtx.typeDcl()));
+            c.setType(getType(constDclCtx.valueTypeDcl()));
             String value = null;
             if (constDclCtx.constValueDcl() != null) {
                 if (constDclCtx.constValueDcl().simpleValueDcl() != null) {
@@ -185,44 +185,23 @@ public class Model {
             }
             // attributes
             for (GreyCatModelParser.AttributeDclContext attDcl : classDclCtx.attributeDcl()) {
-                String name = attDcl.name.getText();
-                final Attribute attribute = newClass.getOrCreateAttribute(name);
-                attribute.setType(getType(attDcl.typeDcl()));
-                if (attDcl.attributeValueDcl() != null) {
-                    attribute.setValue(getAttributeValue(attDcl.attributeValueDcl()));
-                }
+                addAttribute(newClass, attDcl);
             }
             // relations
             for (GreyCatModelParser.RelationDclContext relDclCtx : classDclCtx.relationDcl()) {
-                newClass.getOrCreateRelation(relDclCtx.name.getText()).setType(relDclCtx.type.getText());
+                addRelation(newClass, relDclCtx);
             }
             // references
             for (GreyCatModelParser.ReferenceDclContext refDclCtx : classDclCtx.referenceDcl()) {
-                newClass.getOrCreateReference(refDclCtx.name.getText()).setType(refDclCtx.type.getText());
+                addReference(newClass, refDclCtx);
             }
             // local indexes
             for (GreyCatModelParser.LocalIndexDclContext localIndexDclCtx : classDclCtx.localIndexDcl()) {
-                final Index index = newClass.getOrCreateIndex(localIndexDclCtx.name.getText());
-                index.setType(localIndexDclCtx.type.getText());
-                final Class indexedClass = getOrAddClass(index.type());
-                for (TerminalNode idxDclIdent : localIndexDclCtx.indexAttributesDcl().IDENT()) {
-                    index.addAttributeRef(new AttributeRef(indexedClass.getOrCreateAttribute(idxDclIdent.getText())));
-                }
+                addLocalIndex(newClass, localIndexDclCtx);
             }
-            // constants
+            // local constants
             for (GreyCatModelParser.ConstDclContext constDclCtx : classDclCtx.constDcl()) {
-                Constant constant = newClass.getOrCreateConstant(constDclCtx.name.getText());
-                constant.setType(getType(constDclCtx.typeDcl()));
-                String value = null;
-                if (constDclCtx.constValueDcl() != null) {
-                    if (constDclCtx.constValueDcl().simpleValueDcl() != null) {
-                        value = constDclCtx.constValueDcl().simpleValueDcl().getText();
-                    } else if (constDclCtx.constValueDcl().taskValueDcl() != null) {
-                        GreyCatModelParser.TaskValueDclContext taskDcl = constDclCtx.constValueDcl().taskValueDcl();
-                        value = taskDcl.getText();
-                    }
-                }
-                constant.setValue(value);
+                addLocalConstant(newClass, constDclCtx);
             }
         }
 
@@ -233,46 +212,19 @@ public class Model {
 
             // relations
             for (GreyCatModelParser.RelationDclContext relDclCtx : classDclCtx.relationDcl()) {
-                if (relDclCtx.oppositeDcl() != null) {
-                    Relation rel = (Relation) classType.properties.get(relDclCtx.name.getText());
-                    Class oppositeClass = classes.get(rel.type());
-                    Object oppositeProperty = oppositeClass.properties.get(relDclCtx.oppositeDcl().name.getText());
-                    if (oppositeProperty instanceof Edge) {
-                        Edge opposite = (Edge) oppositeProperty;
-                        rel.setOpposite(new Opposite(opposite));
-                        opposite.setOpposite(new Opposite(rel));
-                    }
-                }
+                linkOppositeRelations(classType, relDclCtx);
             }
             // references
             for (GreyCatModelParser.ReferenceDclContext refDclCtx : classDclCtx.referenceDcl()) {
-                if (refDclCtx.oppositeDcl() != null) {
-                    Reference ref = (Reference) classType.properties.get(refDclCtx.name.getText());
-                    Class oppositeClass = classes.get(ref.type());
-                    Object oppositeProperty = oppositeClass.properties.get(refDclCtx.oppositeDcl().name.getText());
-                    if (oppositeProperty instanceof Edge) {
-                        Edge opposite = (Edge) oppositeProperty;
-                        ref.setOpposite(new Opposite(opposite));
-                        opposite.setOpposite(new Opposite(ref));
-                    }
-                }
+                linkOppositeReferences(classType, refDclCtx);
             }
             // local indexes
             for (GreyCatModelParser.LocalIndexDclContext idxDclCtx : classDclCtx.localIndexDcl()) {
-                if (idxDclCtx.oppositeDcl() != null) {
-                    Index idx = (Index) classType.properties.get(idxDclCtx.name.getText());
-                    Class oppositeClass = classes.get(idx.type());
-                    Object oppositeProperty = oppositeClass.properties.get(idxDclCtx.oppositeDcl().name.getText());
-                    if (oppositeProperty instanceof Edge) {
-                        Edge opposite = (Edge) oppositeProperty;
-                        idx.setOpposite(new Opposite(opposite));
-                        opposite.setOpposite(new Opposite(idx));
-                    }
-                }
+                linkOppositeLocalIndexes(classType, idxDclCtx);
             }
         }
 
-        // indexes
+        // global indexes
         for (GreyCatModelParser.GlobalIndexDclContext globalIdxDclContext : modelDclCtx.globalIndexDcl()) {
             final String name = globalIdxDclContext.name.getText();
             final String type = globalIdxDclContext.type.getText();
@@ -282,6 +234,7 @@ public class Model {
                 index.addAttributeRef(new AttributeRef(indexedClass.getOrCreateAttribute(idxDclIdent.getText())));
             }
         }
+
         // custom types
         for (GreyCatModelParser.CustomTypeDclContext customTypeDclCtx : modelDclCtx.customTypeDcl()) {
             String customTypeName = customTypeDclCtx.name.getText();
@@ -293,31 +246,82 @@ public class Model {
             }
             // attributes
             for (GreyCatModelParser.AttributeDclContext attDcl : customTypeDclCtx.attributeDcl()) {
-                Attribute att = newCustomType.getOrCreateAttribute(attDcl.name.getText());
-                if (attDcl.typeDcl().builtInTypeDcl() != null) {
-                    att.setType(attDcl.typeDcl().builtInTypeDcl().getText());
-                } else if (attDcl.typeDcl().customBuiltTypeDcl() != null) {
-                    att.setType(attDcl.typeDcl().customBuiltTypeDcl().getText());
-                }
-                if (attDcl.attributeValueDcl() != null) {
-                    att.setValue(getAttributeValue(attDcl.attributeValueDcl()));
-                }
+                addAttribute(newCustomType, attDcl);
             }
-            // constants
+//            // relations
+//            for (GreyCatModelParser.RelationDclContext relDcl : customTypeDclCtx.relationDcl()) {
+//                addRelation(newCustomType, relDcl);
+//            }
+//            // references
+//            for (GreyCatModelParser.ReferenceDclContext refDcl : customTypeDclCtx.referenceDcl()) {
+//                addReference(newCustomType, refDcl);
+//            }
+//            // local indexes
+//            for (GreyCatModelParser.LocalIndexDclContext localIndexDcl : customTypeDclCtx.localIndexDcl()) {
+//                addLocalIndex(newCustomType, localIndexDcl);
+//            }
+            // local constants
             for (GreyCatModelParser.ConstDclContext constDclCtx : customTypeDclCtx.constDcl()) {
-                Constant constant = newCustomType.getOrCreateConstant(constDclCtx.name.getText());
-                constant.setType(getType(constDclCtx.typeDcl()));
-                String value = null;
-                if (constDclCtx.constValueDcl() != null) {
-                    if (constDclCtx.constValueDcl().simpleValueDcl() != null) {
-                        value = constDclCtx.constValueDcl().simpleValueDcl().getText();
-                    } else if (constDclCtx.constValueDcl().taskValueDcl() != null) {
-                        GreyCatModelParser.TaskValueDclContext taskDcl = constDclCtx.constValueDcl().taskValueDcl();
-                        value = taskDcl.getText();
-                    }
-                }
-                constant.setValue(value);
+                addLocalConstant(newCustomType, constDclCtx);
+            }
+//            // opposite management
+//            for (GreyCatModelParser.CustomTypeDclContext typeDclCtx : modelDclCtx.customTypeDcl()) {
+//                String typeFqn = typeDclCtx.name.getText();
+//                CustomType customType = customTypes.get(typeFqn);
+//
+//                // relations
+//                for (GreyCatModelParser.RelationDclContext relDclCtx : typeDclCtx.relationDcl()) {
+//                    linkOppositeRelations(customType, relDclCtx);
+//                }
+//                // references
 
+//                for (GreyCatModelParser.ReferenceDclContext refDclCtx : typeDclCtx.referenceDcl()) {
+//                    linkOppositeReferences(customType, refDclCtx);
+//                }
+//                // local indexes
+//                for (GreyCatModelParser.LocalIndexDclContext idxDclCtx : typeDclCtx.localIndexDcl()) {
+//                    linkOppositeLocalIndexes(customType, idxDclCtx);
+//                }
+//            }
+
+        }
+    }
+
+    private void linkOppositeLocalIndexes(Type classType, GreyCatModelParser.LocalIndexDclContext idxDclCtx) {
+        if (idxDclCtx.oppositeDcl() != null) {
+            Index idx = (Index) classType.properties.get(idxDclCtx.name.getText());
+            Class oppositeClass = classes.get(idx.type());
+            Object oppositeProperty = oppositeClass.properties.get(idxDclCtx.oppositeDcl().name.getText());
+            if (oppositeProperty instanceof Edge) {
+                Edge opposite = (Edge) oppositeProperty;
+                idx.setOpposite(new Opposite(opposite));
+                opposite.setOpposite(new Opposite(idx));
+            }
+        }
+    }
+
+    private void linkOppositeReferences(Type classType, GreyCatModelParser.ReferenceDclContext refDclCtx) {
+        if (refDclCtx.oppositeDcl() != null) {
+            Reference ref = (Reference) classType.properties.get(refDclCtx.name.getText());
+            Class oppositeClass = classes.get(ref.type());
+            Object oppositeProperty = oppositeClass.properties.get(refDclCtx.oppositeDcl().name.getText());
+            if (oppositeProperty instanceof Edge) {
+                Edge opposite = (Edge) oppositeProperty;
+                ref.setOpposite(new Opposite(opposite));
+                opposite.setOpposite(new Opposite(ref));
+            }
+        }
+    }
+
+    private void linkOppositeRelations(Type classType, GreyCatModelParser.RelationDclContext relDclCtx) {
+        if (relDclCtx.oppositeDcl() != null) {
+            Relation rel = (Relation) classType.properties.get(relDclCtx.name.getText());
+            Class oppositeClass = classes.get(rel.type());
+            Object oppositeProperty = oppositeClass.properties.get(relDclCtx.oppositeDcl().name.getText());
+            if (oppositeProperty instanceof Edge) {
+                Edge opposite = (Edge) oppositeProperty;
+                rel.setOpposite(new Opposite(opposite));
+                opposite.setOpposite(new Opposite(rel));
             }
         }
     }
@@ -344,7 +348,48 @@ public class Model {
         });
     }
 
-    private String getType(GreyCatModelParser.TypeDclContext typeDclContext) {
+    private void addAttribute(Type type, GreyCatModelParser.AttributeDclContext attDcl) {
+        String name = attDcl.name.getText();
+        final Attribute attribute = type.getOrCreateAttribute(name);
+        attribute.setType(getType(attDcl.valueTypeDcl()));
+        if (attDcl.attributeValueDcl() != null) {
+            attribute.setValue(getAttributeValue(attDcl.attributeValueDcl()));
+        }
+    }
+
+    private void addRelation(Type type, GreyCatModelParser.RelationDclContext relDcl) {
+        type.getOrCreateRelation(relDcl.name.getText()).setType(relDcl.type.getText());
+    }
+
+    private void addReference(Type type, GreyCatModelParser.ReferenceDclContext refDcl) {
+        type.getOrCreateReference(refDcl.name.getText()).setType(refDcl.type.getText());
+    }
+
+    private void addLocalIndex(Type type, GreyCatModelParser.LocalIndexDclContext localIndexDcl) {
+        final Index index = type.getOrCreateIndex(localIndexDcl.name.getText());
+        index.setType(localIndexDcl.type.getText());
+        final Class indexedClass = getOrAddClass(index.type());
+        for (TerminalNode idxDclIdent : localIndexDcl.indexAttributesDcl().IDENT()) {
+            index.addAttributeRef(new AttributeRef(indexedClass.getOrCreateAttribute(idxDclIdent.getText())));
+        }
+    }
+
+    private void addLocalConstant(Type type, GreyCatModelParser.ConstDclContext constDcl) {
+        Constant constant = type.getOrCreateConstant(constDcl.name.getText());
+        constant.setType(getType(constDcl.valueTypeDcl()));
+        String value = null;
+        if (constDcl.constValueDcl() != null) {
+            if (constDcl.constValueDcl().simpleValueDcl() != null) {
+                value = constDcl.constValueDcl().simpleValueDcl().getText();
+            } else if (constDcl.constValueDcl().taskValueDcl() != null) {
+                GreyCatModelParser.TaskValueDclContext taskDcl = constDcl.constValueDcl().taskValueDcl();
+                value = taskDcl.getText();
+            }
+        }
+        constant.setValue(value);
+    }
+
+    private String getType(GreyCatModelParser.ValueTypeDclContext typeDclContext) {
         String type = null;
         if (typeDclContext.builtInTypeDcl() != null) {
             type = typeDclContext.builtInTypeDcl().getText();

@@ -19,6 +19,9 @@ import greycat.*;
 import greycat.struct.LongLongArrayMap;
 import model.*;
 import model.Constants;
+import org.junit.Assert;
+
+import static greycat.Tasks.newTask;
 
 public class HelloModelingWorld {
 
@@ -62,6 +65,9 @@ public class HelloModelingWorld {
                 // custom types
                 SmartCity smartCity = SmartCity.create(0, 0, graph);
                 GPSPosition pos = smartCity.getLocation();
+                Assert.assertNull(pos);
+
+                pos = smartCity.getOrCreateLocation();
                 pos.setLng(5.43d);
                 pos.setLat(3.23d);
                 System.out.println(pos);
@@ -108,7 +114,7 @@ public class HelloModelingWorld {
                 Constants.CONSTANT_TO_OVERRIDE = "new value";
 
                 // complex types
-                LongLongArrayMap llam = building.getLongToLongArrayMap();
+                LongLongArrayMap llam = building.getOrCreateLongToLongArrayMap();
                 llam.put(5, 5);
                 System.out.println(llam.get(5)[0]);
 
@@ -139,6 +145,27 @@ public class HelloModelingWorld {
                         for (B b : result) {
                             System.out.println(b.getName());
                         }
+                    }
+                });
+
+
+                // derived att
+                smartCity.traverseAt(SmartCity.DERIVEDATT.hash, new Callback<Double>() {
+                    public void on(Double i) {
+                        Assert.assertEquals("6.6", i + "");
+                    }
+                });
+                smartCity.traverse(SmartCity.DERIVEDATT.name, new Callback<Double>() {
+                    public void on(Double i) {
+                        Assert.assertEquals("6.6", i + "");
+                    }
+                });
+
+                Task t = newTask().attribute(SmartCity.DERIVEDATT.name);
+                t.executeWith(graph, smartCity, new Callback<TaskResult>() {
+                    @Override
+                    public void on(TaskResult result) {
+                        Assert.assertEquals("6.6", result.get(0) + "");
                     }
                 });
 

@@ -13,32 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package greycat.chunk;
+package greycat.utility;
 
-public interface TimeTreeChunk extends Chunk {
+public class Meta {
+    public final String name;
+    public final int type;
+    public final int hash;
 
-    int insert(long key);
-
-    long getKey(int offset);
-
-    long previousOrEqual(long key);
-
-    int previousOrEqualOffset(long key);
-
-    void range(long startKey, long endKey, long maxElements, TreeWalker walker);
-
-    long magic();
-
-    long previous(long key);
-
-    long next(long key);
-
-    int size();
-
-    long capacity();
-
-    void setCapacity(long v);
-
-    long max();
-
+    public Meta(final String name, final int type, final int hash) {
+        this.name = name;
+        this.type = type;
+        this.hash = hash;
+    }
 }

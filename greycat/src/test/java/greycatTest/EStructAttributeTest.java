@@ -13,32 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package greycat.chunk;
+package greycatTest;
 
-public interface TimeTreeChunk extends Chunk {
 
-    int insert(long key);
+import greycat.Graph;
+import greycat.GraphBuilder;
+import greycat.Node;
+import greycat.Type;
+import greycat.scheduler.NoopScheduler;
+import greycat.struct.EStruct;
+import org.junit.Test;
 
-    long getKey(int offset);
+public class EStructAttributeTest {
 
-    long previousOrEqual(long key);
+   // @Test
+    public void test() {
+        Graph g = GraphBuilder.newBuilder().withScheduler(new NoopScheduler()).build();
+        g.connect(null);
 
-    int previousOrEqualOffset(long key);
-
-    void range(long startKey, long endKey, long maxElements, TreeWalker walker);
-
-    long magic();
-
-    long previous(long key);
-
-    long next(long key);
-
-    int size();
-
-    long capacity();
-
-    void setCapacity(long v);
-
-    long max();
+        Node n = g.newNode(0, 0);
+        EStruct eStruct = (EStruct) n.getOrCreateAt(0, Type.ESTRUCT);
+    }
 
 }

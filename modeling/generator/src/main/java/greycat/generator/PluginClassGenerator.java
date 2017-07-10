@@ -47,7 +47,7 @@ class PluginClassGenerator {
 
         for (Class classType : model.classes()) {
             startBodyBuilder.append("\t\tgraph.nodeRegistry()\n")
-                    .append("\t\t\t.getOrCreateDeclaration(").append(classType.name()).append(".NODE_NAME").append(")").append("\n")
+                    .append("\t\t\t.getOrCreateDeclaration(").append(classType.name()).append(".META.name").append(")").append("\n")
                     .append("\t\t\t.setFactory(new NodeFactory() {\n" +
                             "\t\t\t\t\t@Override\n" +
                             "\t\t\t\t\tpublic greycat.Node create(long world, long time, long id, Graph graph) {\n" +
@@ -58,7 +58,7 @@ class PluginClassGenerator {
         }
 
         for (CustomType customType : model.customTypes()) {
-            startBodyBuilder.append("graph.typeRegistry().getOrCreateDeclaration(" + customType.name() + ".TYPE_NAME" + ").setFactory(new greycat.plugin.TypeFactory() {");
+            startBodyBuilder.append("graph.typeRegistry().getOrCreateDeclaration(" + customType.name() + ".META.name" + ").setFactory(new greycat.plugin.TypeFactory() {");
             startBodyBuilder.append("@Override\n");
             startBodyBuilder.append("public Object wrap(final greycat.struct.EStructArray backend) {");
             startBodyBuilder.append("return new " + customType.name() + "(backend);");
@@ -66,23 +66,23 @@ class PluginClassGenerator {
             startBodyBuilder.append("});\n\n");
         }
 
-        startBodyBuilder.append("graph.addConnectHook(new greycat.Callback<greycat.Callback<Boolean>>() {");
-        startBodyBuilder.append("@Override\n");
-        startBodyBuilder.append("public void on(greycat.Callback<Boolean> result) {");
-
 
         if (model.globalIndexes().length > 0) {
+            startBodyBuilder.append("graph.addConnectHook(new greycat.Callback<greycat.Callback<Boolean>>() {");
+            startBodyBuilder.append("@Override\n");
+            startBodyBuilder.append("public void on(greycat.Callback<Boolean> result) {");
+
             startBodyBuilder.append("greycat.DeferCounter dc = graph.newCounter(" + model.globalIndexes().length + ");");
 
             for (Index idx : model.globalIndexes()) {
                 StringBuilder paramsBuilder = new StringBuilder();
                 for (AttributeRef att : idx.attributes()) {
-                    paramsBuilder.append(idx.name() + "." + att.ref().name().toUpperCase());
+                    paramsBuilder.append(idx.name() + "." + att.ref().name().toUpperCase() + ".name");
                     paramsBuilder.append(",");
                 }
                 paramsBuilder.deleteCharAt(paramsBuilder.length() - 1);
 
-                startBodyBuilder.append("graph.declareIndex(0, " + idx.name() + ".INDEX_NAME" + ", new greycat.Callback<greycat.NodeIndex>() {");
+                startBodyBuilder.append("graph.declareIndex(0, " + idx.name() + ".META.name" + ", new greycat.Callback<greycat.NodeIndex>() {");
                 startBodyBuilder.append("@Override\n");
                 startBodyBuilder.append("public void on(greycat.NodeIndex result) {");
                 startBodyBuilder.append("dc.count();");
@@ -96,10 +96,10 @@ class PluginClassGenerator {
             startBodyBuilder.append("result.on(true);");
             startBodyBuilder.append("}");
             startBodyBuilder.append("});");
-        }
 
-        startBodyBuilder.append("}");
-        startBodyBuilder.append("});");
+            startBodyBuilder.append("}");
+            startBodyBuilder.append("});");
+        }
 
         MethodSource<JavaClassSource> startMethod = pluginClass.addMethod();
         startMethod.setReturnTypeVoid()

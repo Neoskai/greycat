@@ -206,6 +206,7 @@ public class CoreGraph implements Graph {
             //Init the cloned node with clonee resolver cache
             newNode._index_stateChunk = casted._index_stateChunk;
             newNode._index_timeTree = casted._index_timeTree;
+            newNode._index_timeTree_offset = casted._index_timeTree_offset;
             newNode._index_superTimeTree = casted._index_superTimeTree;
             newNode._index_worldOrder = casted._index_worldOrder;
             newNode._world_magic = casted._world_magic;

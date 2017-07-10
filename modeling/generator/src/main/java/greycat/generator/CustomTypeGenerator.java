@@ -15,13 +15,15 @@
  */
 package greycat.generator;
 
+import greycat.Type;
 import greycat.language.Attribute;
 import greycat.language.Constant;
 import greycat.language.CustomType;
 import greycat.language.Model;
+import greycat.utility.HashHelper;
+import greycat.utility.MetaConst;
 import org.jboss.forge.roaster.Roaster;
 import org.jboss.forge.roaster.model.Visibility;
-import org.jboss.forge.roaster.model.source.FieldSource;
 import org.jboss.forge.roaster.model.source.JavaClassSource;
 import org.jboss.forge.roaster.model.source.JavaSource;
 import org.jboss.forge.roaster.model.source.MethodSource;
@@ -42,6 +44,7 @@ public class CustomTypeGenerator {
         final JavaClassSource javaClass = Roaster.create(JavaClassSource.class);
         javaClass.setPackage(packageName);
         javaClass.setName(customType.name());
+        javaClass.addImport(Type.class);
 
         if (customType.parent() != null) {
             javaClass.setSuperType(packageName + "." + customType.parent().name());
@@ -62,24 +65,17 @@ public class CustomTypeGenerator {
         //generate TS getter and setter
         javaClass.getJavaDoc().setFullText("<pre>{@extend ts\n" + TS_GET_SET + "\n}\n</pre>");
 
-
-        // field for type name
+        // field for meta
         javaClass.addField()
                 .setVisibility(Visibility.PUBLIC)
                 .setFinal(true)
-                .setStatic(true)
-                .setType(String.class)
-                .setName("TYPE_NAME")
-                .setStringInitializer(customType.name());
+                .setName("META")
+                .setType(greycat.utility.Meta.class)
+                .setLiteralInitializer("new greycat.utility.Meta(" + "\"" + customType.name() + "\"" + ","
+                        + HashHelper.hash(customType.name()) + ","
+                        + HashHelper.hash(customType.name()) + ");")
+                .setStatic(true);
 
-        // field for type hash
-        javaClass.addField()
-                .setVisibility(Visibility.PUBLIC)
-                .setFinal(true)
-                .setStatic(true)
-                .setType(int.class)
-                .setName("TYPE_HASH")
-                .setLiteralInitializer("greycat.utility.HashHelper.hash(TYPE_NAME)");
 
         // init method
         MethodSource<JavaClassSource> init = javaClass.addMethod()
@@ -88,50 +84,73 @@ public class CustomTypeGenerator {
                 .setReturnTypeVoid();
         StringBuilder initBodyBuilder = new StringBuilder();
 
+        // override typeAt
+        MethodSource<JavaClassSource> typeAt = javaClass.addMethod()
+                .setName("typeAt")
+                .setVisibility(Visibility.PUBLIC)
+                .setReturnType(int.class);
+        typeAt.addParameter("int", "index");
+        StringBuilder typeAtBodyBuilder = new StringBuilder();
+
+        // override getAt
+        MethodSource<JavaClassSource> getAt = javaClass.addMethod()
+                .setName("getAt")
+                .setVisibility(Visibility.PUBLIC)
+                .setReturnType(Object.class);
+        getAt.addParameter("int", "index");
+        StringBuilder getAtBodyBuilder = new StringBuilder();
+
+        // override setAt
+        MethodSource<JavaClassSource> setAt = javaClass.addMethod()
+                .setName("setAt")
+                .setVisibility(Visibility.PUBLIC)
+                .setReturnType(greycat.Container.class);
+        setAt.addParameter("int", "index");
+        setAt.addParameter("int", "type");
+        setAt.addParameter("Object", "value");
+        StringBuilder setAtBodyBuilder = new StringBuilder();
+
         customType.properties().forEach(o -> {
             // constants
             if (o instanceof Constant) {
                 Constant constant = (Constant) o;
                 String value = constant.value();
-                if (constant.type().equals("Task") && value != null) {
-                    value = "greycat.Tasks.newTask().parse(\"" + value.replaceAll("\"", "'").trim() + "\",null);";
+
+                if (constant.type().equals("Task")) {
+                    typeAtBodyBuilder.append("if (index == ").append(constant.name().toUpperCase()).append(".hash) {").append("return Type.TASK;").append("}");
+                    getAtBodyBuilder.append("if (index == ").append(constant.name().toUpperCase()).append(".hash) {").append("return " + constant.name().toUpperCase() + ".value" + ";").append("}");
+                    setAtBodyBuilder.append("if (type == Type.TASK && index == ").append(constant.name().toUpperCase() + ".hash)").append("{")
+                            .append(constant.name().toUpperCase() + ".value ").append("= (greycat.Task) value;").append("return this;").append("}");
+
+                    if (value != null) {
+                        value = "greycat.Tasks.newTask().parse(\"" + value.replaceAll("\"", "'").trim() + "\",null)";
+                    }
                 } else if (!constant.type().equals("String") && value != null) {
                     value = value.replaceAll("\"", "");
                 }
+
+                // field for meta
                 javaClass.addField()
                         .setVisibility(Visibility.PUBLIC)
                         .setFinal(true)
-                        .setName(constant.name())
-                        .setType(TypeManager.className(constant.type()))
-                        .setLiteralInitializer(value)
+                        .setName(constant.name().toUpperCase())
+                        .setType(MetaConst.class)
+                        .setLiteralInitializer("new greycat.utility.MetaConst(\"" + constant.name() + "\", "
+                                + TypeManager.typeName(constant.type()) + ", "
+                                + HashHelper.hash(constant.name()) + ", " + value + ");")
                         .setStatic(true);
+
             } else if (o instanceof Attribute) {
                 Attribute att = (Attribute) o;
-                // field attribute name
+                // field for meta
                 javaClass.addField()
                         .setVisibility(Visibility.PUBLIC)
                         .setFinal(true)
                         .setName(att.name().toUpperCase())
-                        .setType(String.class)
-                        .setStringInitializer(att.name())
-                        .setStatic(true);
-
-                // field attribute type
-                FieldSource<JavaClassSource> typeField = javaClass.addField()
-                        .setVisibility(Visibility.PUBLIC)
-                        .setFinal(true)
-                        .setName(att.name().toUpperCase() + "_TYPE")
-                        .setType(int.class)
-                        .setStatic(true);
-                typeField.setLiteralInitializer("greycat." + TypeManager.typeName(att.type()));
-
-                // field attribute hash
-                javaClass.addField()
-                        .setVisibility(Visibility.PUBLIC)
-                        .setFinal(true)
-                        .setName(att.name().toUpperCase() + "_H")
-                        .setType(int.class)
-                        .setLiteralInitializer("greycat.utility.HashHelper.hash(" + att.name().toUpperCase() + ")")
+                        .setType(greycat.utility.Meta.class)
+                        .setLiteralInitializer("new greycat.utility.Meta(\"" + att.name() + "\", "
+                                + TypeManager.typeName(att.type()) + ", "
+                                + HashHelper.hash(att.name()) + ");")
                         .setStatic(true);
 
                 // getter
@@ -140,7 +159,7 @@ public class CustomTypeGenerator {
                         .setVisibility(Visibility.PUBLIC)
                         .setFinal(true)
                         .setReturnType(TypeManager.className(att.type()))
-                        .setBody("return (" + TypeManager.className(att.type()) + ") getAt(" + att.name().toUpperCase() + "_H" + ");");
+                        .setBody("return (" + TypeManager.className(att.type()) + ") getAt(" + att.name().toUpperCase() + ".hash);");
 
                 // setter
                 javaClass.addMethod()
@@ -148,7 +167,7 @@ public class CustomTypeGenerator {
                         .setVisibility(Visibility.PUBLIC)
                         .setFinal(true)
                         .setReturnType(customType.name())
-                        .setBody("setAt(" + att.name().toUpperCase() + "_H," +
+                        .setBody("setAt(" + att.name().toUpperCase() + ".hash ," +
                                 "greycat." + TypeManager.typeName(att.type()) + "," + att.name() + ");\nreturn this;")
                         .addParameter(TypeManager.className(att.type()), att.name());
 
@@ -190,6 +209,15 @@ public class CustomTypeGenerator {
         toString.setBody(finalToString);
 
         init.setBody(initBodyBuilder.toString());
+
+        typeAtBodyBuilder.append("return super.typeAt(index);");
+        typeAt.setBody(typeAtBodyBuilder.toString());
+
+        getAtBodyBuilder.append("return super.getAt(index);");
+        getAt.setBody(getAtBodyBuilder.toString());
+
+        setAtBodyBuilder.append("return super.setAt(index, type, value);");
+        setAt.setBody(setAtBodyBuilder.toString());
 
         return javaClass;
     }

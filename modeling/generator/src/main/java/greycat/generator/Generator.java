@@ -73,7 +73,7 @@ public class Generator {
         }
     }*/
 
-    private void generateJava(String packageName, String pluginName, File target, List<File> classPath) {
+    private void generateJava(String packageName, String pluginName, File target) {
         int index = 0;
         int size = model.classes().length + model.customTypes().length + model.globalIndexes().length + 1;
         JavaSource[] sources = new JavaSource[size * 2 + 2];
@@ -205,7 +205,7 @@ public class Generator {
                 "    \"greycat\": \"" + gcVersion + "\"\n" +
                 "  },\n" +
                 "  \"devDependencies\": {\n" +
-                "    \"typescript\": \"2.3.4\"\n" +
+                "    \"typescript\": \"2.4.1\"\n" +
                 "  }" +
                 "}";
         try {
@@ -249,7 +249,7 @@ public class Generator {
                     "    \"" + packageName + "\": \"" + new File(modelWeb, "model-1.0.0.tgz").getAbsolutePath() + "\"\n" +
                     "  },\n" +
                     "  \"devDependencies\": {\n" +
-                    "    \"typescript\": \"2.3.4\",\n" +
+                    "    \"typescript\": \"2.4.1\",\n" +
                     "    \"ts-node\": \"3.0.4\"\n" +
                     "  }" +
                     "}").getBytes());
@@ -313,7 +313,7 @@ public class Generator {
         model.consolidate();
         Checker.check(model);
         if (generateJava || generateJS) {
-            generateJava(packageName, pluginName, target, classPath);
+            generateJava(packageName, pluginName, target);
         }
         if (generateJS) {
             generateJS(packageName, pluginName, target, targetWeb, gcVersion, classPath);
@@ -321,31 +321,11 @@ public class Generator {
     }
 
     private void addToTransClassPath(SourceTranslator transpiler) {
-        String classPath = System.getProperty("java.class.path");
-        int index = 0;
-        boolean finish = false;
-        while (index < classPath.length() && !finish) {
-            if (classPath.charAt(index) == ':') {
-                int slashIdx = index;
-                while (slashIdx >= 0 && !finish) {
-                    if (classPath.charAt(slashIdx) == '/') {
-                        if (slashIdx + 7 < index && classPath.charAt(slashIdx + 1) == 'g' && classPath.charAt(slashIdx + 2) == 'r' && classPath.charAt(slashIdx + 3) == 'e'
-                                && classPath.charAt(slashIdx + 4) == 'y' && classPath.charAt(slashIdx + 5) == 'c' && classPath.charAt(slashIdx + 6) == 'a' && classPath.charAt(slashIdx + 7) == 't') {
-                            while (slashIdx >= 0 && !finish) {
-                                if (classPath.charAt(slashIdx) == ':') {
-                                    transpiler.addToClasspath(classPath.substring(slashIdx + 1, index));
-                                    finish = true;
-                                }
-                                slashIdx--;
-                            }
-                        }
-                    }
-                    slashIdx--;
-                }
-            }
-            index++;
+        String classpath = System.getProperty("java.class.path");
+        String[] classpathEntries = classpath.split(File.pathSeparator);
+        for (int i = 0; i < classpathEntries.length; i++) {
+            transpiler.addToClasspath(classpathEntries[i]);
         }
     }
-
 
 }

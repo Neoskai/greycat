@@ -108,7 +108,7 @@
         <module>modeling/generator</module>
         <module>modeling/mavenplugin</module>
         <module>modeling/gradleplugin</module>
-        <module>modeling/cli</module>
+        <module>modeling/gencli</module>
 
         <!--Examples-->
         <module>examples/modeling</module>
@@ -151,6 +151,8 @@
                 <configuration>
                     <header>${header.path}</header>
                     <excludes>
+                        <exclude>**/examples/**</exclude>
+                        <exclude>**/gencli.js</exclude>
                         <exclude>**/README</exclude>
                         <exclude>**/README.md</exclude>
                         <exclude>src/test/resources/**</exclude>
