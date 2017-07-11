@@ -299,7 +299,6 @@ public class CoreGraph implements Graph {
                                     lookupTimes(0, Constants.BEGINNING_OF_TIME, Constants.END_OF_TIME, node.id(),-1, new Callback<Node[]>() {
                                         @Override
                                         public void on(Node[] timeNodes) {
-                                            System.out.println("There are " + timeNodes.length);
                                             for(int i = 0; i< timeNodes.length; i++){
                                                 if(i != 0){
                                                     builder.append(",");
