@@ -67,6 +67,29 @@ class HeapEStructArray implements EStructArray {
         return _graph;
     }
 
+    @Override
+    public String toJson() {
+        StringBuilder builder = new StringBuilder();
+        final boolean[] isFirst = {true};
+
+        builder.append("[");
+
+        for (EStruct struct : _nodes){
+            if (struct != null) {
+                if(isFirst[0]){
+                    isFirst[0] = false;
+                }
+                else{
+                    builder.append(",");
+                }
+                builder.append(struct.toJson());
+            }
+        }
+        builder.append("]");
+
+        return builder.toString();
+    }
+
     private void allocate(int newCapacity) {
         final int closePowerOfTwo = (int) Math.pow(2, Math.ceil(Math.log(newCapacity) / Math.log(2)));
         if (closePowerOfTwo > _nodes_capacity) {

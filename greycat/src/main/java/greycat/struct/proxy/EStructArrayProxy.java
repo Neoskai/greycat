@@ -55,6 +55,11 @@ public final class EStructArrayProxy implements EStructArray {
     }
 
     @Override
+    public String toJson() {
+        return _elem.toJson();
+    }
+
+    @Override
     public final EStruct newEStruct() {
         check();
         return _elem.newEStruct();

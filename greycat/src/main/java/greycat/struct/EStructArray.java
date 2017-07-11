@@ -40,4 +40,8 @@ public interface EStructArray {
 
     Graph graph();
 
+    /**
+     * @ignore ts
+     */
+    String toJson();
 }

@@ -274,7 +274,7 @@ public class JsonBuilder {
                 builder.append(", \"_value\":");
                 builder.append("[");
 
-                DMatrix castedLMat = (DMatrix) elem;
+                LMatrix castedLMat = (LMatrix) elem;
                 for(int i = 0 ; i < castedLMat.rows(); i++) {
                     if(i != 0){
                         builder.append(",");
@@ -307,8 +307,7 @@ public class JsonBuilder {
                 builder.append(", \"_value\":");
 
                 EStructArray castedEArr = (EStructArray) elem;
-                // @Todo Switch from toString to toJson
-                builder.append(castedEArr.toString());
+                builder.append(castedEArr.toJson());
                 break;
 
             case Type.ERELATION:

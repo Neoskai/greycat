@@ -16,8 +16,13 @@
 
 package greycatTest.utility;
 
-import greycat.Type;
+import greycat.*;
+import greycat.struct.DMatrix;
+import greycat.struct.LMatrix;
+import greycat.struct.Relation;
+import greycat.utility.HashHelper;
 import greycat.utility.JsonBuilder;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -48,5 +53,231 @@ public class JsonBuilderTest {
         String doubleJson =JsonBuilder.buildJson(Type.DOUBLE, 3973226699.47893);
         String doubleWriting = "{\"_type\":5, \"_value\":3.97322669947893E9}";
         assertEquals(doubleJson, doubleWriting);
+    }
+
+    @Test
+    public void testDMatrix() {
+        Graph graph = GraphBuilder
+                .newBuilder()
+                .build();
+        graph.connect(new Callback<Boolean>() {
+            @Override
+            public void on(Boolean result) {
+                final Node node = graph.newNode(0, 0);
+                final DMatrix matrix = (DMatrix) node.getOrCreate("matrix", Type.DMATRIX);
+                matrix.init(3, 3);
+                matrix.set(0, 0, 0);
+                matrix.set(1, 1, 1);
+                matrix.set(2, 2, 2);
+
+                Assert.assertTrue(matrix.get(0,0)==0);
+                Assert.assertTrue(matrix.get(1,1)==1);
+                Assert.assertTrue(matrix.get(2,2)==2);
+                node.travelInTime(1, new Callback<Node>() {
+                    @Override
+                    public void on(final Node node_t1) {
+                        final DMatrix matrix_t1 = (DMatrix) node_t1.getOrCreate("matrix", Type.DMATRIX);
+                        Assert.assertTrue(matrix_t1.get(0,0)==0);
+                        Assert.assertTrue(matrix_t1.get(1,1)==1);
+                        Assert.assertTrue(matrix_t1.get(2,2)==2);
+
+                        matrix_t1.set(0, 0, 10);
+                        matrix_t1.set(1, 1, 11);
+                        matrix_t1.set(2, 2, 12);
+                        graph.save(new Callback<Boolean>() {
+                            @Override
+                            public void on(Boolean saved) {
+
+                                node_t1.travelInTime(0, new Callback<Node>() {
+                                    @Override
+                                    public void on(Node node2) {
+                                        DMatrix matrix_t2 = (DMatrix) node2.getOrCreate("matrix", Type.DMATRIX);
+
+                                        Assert.assertTrue(matrix_t2.get(0,0)==0);
+                                        Assert.assertTrue(matrix_t2.get(1,1)==1);
+                                        Assert.assertTrue(matrix_t2.get(2,2)==2);
+
+                                        node2.travelInTime(1, new Callback<Node>() {
+                                            @Override
+                                            public void on(Node node3) {
+                                                DMatrix matrix_t3 = (DMatrix) node3.getOrCreate("matrix", Type.DMATRIX);
+                                                Assert.assertTrue(matrix_t3.get(0,0)==10);
+                                                Assert.assertTrue(matrix_t3.get(1,1)==11);
+                                                Assert.assertTrue(matrix_t3.get(2,2)==12);
+                                            }
+                                        });
+
+
+                                    }
+                                });
+
+                            }
+                        });
+
+                        graph.declareIndex(0,"TestIndex", null);
+                        graph.index(0,0,"TestIndex", index ->{
+                            index.update(node);
+                        });
+
+                        System.out.println(graph.toJson());
+
+
+                    }
+                });
+
+            }
+        });
+    }
+
+    @Test
+    public void testLMatrix() {
+        Graph graph = GraphBuilder
+                .newBuilder()
+                .build();
+        graph.connect(new Callback<Boolean>() {
+            @Override
+            public void on(Boolean result) {
+                final Node node = graph.newNode(0, 0);
+                final LMatrix matrix = (LMatrix) node.getOrCreate("matrix", Type.LMATRIX);
+                matrix.init(3, 3);
+                matrix.set(0, 0, 0);
+                matrix.set(1, 1, 1);
+                matrix.set(2, 2, 2);
+
+                Assert.assertTrue(matrix.get(0,0)==0);
+                Assert.assertTrue(matrix.get(1,1)==1);
+                Assert.assertTrue(matrix.get(2,2)==2);
+                node.travelInTime(1, new Callback<Node>() {
+                    @Override
+                    public void on(final Node node_t1) {
+                        final LMatrix matrix_t1 = (LMatrix) node_t1.getOrCreate("matrix", Type.LMATRIX);
+                        Assert.assertTrue(matrix_t1.get(0,0)==0);
+                        Assert.assertTrue(matrix_t1.get(1,1)==1);
+                        Assert.assertTrue(matrix_t1.get(2,2)==2);
+
+                        matrix_t1.set(0, 0, 10);
+                        matrix_t1.set(1, 1, 11);
+                        matrix_t1.set(2, 2, 12);
+                        graph.save(new Callback<Boolean>() {
+                            @Override
+                            public void on(Boolean saved) {
+
+                                node_t1.travelInTime(0, new Callback<Node>() {
+                                    @Override
+                                    public void on(Node node2) {
+                                        LMatrix matrix_t2 = (LMatrix) node2.getOrCreate("matrix", Type.LMATRIX);
+
+                                        Assert.assertTrue(matrix_t2.get(0,0)==0);
+                                        Assert.assertTrue(matrix_t2.get(1,1)==1);
+                                        Assert.assertTrue(matrix_t2.get(2,2)==2);
+
+                                        node2.travelInTime(1, new Callback<Node>() {
+                                            @Override
+                                            public void on(Node node3) {
+                                                LMatrix matrix_t3 = (LMatrix) node3.getOrCreate("matrix", Type.LMATRIX);
+                                                Assert.assertTrue(matrix_t3.get(0,0)==10);
+                                                Assert.assertTrue(matrix_t3.get(1,1)==11);
+                                                Assert.assertTrue(matrix_t3.get(2,2)==12);
+
+                                            }
+                                        });
+
+
+                                    }
+                                });
+
+                            }
+                        });
+
+                        graph.declareIndex(0,"TestIndex", null);
+                        graph.index(0,0,"TestIndex", index ->{
+                            index.update(node);
+                        });
+
+                        System.out.println(graph.toJson());
+
+                    }
+                });
+
+            }
+        });
+    }
+
+    @Test
+    public void helloWorldTest() {
+        Graph graph = new GraphBuilder().build();
+
+        graph.connect(new Callback<Boolean>() {
+            @Override
+            public void on(Boolean o) {
+
+                final long available = graph.space().available();
+
+                final Node node0 = graph.newNode(0, 0);
+
+                //do something selectWith the node
+                graph.lookup(0, 0, node0.id(), new Callback<Node>() {
+                    @Override
+                    public void on(Node result) {
+                        //check that the lookup return the same
+                        Assert.assertTrue(result.id() == node0.id());
+                        result.free();
+
+                        node0.set("name", Type.STRING, "MyName");
+                        Assert.assertTrue(HashHelper.equals("MyName", node0.get("name").toString()));
+
+                        node0.remove("name");
+                        Assert.assertTrue(node0.get("name") == null);
+                        node0.set("name", Type.STRING, "MyName");
+
+                        node0.set("value", Type.STRING, "MyValue");
+                        Assert.assertTrue(HashHelper.equals("MyValue", node0.get("value").toString()));
+                        //check that other attribute name is not affected
+                        Assert.assertTrue(HashHelper.equals("MyName", node0.get("name").toString()));
+
+                        node0.set("name", Type.STRING, "MyName2");
+                        Assert.assertTrue(HashHelper.equals("MyName2", node0.get("name").toString()));
+                        Assert.assertTrue(HashHelper.equals("MyValue", node0.get("value").toString()));
+
+                        //check the simple json print
+
+                        String flatNode0 = "{\"world\":0,\"time\":0,\"id\":1,\"name\":\"MyName2\",\"value\":\"MyValue\"}";
+
+                        Assert.assertTrue(flatNode0.length() == node0.toString().length());
+                        Assert.assertTrue(HashHelper.equals("{\"world\":0,\"time\":0,\"id\":1,\"name\":\"MyName2\",\"value\":\"MyValue\"}", node0.toString()));
+
+                        //Create a new node
+                        Node node1 = graph.newNode(0, 0);
+                        Assert.assertTrue(HashHelper.equals("{\"world\":0,\"time\":0,\"id\":2}", node1.toString()));
+
+                        //attach the new node
+                        node1.addToRelation("children", node0);
+                        Assert.assertTrue(HashHelper.equals("{\"world\":0,\"time\":0,\"id\":2,\"children\":[1]}", node1.toString()));
+
+                        node1.addToRelation("children", node0);
+                        Assert.assertTrue(HashHelper.equals("{\"world\":0,\"time\":0,\"id\":2,\"children\":[1,1]}", node1.toString()));
+
+                        Node node2 = graph.newNode(0, 0);
+                        node1.addToRelation("children", node2);
+                        Assert.assertTrue(HashHelper.equals("{\"world\":0,\"time\":0,\"id\":2,\"children\":[1,1,3]}", node1.toString()));
+
+                        Relation refValuesThree = (Relation) node1.get("children");
+                        Assert.assertTrue(refValuesThree.size() == 3);
+                        Assert.assertTrue(refValuesThree.get(0) == 1);
+                        Assert.assertTrue(refValuesThree.get(1) == 1);
+                        Assert.assertTrue(refValuesThree.get(2) == 3);
+
+                        graph.declareIndex(0, "TestIndex", null);
+                        graph.index(0, 0, "TestIndex", index -> {
+                            index.update(node0);
+                            index.update(node1);
+                            index.update(node2);
+                        });
+
+                        System.out.println(graph.toJson());
+                    }
+                });
+            }
+        });
     }
 }
