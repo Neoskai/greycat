@@ -89,6 +89,15 @@ public class HelloWorldTest {
                         Assert.assertTrue(refValuesThree.get(1) == 1);
                         Assert.assertTrue(refValuesThree.get(2) == 3);
 
+                        /*graph.declareIndex(0,"TestIndex", null);
+                        graph.index(0,0,"TestIndex", index ->{
+                            index.update(node0);
+                            index.update(node1);
+                            index.update(node2);
+                        });
+
+                        System.out.println(graph.toJson());*/
+
                         node1.traverse("children", new Callback<Node[]>() {
                             @Override
                             public void on(Node[] resolvedNodes) {

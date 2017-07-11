@@ -292,6 +292,11 @@ public final class EStructProxy implements EStruct {
     }
 
     @Override
+    public String toJson() {
+        return null;
+    }
+
+    @Override
     public final String toString() {
         return _node.toString();
     }

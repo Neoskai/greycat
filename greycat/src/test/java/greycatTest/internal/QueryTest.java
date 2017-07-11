@@ -281,6 +281,11 @@ public class QueryTest implements Resolver, Graph {
     }
 
     @Override
+    public String toJson() {
+        return null;
+    }
+
+    @Override
     public NodeState resolveState(Node node) {
         return null;
     }

@@ -27,6 +27,7 @@ import greycat.internal.task.CoreActionRegistry;
 import greycat.internal.task.CoreTask;
 import greycat.TaskHook;
 import greycat.utility.Base64;
+import greycat.utility.JsonBuilder;
 import greycat.utility.KeyHelper;
 
 import java.util.ArrayList;
@@ -272,6 +273,50 @@ public class CoreGraph implements Graph {
     public final Graph addConnectHook(Callback<Callback<Boolean>> onConnect) {
         _connectHooks.add(onConnect);
         return this;
+    }
+
+    /**
+     * @ignore ts
+     */
+    @Override
+    public String toJson() {
+        // Get all Nodes and Worlds
+        StringBuilder builder = new StringBuilder();
+        final boolean[] isFirst = {true};
+
+        indexNames(0, 0, new Callback<String[]>() {
+            @Override
+            public void on(String[] result) {
+                for(String name : result){
+                    index(0, 0, name, new Callback<NodeIndex>() {
+                        @Override
+                        public void on(NodeIndex nodeIndex) {
+                            nodeIndex.findFrom(elems ->{
+                                for(Node node: elems){
+                                    lookupTimes(0, Constants.BEGINNING_OF_TIME, Constants.END_OF_TIME, node.id(),0, new Callback<Node[]>() {
+                                        @Override
+                                        public void on(Node[] result) {
+                                            if(isFirst[0]){
+                                                isFirst[0] = false;
+                                            }
+                                            else{
+                                                builder.append(",");
+                                            }
+
+                                            builder.append(JsonBuilder.buildJson(Type.NODE, node));
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+        });
+
+        // For each, lookup times and display node.
+
+        return builder.toString();
     }
 
     @Override

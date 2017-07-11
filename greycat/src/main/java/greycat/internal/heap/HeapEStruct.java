@@ -948,6 +948,9 @@ class HeapEStruct implements EStruct, HeapContainer {
         return builder.toString();
     }
 
+    /**
+     * @ignore ts
+     */
     public final String toJson(){
         StringBuilder builder = new StringBuilder();
         boolean isFirstField = true;

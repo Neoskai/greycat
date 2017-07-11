@@ -285,4 +285,8 @@ public interface Graph {
 
     Graph addConnectHook(Callback<Callback<Boolean>> onConnect);
 
+    /**
+     * @ignore ts
+     */
+    String toJson();
 }

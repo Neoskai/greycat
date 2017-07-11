@@ -362,16 +362,16 @@ public class JsonBuilder {
 
                 Node castedNode = (Node) elem;
 
-                builder.append("\"world\":");
+                builder.append("\"_world\":");
                 builder.append(castedNode.world());
-                builder.append(",\"time\":");
+                builder.append(",\"_time\":");
                 builder.append(castedNode.time());
-                builder.append(",\"id\":");
+                builder.append(",\"_id\":");
                 builder.append(castedNode.id());
-                builder.append(",\"type\":");
+                builder.append(",\"_nodetype\":");
                 builder.append(castedNode.nodeTypeName());
 
-                builder.append(",\"elems\":");
+                builder.append(",\"_elems\":");
                 builder.append("[");
 
                 isFirst[0] = true;
@@ -394,10 +394,10 @@ public class JsonBuilder {
 
                                 builder.append("{");
 
-                                builder.append("\"name\":\"");
+                                builder.append("\"_name\":\"");
                                 builder.append(resolveName);
                                 builder.append("\",");
-                                builder.append("\"value\":");
+                                builder.append("\"_value\":");
                                 builder.append(JsonBuilder.buildJson(elemType,elem));
 
                                 builder.append("}");
@@ -508,7 +508,6 @@ public class JsonBuilder {
                     darray[i] = jDArray.getDouble(i);
                 }
 
-
                 break;
 
             case Type.LONG_ARRAY:
@@ -598,13 +597,47 @@ public class JsonBuilder {
 
 
             case Type.RELATION:
+                JSONArray rjArray = jsonObject.getJSONArray("_value");
+
+                Long[] rarray = new Long[rjArray.length()];
+                for(int i=0; i < rjArray.length(); i++){
+                    rarray[i] = rjArray.getLong(i);
+                }
+
                 break;
 
 
             case Type.DMATRIX:
+                JSONArray dmjArray = jsonObject.getJSONArray("_value");
+
+                int ySize = dmjArray.getJSONArray(0).length();
+
+                Double[][] dmarray = new Double[dmjArray.length()][ySize];
+
+                for(int i=0; i < dmjArray.length(); i++){
+                    JSONArray dmjyArray = dmjArray.getJSONArray(i);
+
+                    for(int j = 0 ; j < dmjyArray.length(); j++){
+                        dmarray[i][j] = dmjyArray.getDouble(j);
+                    }
+                }
+
                 break;
 
             case Type.LMATRIX:
+                JSONArray lmjArray = jsonObject.getJSONArray("_value");
+
+                int lySize = lmjArray.getJSONArray(0).length();
+
+                Long[][] lmarray = new Long[lmjArray.length()][lySize];
+
+                for(int i=0; i < lmjArray.length(); i++){
+                    JSONArray lmjyArray = lmjArray.getJSONArray(i);
+
+                    for(int j = 0 ; j < lmjyArray.length(); j++){
+                        lmarray[i][j] = lmjyArray.getLong(j);
+                    }
+                }
                 break;
 
 
