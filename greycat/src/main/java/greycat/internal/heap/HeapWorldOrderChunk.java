@@ -16,11 +16,13 @@
 package greycat.internal.heap;
 
 import greycat.Constants;
+import greycat.NodeListener;
 import greycat.chunk.ChunkType;
 import greycat.struct.Buffer;
 import greycat.struct.LongLongMapCallBack;
 import greycat.utility.Base64;
 import greycat.utility.HashHelper;
+import greycat.utility.Listeners;
 import greycat.utility.Unsafe;
 import greycat.chunk.WorldOrderChunk;
 import greycat.internal.CoreConstants;
@@ -53,6 +55,9 @@ final class HeapWorldOrderChunk implements WorldOrderChunk {
 
     private long _chunkHash;
     private boolean _inSync;
+
+    private Listeners _listeners = null;
+
 
     /**
      * @ignore ts
@@ -127,6 +132,26 @@ final class HeapWorldOrderChunk implements WorldOrderChunk {
     @Override
     public final void setType(final long v) {
         this._type = v;
+    }
+
+    @Override
+    public synchronized int listen(NodeListener listener) {
+        if (_listeners == null) {
+            _listeners = new Listeners();
+        }
+        return _listeners.listen(listener);
+    }
+
+    @Override
+    public void unlisten(int registrationID) {
+        if (_listeners != null) {
+            _listeners.unlisten(registrationID);
+        }
+    }
+
+    @Override
+    public final Listeners listeners() {
+        return _listeners;
     }
 
     /**

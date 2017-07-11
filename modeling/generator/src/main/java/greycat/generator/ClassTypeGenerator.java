@@ -438,7 +438,16 @@ class ClassTypeGenerator {
                 StringBuilder findAllBodyBuilder = createFindMethodBody(li, null);
                 findAll.setBody(findAllBodyBuilder.toString());
             }
+        });
 
+        // all annotations
+        classType.allAnnotations().forEach(annotation -> {
+            String params = "";
+            if (annotation.value() != null) {
+                params = annotation.value();
+                params = params.replaceAll("\"", "");
+            }
+            initBodyBuilder.append("set" + Generator.upperCaseFirstChar(annotation.name()) + "(" + params + ");");
         });
 
         init.setBody(initBodyBuilder.toString());

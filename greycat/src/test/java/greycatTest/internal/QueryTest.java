@@ -285,6 +285,10 @@ public class QueryTest implements Resolver, Graph {
         return null;
     }
 
+    public void remoteNotify(Buffer buffer) {
+        //noop
+    }
+
     @Override
     public NodeState resolveState(Node node) {
         return null;

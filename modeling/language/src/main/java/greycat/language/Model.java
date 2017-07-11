@@ -183,6 +183,10 @@ public class Model {
                 final Class parentClass = getOrAddClass(classDclCtx.parentDcl().IDENT().getText());
                 newClass.setParent(parentClass);
             }
+            // annotations
+            for (GreyCatModelParser.AnnotationDclContext annotationDcl : classDclCtx.annotationDcl()) {
+                addAnnotation(newClass, annotationDcl);
+            }
             // attributes
             for (GreyCatModelParser.AttributeDclContext attDcl : classDclCtx.attributeDcl()) {
                 addAttribute(newClass, attDcl);
@@ -331,12 +335,12 @@ public class Model {
         types.addAll(classes.values());
         types.addAll(customTypes.values());
 
-        types.forEach(aClass -> {
+        types.forEach(aType -> {
             List<String> toRemove = new ArrayList<String>();
-            aClass.properties().forEach(o -> {
+            aType.properties().forEach(o -> {
                 if (o instanceof Attribute) {
                     Attribute attribute = (Attribute) o;
-                    Attribute parent = aClass.attributeFromParent(attribute.name());
+                    Attribute parent = aType.attributeFromParent(attribute.name());
                     if (parent != null) {
                         toRemove.add(attribute.name());
                         attribute.references.forEach(attributeRef -> attributeRef.update(parent));
@@ -344,7 +348,7 @@ public class Model {
                     }
                 }
             });
-            toRemove.forEach(s -> aClass.properties.remove(s));
+            toRemove.forEach(s -> aType.properties.remove(s));
         });
     }
 
@@ -354,6 +358,15 @@ public class Model {
         attribute.setType(getType(attDcl.valueTypeDcl()));
         if (attDcl.attributeValueDcl() != null) {
             attribute.setValue(getAttributeValue(attDcl.attributeValueDcl()));
+        }
+    }
+
+    private void addAnnotation(Type type, GreyCatModelParser.AnnotationDclContext annotationDcl) {
+        String name = annotationDcl.name.getText();
+        final Annotation annotation = type.getOrCreateAnnotation(name);
+        if (annotationDcl.value != null) {
+            String value = annotationDcl.value.getText();
+            annotation.setValue(value);
         }
     }
 

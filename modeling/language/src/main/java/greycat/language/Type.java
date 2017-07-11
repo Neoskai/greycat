@@ -15,8 +15,8 @@
  */
 package greycat.language;
 
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public abstract class Type implements Container {
     protected String name;
@@ -33,6 +33,17 @@ public abstract class Type implements Container {
             throw new RuntimeException("Property name conflict attribute name conflict with " + att);
         }
         return (Attribute) att;
+    }
+
+    Annotation getOrCreateAnnotation(String name) {
+        Object annotation = properties.get(name);
+        if (annotation == null) {
+            annotation = new Annotation(name);
+            properties.put(name, annotation);
+        } else if (!(annotation instanceof Annotation)) {
+            throw new RuntimeException("Property name conflict annotation name conflict with " + annotation);
+        }
+        return (Annotation) annotation;
     }
 
     Constant getOrCreateConstant(String name) {
@@ -120,6 +131,28 @@ public abstract class Type implements Container {
         return properties.values();
     }
 
+    public final Set<Annotation> allAnnotations() {
+        Set<Annotation> allAnnotations = new HashSet<Annotation>();
+        properties().forEach(p -> {
+            if (p instanceof Annotation) {
+                if (!allAnnotations.contains(p)) {
+                    allAnnotations.add((Annotation) p);
+                }
+            }
+        });
 
+        Type loop_parent = parent;
+        while (loop_parent != null) {
+            loop_parent.properties().forEach(p -> {
+                if (p instanceof Annotation) {
+                    if (!allAnnotations.contains(p)) {
+                        allAnnotations.add((Annotation) p);
+                    }
+                }
+            });
+            loop_parent = loop_parent.parent;
+        }
+        return allAnnotations;
+    }
 
 }

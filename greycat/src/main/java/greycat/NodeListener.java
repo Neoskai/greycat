@@ -13,32 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package greycat.chunk;
+package greycat;
 
-import greycat.NodeListener;
-import greycat.struct.LongLongMap;
-import greycat.utility.Listeners;
+@FunctionalInterface
+public interface NodeListener {
 
-public interface WorldOrderChunk extends Chunk, LongLongMap {
-
-    long magic();
-
-    void lock();
-
-    void unlock();
-
-    void externalLock();
-
-    void externalUnlock();
-
-    long type();
-
-    void setType(long extraValue);
-
-    int listen(NodeListener listener);
-
-    void unlisten(int registrationID);
-
-    Listeners listeners();
+    void on(long[] changeTimes);
 
 }

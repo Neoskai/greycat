@@ -25,6 +25,8 @@ class SmartCity {
 }
 
 class Building extends ASuperType {
+    @timeSensitivity = "3,5"
+
     const BUILDING_CONSTANT : String = "bla"
 
     att name : String
@@ -64,6 +66,7 @@ class Room {
 
 
 class ASuperType {
+    @timeSensitivity = "4,5"
 
 }
 

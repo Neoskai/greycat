@@ -285,6 +285,8 @@ public interface Graph {
 
     Graph addConnectHook(Callback<Callback<Boolean>> onConnect);
 
+    void remoteNotify(Buffer buffer);
+
     /**
      * @ignore ts
      */

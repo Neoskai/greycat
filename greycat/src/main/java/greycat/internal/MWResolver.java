@@ -251,6 +251,7 @@ final class MWResolver implements Resolver {
                         _storage.remove(toDelete, new Callback<Boolean>() {
                             @Override
                             public void on(Boolean result) {
+                                toDelete.free();
                                 castedNode.cacheUnlock();
                                 if (callback != null) {
                                     callback.on(result);

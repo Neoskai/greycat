@@ -217,6 +217,7 @@ class HeapRelation implements Relation {
                 System.arraycopy(_backend, indexToRemove + 1, _backend, indexToRemove, _size - indexToRemove - 1);
                 _size--;
             }
+            parent.declareDirty();
         }
         return this;
     }
@@ -234,6 +235,7 @@ class HeapRelation implements Relation {
                 System.arraycopy(_backend, toRemoveIndex + 1, _backend, toRemoveIndex, _size - toRemoveIndex - 1);
                 _size--;
             }
+            parent.declareDirty();
         }
         return this;
     }
@@ -243,6 +245,7 @@ class HeapRelation implements Relation {
         synchronized (parent) {
             _backend = null;
             _size = 0;
+            parent.declareDirty();
         }
         return this;
     }
