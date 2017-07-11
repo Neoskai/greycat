@@ -281,8 +281,10 @@ public class CoreGraph implements Graph {
      */
     @Override
     public String toJson() {
-        // Get all Nodes and Worlds
         StringBuilder builder = new StringBuilder();
+        builder.append("{");
+        builder.append("\"_nodes\":");
+        builder.append("[");
         final boolean[] isFirst = {true};
 
         indexNames(0, 0, new Callback<String[]>() {
@@ -314,9 +316,7 @@ public class CoreGraph implements Graph {
                 }
             }
         });
-
-        // For each, lookup times and display node.
-
+        builder.append("]}");
         return builder.toString();
     }
 
