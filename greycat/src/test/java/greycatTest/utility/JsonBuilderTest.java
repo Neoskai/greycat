@@ -17,9 +17,8 @@
 package greycatTest.utility;
 
 import greycat.*;
-import greycat.struct.DMatrix;
-import greycat.struct.LMatrix;
-import greycat.struct.Relation;
+import greycat.plugin.Job;
+import greycat.struct.*;
 import greycat.utility.HashHelper;
 import greycat.utility.JsonBuilder;
 import org.junit.Assert;
@@ -279,5 +278,165 @@ public class JsonBuilderTest {
                 });
             }
         });
+    }
+
+    @Test
+    public void testEStructDMatrix() {
+        Graph graph= GraphBuilder
+                .newBuilder()
+                .build();
+        graph.connect(new Callback<Boolean>() {
+            @Override
+            public void on(Boolean result) {
+
+                Node node = graph.newNode(0,0);
+
+                EStructArray eg= (EStructArray) node.getOrCreate("egraph", Type.ESTRUCT_ARRAY);
+                EStruct en =eg.newEStruct();
+                eg.setRoot(en);
+
+                DMatrix matrix= (DMatrix)en.getOrCreate("matrix", Type.DMATRIX);
+
+                matrix.init(3,3);
+                matrix.set(0,0,0);
+                matrix.set(1,1,1);
+                matrix.set(2,2,2);
+                Assert.assertTrue(matrix.get(0,0)==0);
+                Assert.assertTrue(matrix.get(1,1)==1);
+                Assert.assertTrue(matrix.get(2,2)==2);
+
+
+                node.travelInTime(1, new Callback<Node>() {
+                    @Override
+                    public void on(Node result1) {
+                        EStructArray eg= (EStructArray) result1.getOrCreate("egraph", Type.ESTRUCT_ARRAY);
+                        EStruct en =eg.root();
+                        DMatrix matrix_t1= (DMatrix)en.getOrCreate("matrix", Type.DMATRIX);
+                        Assert.assertTrue(matrix_t1.get(0,0)==0);
+                        Assert.assertTrue(matrix_t1.get(1,1)==1);
+                        Assert.assertTrue(matrix_t1.get(2,2)==2);
+
+                        matrix_t1.set(0,0,10);
+                        matrix_t1.set(1,1,11);
+                        matrix_t1.set(2,2,12);
+
+
+                        result1.travelInTime(0, new Callback<Node>() {
+                            @Override
+                            public void on(Node result2) {
+                                EStructArray eg= (EStructArray) result2.getOrCreate("egraph", Type.ESTRUCT_ARRAY);
+                                EStruct en =eg.root();
+                                DMatrix matrix_t2= (DMatrix)en.getOrCreate("matrix", Type.DMATRIX);
+                                Assert.assertTrue(matrix_t2.get(0,0)==0);
+                                Assert.assertTrue(matrix_t2.get(1,1)==1);
+                                Assert.assertTrue(matrix_t2.get(2,2)==2);
+                                result2.travelInTime(1, new Callback<Node>() {
+                                    @Override
+                                    public void on(Node result3) {
+                                        EStructArray eg= (EStructArray) result3.getOrCreate("egraph", Type.ESTRUCT_ARRAY);
+                                        EStruct en =eg.root();
+                                        DMatrix matrix_t3= (DMatrix)en.getOrCreate("matrix", Type.DMATRIX);
+                                        Assert.assertTrue(matrix_t3.get(0,0)==10);
+                                        Assert.assertTrue(matrix_t3.get(1,1)==11);
+                                        Assert.assertTrue(matrix_t3.get(2,2)==12);
+                                    }
+                                });
+                            }
+                        });
+
+
+                    }
+                });
+
+                graph.declareIndex(0,"TestIndex", null);
+                graph.index(0,0,"TestIndex", index ->{
+                    index.update(node);
+                });
+
+                System.out.println(graph.toJson());
+
+            }
+        });
+
+    }
+
+    final int valuesToInsert= 100;
+    final long initialStamp = 1000;
+
+
+    @Test
+    public void testMultiNode(){
+        // 5 Nodes with many points
+        Graph graph = new GraphBuilder()
+                .withMemorySize(2000000)
+                .build();
+
+        graph.connect(new Callback<Boolean>() {
+            @Override
+            public void on(Boolean result) {
+                final long before = System.currentTimeMillis();
+                System.out.println("Connected to graph");
+
+                graph.declareIndex(0,"TestIndex", null);
+
+                final DeferCounter counter = graph.newCounter(valuesToInsert);
+
+                for(long i = 0 ; i < 5; i++){
+                    Node initialNode = graph.newNode(0,0);
+
+                    graph.index(0,0,"TestIndex", index ->{
+                        index.update(initialNode);
+                    });
+
+                    for(long j = 0 ; j < valuesToInsert; j++){
+                        if(j%(valuesToInsert/10) == 0) {
+                            graph.save(new Callback<Boolean>() {
+                                @Override
+                                public void on(Boolean result) {
+                                    // NOTHING
+                                }
+                            });
+                        }
+
+                        final double value= j * 0.3;
+                        final long time = initialStamp + j;
+
+                        graph.lookup(0, time, initialNode.id(), new Callback<Node>() {
+                            @Override
+                            public void on(Node timedNode) {
+                                timedNode.set("value", Type.DOUBLE, value);
+                                graph.index(0,0,"TestIndex", index ->{
+                                    index.update(timedNode);
+                                });
+                                counter.count();
+                                timedNode.free();
+                            }
+                        });
+                    }
+
+                    initialNode.free();
+                }
+
+
+                counter.then(new Job() {
+                    @Override
+                    public void run() {
+                        System.out.println("<end insert phase>" + " " + (System.currentTimeMillis() - before) / 1000 + "s");
+                        System.out.println( "Sparkey result: " + (valuesToInsert / ((System.currentTimeMillis() - before) / 1000) / 1000) + "kv/s");
+
+
+                        graph.disconnect(new Callback<Boolean>() {
+                            @Override
+                            public void on(Boolean result) {
+                                System.out.println("Disconnected from graph");
+                            }
+                        });
+                    }
+                });
+
+            }
+        });
+
+        System.out.println(graph.toJson());
     }
 }

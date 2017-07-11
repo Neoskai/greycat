@@ -296,17 +296,16 @@ public class CoreGraph implements Graph {
                         public void on(NodeIndex nodeIndex) {
                             nodeIndex.findFrom(elems ->{
                                 for(Node node: elems){
-                                    lookupTimes(0, Constants.BEGINNING_OF_TIME, Constants.END_OF_TIME, node.id(),0, new Callback<Node[]>() {
+                                    lookupTimes(0, Constants.BEGINNING_OF_TIME, Constants.END_OF_TIME, node.id(),-1, new Callback<Node[]>() {
                                         @Override
-                                        public void on(Node[] result) {
-                                            if(isFirst[0]){
-                                                isFirst[0] = false;
+                                        public void on(Node[] timeNodes) {
+                                            System.out.println("There are " + timeNodes.length);
+                                            for(int i = 0; i< timeNodes.length; i++){
+                                                if(i != 0){
+                                                    builder.append(",");
+                                                }
+                                                builder.append(JsonBuilder.buildJson(Type.NODE, timeNodes[i]));
                                             }
-                                            else{
-                                                builder.append(",");
-                                            }
-
-                                            builder.append(JsonBuilder.buildJson(Type.NODE, node));
                                         }
                                     });
                                 }
