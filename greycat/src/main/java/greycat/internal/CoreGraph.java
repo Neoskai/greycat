@@ -300,8 +300,10 @@ public class CoreGraph implements Graph {
                                         @Override
                                         public void on(Node[] timeNodes) {
                                             for(int i = 0; i< timeNodes.length; i++){
-                                                if(i != 0){
+                                                if(!isFirst[0]){
                                                     builder.append(",");
+                                                } else {
+                                                    isFirst[0] = false;
                                                 }
                                                 builder.append(JsonBuilder.buildJson(Type.NODE, timeNodes[i]));
                                             }
