@@ -73,7 +73,6 @@ class HeapEStructArray implements EStructArray {
         final boolean[] isFirst = {true};
 
         builder.append("[");
-
         for (EStruct struct : _nodes){
             if (struct != null) {
                 if(isFirst[0]){
