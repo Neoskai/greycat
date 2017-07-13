@@ -54,6 +54,9 @@ public final class EStructArrayProxy implements EStructArray {
         return _elem.graph();
     }
 
+    /**
+     * @ignore ts
+     */
     @Override
     public String toJson() {
         return _elem.toJson();

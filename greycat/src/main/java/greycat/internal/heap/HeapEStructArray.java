@@ -67,6 +67,9 @@ class HeapEStructArray implements EStructArray {
         return _graph;
     }
 
+    /**
+     * @ignore ts
+     */
     @Override
     public String toJson() {
         StringBuilder builder = new StringBuilder();

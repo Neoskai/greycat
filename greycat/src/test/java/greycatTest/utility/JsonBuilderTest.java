@@ -120,7 +120,12 @@ public class JsonBuilderTest {
                             index.update(node);
                         });
 
-                        System.out.println(graph.toJson());
+                        String sToJson = graph.toJson();
+
+                        Buffer buffer = graph.newBuffer();
+                        graph.toJson(buffer);
+
+                        assertEquals(sToJson, new String(buffer.data()));
 
 
                     }
@@ -275,7 +280,13 @@ public class JsonBuilderTest {
                             index.update(node2);
                         });
 
-                        System.out.println(graph.toJson());
+                        String sToJson = graph.toJson();
+
+                        Buffer buffer = graph.newBuffer();
+                        graph.toJson(buffer);
+
+                        assertEquals(sToJson, new String(buffer.data()));
+
                     }
                 });
             }
@@ -355,7 +366,12 @@ public class JsonBuilderTest {
                     index.update(node);
                 });
 
-                System.out.println(graph.toJson());
+                String sToJson = graph.toJson();
+
+                Buffer buffer = graph.newBuffer();
+                graph.toJson(buffer);
+
+                assertEquals(sToJson, new String(buffer.data()));
 
             }
         });
@@ -439,6 +455,11 @@ public class JsonBuilderTest {
             }
         });
 
-        System.out.println(graph.toJson());
+        String sToJson = graph.toJson();
+
+        Buffer buffer = graph.newBuffer();
+        graph.toJson(buffer);
+
+        assertEquals(sToJson, new String(buffer.data()));
     }
 }

@@ -64,6 +64,14 @@ public interface Graph {
     Node cloneNode(Node origin);
 
     /**
+     * @ignore ts
+     * Writes the JSonified Graph into the given Buffer
+     * @param buffer The buffer to put the graph in JSON format in
+     * @return The buffer filled with the graph
+     */
+    Buffer toJson(Buffer buffer);
+
+    /**
      * Asynchronous lookup of a particular node.<br>
      * Based on the tuple &lt;World, Time, Node_ID&gt; this method seeks a {@link Node} in the Graph and returns it to the callback.
      *
@@ -289,6 +297,8 @@ public interface Graph {
 
     /**
      * @ignore ts
+     * JSONify the graph and returns the string
+     * @return String containing the JSON of the graph
      */
     String toJson();
 }

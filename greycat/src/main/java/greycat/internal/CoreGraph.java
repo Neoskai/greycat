@@ -362,6 +362,97 @@ public class CoreGraph implements Graph {
         return builder.toString();
     }
 
+
+    /**
+     * @ignore ts
+     */
+    @Override
+    public final Buffer toJson(Buffer buffer){
+        buffer.writeString("[");
+        final boolean[] isFirst = {true};
+
+        indexNames(0, 0, new Callback<String[]>() {
+            @Override
+            public void on(String[] result) {
+                for(String name : result){
+                    index(0, 0, name, new Callback<NodeIndex>() {
+                        @Override
+                        public void on(NodeIndex nodeIndex) {
+                            nodeIndex.findFrom(elems ->{
+                                for(Node node: elems){
+                                    if(isFirst[0]){
+                                        isFirst[0] = false;
+                                    } else {
+                                        buffer.writeString(",");
+                                    }
+
+                                    buffer.writeString("{");
+
+                                    buffer.writeString("\"_world\":");
+                                    buffer.writeString(node.world()+ "");
+                                    buffer.writeString(",\"_id\":");
+                                    buffer.writeString(node.id() + "");
+                                    buffer.writeString(",\"_nodetype\":");
+                                    if(node.nodeTypeName() == null){
+                                        buffer.writeString("null");
+                                    } else {
+                                        buffer.writeString(node.nodeTypeName());
+                                    }
+
+
+                                    lookupTimes(0, Constants.BEGINNING_OF_TIME, Constants.END_OF_TIME, node.id(),-1, new Callback<Node[]>() {
+                                        @Override
+                                        public void on(Node[] timeNodes) {
+                                            if(timeNodes.length == 1){
+                                                buffer.writeString(", \"_time\":");
+                                            }
+                                            else{
+                                                buffer.writeString(", \"_times\":");
+                                            }
+
+                                            buffer.writeString("[");
+                                            for(int i = 0; i < timeNodes.length; i++){
+                                                if(i != 0){
+                                                    buffer.writeString(",");
+                                                }
+
+                                                buffer.writeString(timeNodes[i].time() + "");
+                                            }
+                                            buffer.writeString("],");
+
+                                            if(timeNodes.length == 1){
+                                                buffer.writeString("\"_value\":");
+                                            }
+                                            else{
+                                                buffer.writeString("\"_values\":");
+                                            }
+                                            buffer.writeString("[");
+
+                                            for(int i = 0; i< timeNodes.length; i++){
+                                                if(i != 0) {
+                                                    buffer.writeString(",");
+                                                }
+
+                                                buffer.writeString(JsonBuilder.buildJson(Type.NODE, timeNodes[i]));
+                                            }
+
+                                            buffer.writeString("]");
+                                        }
+                                    });
+
+                                    buffer.writeString("}");
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+        });
+        buffer.writeString("]");
+
+        return buffer;
+    }
+
     @Override
     public final <A extends Node> void lookup(long world, long time, long id, Callback<A> callback) {
         if (!_isConnected.get()) {
