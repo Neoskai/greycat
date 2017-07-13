@@ -282,8 +282,6 @@ public class CoreGraph implements Graph {
     @Override
     public String toJson() {
         StringBuilder builder = new StringBuilder();
-        builder.append("{");
-        builder.append("\"_nodes\":");
         builder.append("[");
         final boolean[] isFirst = {true};
 
@@ -296,19 +294,63 @@ public class CoreGraph implements Graph {
                         public void on(NodeIndex nodeIndex) {
                             nodeIndex.findFrom(elems ->{
                                 for(Node node: elems){
+                                    if(isFirst[0]){
+                                        isFirst[0] = false;
+                                    } else {
+                                        builder.append(",");
+                                    }
+
+                                    builder.append("{");
+
+                                    builder.append("\"_world\":");
+                                    builder.append(node.world());
+                                    builder.append(",\"_id\":");
+                                    builder.append(node.id());
+                                    builder.append(",\"_nodetype\":");
+                                    builder.append(node.nodeTypeName());
+
+
                                     lookupTimes(0, Constants.BEGINNING_OF_TIME, Constants.END_OF_TIME, node.id(),-1, new Callback<Node[]>() {
                                         @Override
                                         public void on(Node[] timeNodes) {
-                                            for(int i = 0; i< timeNodes.length; i++){
-                                                if(!isFirst[0]){
+                                            if(timeNodes.length == 1){
+                                                builder.append(", \"_time\":");
+                                            }
+                                            else{
+                                                builder.append(", \"_times\":");
+                                            }
+
+                                            builder.append("[");
+                                            for(int i = 0; i < timeNodes.length; i++){
+                                                if(i != 0){
                                                     builder.append(",");
-                                                } else {
-                                                    isFirst[0] = false;
                                                 }
+
+                                                builder.append(timeNodes[i].time());
+                                            }
+                                            builder.append("],");
+
+                                            if(timeNodes.length == 1){
+                                                builder.append("\"_value\":");
+                                            }
+                                            else{
+                                                builder.append("\"_values\":");
+                                            }
+                                            builder.append("[");
+
+                                            for(int i = 0; i< timeNodes.length; i++){
+                                                if(i != 0) {
+                                                    builder.append(",");
+                                                }
+
                                                 builder.append(JsonBuilder.buildJson(Type.NODE, timeNodes[i]));
                                             }
+
+                                            builder.append("]");
                                         }
                                     });
+
+                                    builder.append("}");
                                 }
                             });
                         }
@@ -316,7 +358,7 @@ public class CoreGraph implements Graph {
                 }
             }
         });
-        builder.append("]}");
+        builder.append("]");
         return builder.toString();
     }
 

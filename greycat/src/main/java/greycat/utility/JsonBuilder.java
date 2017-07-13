@@ -37,12 +37,11 @@ public class JsonBuilder {
     public static String buildJson(int type, Object elem) {
         final boolean[] isFirst = {true};
         final StringBuilder builder = new StringBuilder();
-        builder.append("{");
+        builder.append("[");
         switch(type){
             case Type.BOOL:
-                builder.append("\"_type\":");
                 builder.append(Type.BOOL);
-                builder.append(", \"_value\":");
+                builder.append(",");
                 if ((Boolean) elem) {
                     builder.append("true");
                 } else {
@@ -51,40 +50,35 @@ public class JsonBuilder {
                 break;
 
             case Type.STRING:
-                builder.append("\"_type\":");
                 builder.append(Type.STRING);
-                builder.append(", \"_value\":");
+                builder.append(",");
                 builder.append("\"");
                 builder.append((String) elem);
                 builder.append("\"");
                 break;
 
             case Type.LONG:
-                builder.append("\"_type\":");
                 builder.append(Type.LONG);
-                builder.append(", \"_value\":");
+                builder.append(", ");
                 builder.append((Long) elem);
                 break;
 
             case Type.INT:
-                builder.append("\"_type\":");
                 builder.append(Type.INT);
-                builder.append(", \"_value\":");
+                builder.append(",");
                 builder.append((Integer) elem);
                 break;
 
             case Type.DOUBLE:
-                builder.append("\"_type\":");
                 builder.append(Type.DOUBLE);
-                builder.append(", \"_value\":");
+                builder.append(",");
                 builder.append((Double) elem);
                 break;
 
 
             case Type.DOUBLE_ARRAY:
-                builder.append("\"_type\":");
                 builder.append(Type.DOUBLE_ARRAY);
-                builder.append(", \"_value\":");
+                builder.append(",");
                 builder.append("[");
                 DoubleArray castedArr = ((DoubleArray) elem);
                 for (int j = 0; j < castedArr.size(); j++) {
@@ -97,9 +91,8 @@ public class JsonBuilder {
                 break;
 
             case Type.LONG_ARRAY:
-                builder.append("\"_type\":");
                 builder.append(Type.LONG_ARRAY);
-                builder.append(", \"_value\":");
+                builder.append(",");
                 builder.append("[");
                 LongArray castedArr2 = (LongArray) elem;
                 for (int j = 0; j < castedArr2.size(); j++) {
@@ -112,9 +105,8 @@ public class JsonBuilder {
                 break;
 
             case Type.INT_ARRAY:
-                builder.append("\"_type\":");
                 builder.append(Type.INT_ARRAY);
-                builder.append(", \"_value\":");
+                builder.append(",");
                 builder.append("[");
                 IntArray castedArr3 = (IntArray) elem;
                 for (int j = 0; j < castedArr3.size(); j++) {
@@ -127,9 +119,8 @@ public class JsonBuilder {
                 break;
 
             case Type.STRING_ARRAY:
-                builder.append("\"_type\":");
                 builder.append(Type.STRING_ARRAY);
-                builder.append(", \"_value\":");
+                builder.append(",");
                 builder.append("[");
                 StringArray castedStrArr = (StringArray) elem;
                 for (int j = 0; j < castedStrArr.size(); j++) {
@@ -144,9 +135,8 @@ public class JsonBuilder {
                 break;
 
             case Type.LONG_TO_LONG_MAP:
-                builder.append("\"_type\":");
                 builder.append(Type.LONG_TO_LONG_MAP);
-                builder.append(", \"_value\":");
+                builder.append(",");
                 builder.append("{");
                 LongLongMap castedMapL2L = (LongLongMap) elem;
                 isFirst[0] = true;
@@ -167,10 +157,10 @@ public class JsonBuilder {
                 builder.append("}");
                 break;
 
+            // @TODO A VERIFIER
             case Type.LONG_TO_LONG_ARRAY_MAP:
-                builder.append("\"_type\":");
                 builder.append(Type.LONG_TO_LONG_ARRAY_MAP);
-                builder.append(", \"_value\":");
+                builder.append(",");
                 builder.append("{");
                 LongLongArrayMap castedMapL2LA = (LongLongArrayMap) elem;
                 isFirst[0] = true;
@@ -205,9 +195,8 @@ public class JsonBuilder {
                 break;
 
             case Type.STRING_TO_INT_MAP:
-                builder.append("\"_type\":");
                 builder.append(Type.STRING_TO_INT_MAP);
-                builder.append(", \"_value\":");
+                builder.append(",");
                 builder.append("{");
                 StringIntMap castedMapS2L = (StringIntMap) elem;
                 isFirst[0] = true;
@@ -230,9 +219,8 @@ public class JsonBuilder {
 
 
             case Type.RELATION:
-                builder.append("\"_type\":");
                 builder.append(Type.RELATION);
-                builder.append(", \"_value\":");
+                builder.append(",");
                 builder.append("[");
                 Relation castedRelArr = (Relation) elem;
                 for (int j = 0; j < castedRelArr.size(); j++) {
@@ -246,85 +234,83 @@ public class JsonBuilder {
 
 
             case Type.DMATRIX:
-                builder.append("\"_type\":");
                 builder.append(Type.DMATRIX);
-                builder.append(", \"_value\":");
+                builder.append(",");
                 builder.append("[");
-
                 DMatrix castedDMat = (DMatrix) elem;
+
+                builder.append(castedDMat.rows());
+                builder.append(",");
+
+                builder.append(castedDMat.columns());
+                builder.append(",");
+
                 for(int i = 0 ; i < castedDMat.rows(); i++) {
-                    if(i != 0){
-                        builder.append(",");
-                    }
-                    builder.append("[");
                     for(int j= 0; j < castedDMat.columns(); j++){
-                        if(j != 0){
+                        if(j != 0 || i != 0){
                             builder.append(",");
                         }
                         builder.append(castedDMat.get(i,j));
                     }
-                    builder.append("]");
                 }
                 builder.append("]");
                 break;
 
             case Type.LMATRIX:
-                builder.append("\"_type\":");
                 builder.append(Type.LMATRIX);
-                builder.append(", \"_value\":");
+                builder.append(",");
                 builder.append("[");
 
                 LMatrix castedLMat = (LMatrix) elem;
+
+                builder.append(castedLMat.rows());
+                builder.append(",");
+
+                builder.append(castedLMat.columns());
+                builder.append(",");
+
                 for(int i = 0 ; i < castedLMat.rows(); i++) {
-                    if(i != 0){
-                        builder.append(",");
-                    }
-                    builder.append("[");
                     for(int j= 0; j < castedLMat.columns(); j++){
-                        if(j != 0){
+                        if(j != 0 || i != 0){
                             builder.append(",");
                         }
                         builder.append(castedLMat.get(i,j));
                     }
-                    builder.append("]");
                 }
+
                 builder.append("]");
                 break;
 
 
             case Type.ESTRUCT:
-                builder.append("\"_type\":");
                 builder.append(Type.ESTRUCT);
-                builder.append(", \"_value\":");
+                builder.append(",");
 
                 EStruct castedEStruct = (EStruct) elem;
                 builder.append(castedEStruct.toJson());
                 break;
 
             case Type.ESTRUCT_ARRAY:
-                builder.append("\"_type\":");
                 builder.append(Type.ESTRUCT_ARRAY);
-                builder.append(", \"_value\":");
+                builder.append(",");
 
                 EStructArray castedEArr = (EStructArray) elem;
                 builder.append(castedEArr.toJson());
                 break;
 
             case Type.ERELATION:
-                builder.append("\"_type\":");
                 builder.append(Type.ERELATION);
-                builder.append(", \"_value\":");
+                builder.append(", ");
 
                 ERelation castedErel = (ERelation) elem;
-                // @Todo Switch from toString to toJson
+                // @Todo Switch from toString to toJson (Value is OK)
                 builder.append(castedErel.toString());
                 break;
 
 
             case Type.TASK:
-                builder.append("\"_type\":");
                 builder.append(Type.TASK);
-                builder.append(", \"_value\":");
+                builder.append(",");
                 builder.append("\"");
 
                 Task castedTask = (Task) elem;
@@ -334,9 +320,8 @@ public class JsonBuilder {
                 break;
 
             case Type.TASK_ARRAY:
-                builder.append("\"_type\":");
                 builder.append(Type.TASK_ARRAY);
-                builder.append(", \"_value\":");
+                builder.append(",");
                 builder.append("[");
 
                 Task[] castedTaskArr = (Task[]) elem;
@@ -354,66 +339,47 @@ public class JsonBuilder {
                 break;
 
             case Type.NODE:
-                builder.append("\"_type\":");
-                builder.append(Type.NODE);
-                builder.append(", \"_value\":");
-                builder.append("{");
-
                 Node castedNode = (Node) elem;
 
-                builder.append("\"_world\":");
-                builder.append(castedNode.world());
-                builder.append(",\"_time\":");
-                builder.append(castedNode.time());
-                builder.append(",\"_id\":");
-                builder.append(castedNode.id());
-                builder.append(",\"_nodetype\":");
-                builder.append(castedNode.nodeTypeName());
-
-                builder.append(",\"_elems\":");
-                builder.append("[");
-
-                isFirst[0] = true;
                 final NodeState state = castedNode.graph().resolver().resolveState(castedNode);
+                isFirst[0] = true;
+
                 if (state != null) {
                     state.each(new NodeStateCallback() {
                         @Override
                         public void on(int attributeKey, int elemType, Object elem) {
                             if (elem != null) {
+                                if(isFirst[0]){
+                                    isFirst[0] = false;
+                                } else {
+                                    builder.append(",");
+                                }
+
+                                builder.append("{");
                                 String resolveName = castedNode.graph().resolver().hashToString(attributeKey);
                                 if (resolveName == null) {
                                     resolveName = attributeKey + "";
                                 }
-
-                                if (!isFirst[0]) {
-                                    builder.append(",");
-                                } else {
-                                    isFirst[0] = false;
-                                }
-
-                                builder.append("{");
 
                                 builder.append("\"_name\":\"");
                                 builder.append(resolveName);
                                 builder.append("\",");
                                 builder.append("\"_value\":");
                                 builder.append(JsonBuilder.buildJson(elemType,elem));
-
                                 builder.append("}");
+
                             }
                         }
                     });
                 }
 
-                builder.append("]");
-                builder.append("}");
+
                 break;
 
 
             case Type.INT_TO_INT_MAP:
-                builder.append("\"_type\":");
                 builder.append(Type.INT_TO_INT_MAP);
-                builder.append(", \"_value\":");
+                builder.append(",");
                 builder.append("{");
                 IntIntMap castedMapI2I = (IntIntMap) elem;
                 isFirst[0] = true;
@@ -435,9 +401,8 @@ public class JsonBuilder {
                 break;
 
             case Type.INT_TO_STRING_MAP:
-                builder.append("\"_type\":");
                 builder.append(Type.INT_TO_STRING_MAP);
-                builder.append(", \"_value\":");
+                builder.append(",");
                 builder.append("{");
                 IntStringMap castedMapI2S = (IntStringMap) elem;
                 isFirst[0] = true;
@@ -467,7 +432,7 @@ public class JsonBuilder {
             case Type.NDTREE:
                 break;
         }
-        builder.append("}");
+        builder.append("]");
         return builder.toString();
     }
 

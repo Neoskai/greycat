@@ -22,6 +22,7 @@ import greycat.struct.*;
 import greycat.utility.HashHelper;
 import greycat.utility.JsonBuilder;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -30,28 +31,29 @@ import static org.junit.Assert.assertEquals;
  * @ignore ts
  */
 public class JsonBuilderTest {
+
     @Test
     public void testBuilder(){
-
         String boolJson = JsonBuilder.buildJson(Type.BOOL, true);
-        String boolWriting = "{\"_type\":1, \"_value\":true}";
+        String boolWriting = "[1,true]";
         assertEquals(boolJson, boolWriting);
 
         String stringJson = JsonBuilder.buildJson(Type.STRING, "hello");
-        String stringWriting = "{\"_type\":2, \"_value\":\"hello\"}";
+        String stringWriting = "[2,\"hello\"]";
         assertEquals(stringJson, stringWriting);
 
         String longJson =JsonBuilder.buildJson(Type.LONG, 1712771606L);
-        String longWriting = "{\"_type\":3, \"_value\":1712771606}";
+        String longWriting = "[3, 1712771606]";
         assertEquals(longJson, longWriting);
 
         String intJson =JsonBuilder.buildJson(Type.INT, -70308288);
-        String intWriting = "{\"_type\":4, \"_value\":-70308288}";
+        String intWriting = "[4,-70308288]";
         assertEquals(intJson, intWriting);
 
         String doubleJson =JsonBuilder.buildJson(Type.DOUBLE, 3973226699.47893);
-        String doubleWriting = "{\"_type\":5, \"_value\":3.97322669947893E9}";
+        String doubleWriting = "[5,3.97322669947893E9]";
         assertEquals(doubleJson, doubleWriting);
+
     }
 
     @Test
