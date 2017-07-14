@@ -15,24 +15,23 @@
     limitations under the License.
 
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <artifactId>greycat-generator</artifactId>
-    <version>9-SNAPSHOT</version>
+    <version>10-SNAPSHOT</version>
     <name>greycat-generator</name>
 
     <parent>
         <artifactId>greycat-parent</artifactId>
         <groupId>com.datathings</groupId>
-        <version>9-SNAPSHOT</version>
+        <version>10-SNAPSHOT</version>
         <relativePath>../..</relativePath>
     </parent>
 
     <properties>
         <header.path>${basedir}/../../HEADER</header.path>
-        <roaster.version>2.20.0.Final</roaster.version>
         <maven.core.version>3.3.9</maven.core.version>
+        <javapoet.version>1.9.0</javapoet.version>
     </properties>
 
     <dependencies>
@@ -47,14 +46,9 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.jboss.forge.roaster</groupId>
-            <artifactId>roaster-api</artifactId>
-            <version>${roaster.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.forge.roaster</groupId>
-            <artifactId>roaster-jdt</artifactId>
-            <version>${roaster.version}</version>
+            <groupId>com.squareup</groupId>
+            <artifactId>javapoet</artifactId>
+            <version>${javapoet.version}</version>
         </dependency>
         <dependency>
             <groupId>com.datathings</groupId>
@@ -79,7 +73,7 @@
                     <source>1.8</source>
                     <target>1.8</target>
                     <compilerArguments>
-                        <profile>compact1</profile>
+                        <profile>compact3</profile>
                     </compilerArguments>
                 </configuration>
             </plugin>

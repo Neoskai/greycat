@@ -1,5 +1,7 @@
 package greycat.language;
 
+import java.util.List;
+
 /**
  * Copyright 2017 The GreyCat Authors.  All rights reserved.
  * <p>
@@ -17,7 +19,7 @@ package greycat.language;
  */
 public class Annotation {
     private final String name;
-    private String value;
+    private List<List<Object>> value;
 
     public Annotation(final String name) {
         this.name = name;
@@ -27,14 +29,13 @@ public class Annotation {
         return name;
     }
 
-    public final String value() {
-        return value;
-    }
-
-    public final void setValue(final String value) {
+    public final void setValue(List<List<Object>> value) {
         this.value = value;
     }
 
+    public final List<List<Object>> value() {
+        return this.value;
+    }
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

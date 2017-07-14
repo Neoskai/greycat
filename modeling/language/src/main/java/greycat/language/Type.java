@@ -18,11 +18,11 @@ package greycat.language;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public abstract class Type implements Container {
+public abstract class Type {
     protected String name;
 
     protected Type parent;
-    protected Map<String, Object> properties;
+    public Map<String, Object> properties;
 
     Attribute getOrCreateAttribute(String name) {
         Object att = properties.get(name);
@@ -131,28 +131,20 @@ public abstract class Type implements Container {
         return properties.values();
     }
 
-    public final Set<Annotation> allAnnotations() {
-        Set<Annotation> allAnnotations = new HashSet<Annotation>();
-        properties().forEach(p -> {
-            if (p instanceof Annotation) {
-                if (!allAnnotations.contains(p)) {
-                    allAnnotations.add((Annotation) p);
-                }
-            }
-        });
-
+    public final Map<String, Object> allProperties() {
+        final Map<String, Object> allProperties = new HashMap<String, Object>();
+        allProperties.putAll(properties);
         Type loop_parent = parent;
         while (loop_parent != null) {
-            loop_parent.properties().forEach(p -> {
-                if (p instanceof Annotation) {
-                    if (!allAnnotations.contains(p)) {
-                        allAnnotations.add((Annotation) p);
-                    }
+            loop_parent.properties.forEach((s, o) -> {
+                if (!allProperties.containsKey(s)) {
+                    allProperties.put(s, o);
                 }
             });
             loop_parent = loop_parent.parent;
         }
-        return allAnnotations;
+        return allProperties;
     }
+
 
 }

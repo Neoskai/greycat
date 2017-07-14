@@ -492,6 +492,9 @@ public class CoreGraph implements Graph {
         return buffer;
     }
 
+    /**
+     * @ignore ts
+     */
     private final String buildNode(Node node, Long startStamp, Long endStamp, Long maxSize){
         StringBuilder builder = new StringBuilder();
 

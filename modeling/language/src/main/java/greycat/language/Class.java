@@ -24,9 +24,9 @@ public class Class extends Type {
         this.properties = new HashMap<String, Object>();
     }
 
-
     @Override
     public String toString() {
         return "Class(" + name + ")";
     }
+
 }

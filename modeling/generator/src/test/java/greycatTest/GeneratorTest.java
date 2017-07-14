@@ -15,22 +15,21 @@
  */
 package greycatTest;
 
-import greycat.language.Checker;
-import greycat.language.Model;
-import org.junit.Assert;
+import greycat.generator.Generator;
 import org.junit.Test;
 
-public class ImportTest {
+import java.io.File;
 
-    @Test
-    public void importTest() throws Exception {
-        Model model = new Model();
-        model.parseResource("import.gcm", this.getClass().getClassLoader());
-        //model.parse(new File("/Users/duke/Documents/datathings/greycat/modeling/language/src/test/resources/import.gcm"));
-        model.consolidate();
-        Checker.check(model);
-        Assert.assertEquals(1, model.classes().length);
-        Assert.assertEquals(1, model.constants().length);
+public class GeneratorTest {
+
+    public static void main(String[] args) throws Exception {
+        File target = new File("/Users/duke/Documents/datathings/greycat/modeling/generator/target/gen");
+        target.exists();
+        File targetWeb = new File("/Users/duke/Documents/datathings/greycat/modeling/generator/target/gen-web");
+        targetWeb.exists();
+        Generator generator = new Generator();
+        generator.parse(new File("/Users/duke/Documents/datathings/greycat/modeling/generator/src/test/resources/hello.gcm"));
+        generator.generate("generator", "myGen", target, targetWeb, true, false, "9", null);
     }
 
 }

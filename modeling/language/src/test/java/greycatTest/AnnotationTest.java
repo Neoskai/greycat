@@ -13,7 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package greycat.language;
+package greycatTest;
 
-public interface Container {
+import greycat.language.Annotation;
+import greycat.language.Checker;
+import greycat.language.Model;
+import org.junit.Assert;
+import org.junit.Test;
+
+public class AnnotationTest {
+
+    @Test
+    public void importTest() throws Exception {
+        Model model = new Model();
+        model.parseResource("annotation.gcm", this.getClass().getClassLoader());
+        model.consolidate();
+        Checker.check(model);
+        Assert.assertEquals(1, model.classes().length);
+        Assert.assertEquals(2, ((Annotation) model.classes()[0].properties.get("timeSensitivity")).value().size());
+    }
+
 }

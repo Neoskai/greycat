@@ -15,16 +15,16 @@
  */
 package greycat.generator;
 
+import com.squareup.javapoet.JavaFile;
 import greycat.language.Checker;
 import greycat.language.Model;
 import java2typescript.SourceTranslator;
-import org.jboss.forge.roaster.model.source.JavaSource;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -49,72 +49,17 @@ public class Generator {
         }
     }
 
-    /*
-    public void deepScan(File target) throws Exception {
-        if (target.isDirectory()) {
-            String[] files = target.list();
-            if (files == null) {
-                throw new RuntimeException("no files to parse found");
-            } else {
-                for (String name : files) {
-                    if (name.trim().endsWith(FILE_EXTENSION)) {
-                        this.model.parse(new File(target, name));
-                    } else {
-                        File current = new File(target, name);
-                        if (current.isDirectory()) {
-                            deepScan(current);
-                        }
-                    }
-                }
-            }
-
-        } else if (target.getName().endsWith(FILE_EXTENSION)) {
-            this.model.parse(target);
-        }
-    }*/
-
     private void generateJava(String packageName, String pluginName, File target) {
-        int index = 0;
-        int size = model.classes().length + model.customTypes().length + model.globalIndexes().length + 1;
-        JavaSource[] sources = new JavaSource[size * 2 + 2];
-
-        sources[index] = PluginClassGenerator.generate(packageName, pluginName, model);
-        index++;
-
-        JavaSource[] classTypes = ClassTypeGenerator.generate(packageName, model);
-        System.arraycopy(classTypes, 0, sources, index, classTypes.length);
-        index += classTypes.length;
-
-        JavaSource[] customTypes = CustomTypeGenerator.generate(packageName, model);
-        System.arraycopy(customTypes, 0, sources, index, customTypes.length);
-        index += customTypes.length;
-
-        JavaSource[] globalIndexes = GlobalIndexGenerator.generate(packageName, model);
-        System.arraycopy(globalIndexes, 0, sources, index, globalIndexes.length);
-        index += globalIndexes.length;
-
-        JavaSource[] globalConstants = GlobalConstantGenerator.generate(packageName, model);
-        System.arraycopy(globalConstants, 0, sources, index, globalConstants.length);
-        index += globalConstants.length;
-
-        for (int i = 0; i < index; i++) {
-            if (sources[i] != null) {
-                JavaSource src = sources[i];
-                File targetPkg;
-                if (src.getPackage() != null) {
-                    targetPkg = new File(target.getAbsolutePath() + File.separator + src.getPackage().replace(".", File.separator));
-                } else {
-                    targetPkg = target;
-                }
-                targetPkg.mkdirs();
-                File targetSrc = new File(targetPkg, src.getName() + ".java");
-                try {
-                    FileWriter writer = new FileWriter(targetSrc);
-                    writer.write(src.toString().replace("<pre>", "").replace("</pre>", ""));
-                    writer.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+        List<JavaFile> collector = new ArrayList<JavaFile>();
+        TypeGenerator.generate(packageName, model, collector);
+        IndexGenerator.generate(packageName, model, collector);
+        ConstantGenerator.generate(packageName, model, collector);
+        PluginGenerator.generate(packageName, pluginName, model, collector);
+        for (JavaFile file : collector) {
+            try {
+                file.writeTo(target);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }
@@ -136,19 +81,6 @@ public class Generator {
         } else {
             addToTransClassPath(transpiler);
         }
-
-        /*
-        if (mvnProject != null) {
-            for (Artifact a : mvnProject.getArtifacts()) {
-                File file = a.getFile();
-                if (file != null) {
-                    if (file.isFile()) {
-                        transpiler.addToClasspath(file.getAbsolutePath());
-                    }
-                }
-            }
-        }
-        */
         transpiler.process();
         transpiler.addHeader("import * as greycat from 'greycat';");
         transpiler.addHeader("import {java} from 'j2ts-jre';");

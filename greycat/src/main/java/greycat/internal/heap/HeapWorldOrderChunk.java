@@ -19,6 +19,7 @@ import greycat.Constants;
 import greycat.NodeListener;
 import greycat.chunk.ChunkType;
 import greycat.struct.Buffer;
+import greycat.struct.LongLongMap;
 import greycat.struct.LongLongMapCallBack;
 import greycat.utility.Base64;
 import greycat.utility.HashHelper;
@@ -220,8 +221,9 @@ final class HeapWorldOrderChunk implements WorldOrderChunk {
     }
 
     @Override
-    public synchronized final void put(final long key, final long value) {
+    public synchronized final LongLongMap put(final long key, final long value) {
         internal_put(key, value, true);
+        return this;
     }
 
     private void internal_put(final long key, final long value, final boolean notifyUpdate) {

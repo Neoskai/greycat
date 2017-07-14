@@ -83,12 +83,12 @@ public class Model {
         internal_parse(CharStreams.fromStream(is), resolver);
     }
 
-    public Constant[] globalConstants() {
+    public Constant[] constants() {
         return constants.values().toArray(new Constant[constants.size()]);
     }
 
-    public Index[] globalIndexes() {
-        return indexes.values().toArray(new Index[indexes.size()]);
+    public Collection<Index> indexes() {
+        return indexes.values();
     }
 
     public CustomType[] customTypes() {
@@ -123,6 +123,12 @@ public class Model {
         return buf.toString();
     }
 
+
+    private String cleanString(Token s) {
+        String rawText = s.getText();
+        return rawText.substring(1, rawText.length() - 1);
+    }
+
     private void internal_parse(CharStream in, Resolver resolver) {
         if (md == null) {
             try {
@@ -131,6 +137,10 @@ public class Model {
                 e.printStackTrace();
             }
         }
+        if (in.size() == 0) {
+            return;
+        }
+
         String sha1 = convertToHex(md.digest(in.getText(new Interval(0, in.size())).getBytes()));
         if (alreadyLoaded.contains(sha1)) {
             return;
@@ -143,7 +153,7 @@ public class Model {
         GreyCatModelParser.ModelDclContext modelDclCtx = parser.modelDcl();
         //first subImport
         modelDclCtx.importDcl().forEach(importDclContext -> {
-            String subPath = importDclContext.STRING().getText().replace("\"", "");
+            String subPath = cleanString(importDclContext.path);
             CharStream subStream = resolver.resolver(subPath);
             if (subStream == null) {
                 throw new RuntimeException("Import not resolved " + subPath);
@@ -162,11 +172,16 @@ public class Model {
                 c = new Constant(const_name);
                 constants.put(const_name, c);
             }
-            c.setType(getType(constDclCtx.valueTypeDcl()));
+            c.setType(constDclCtx.type.getText());
             String value = null;
             if (constDclCtx.constValueDcl() != null) {
                 if (constDclCtx.constValueDcl().simpleValueDcl() != null) {
-                    value = constDclCtx.constValueDcl().simpleValueDcl().getText();
+                    GreyCatModelParser.SimpleValueDclContext sVc = constDclCtx.constValueDcl().simpleValueDcl();
+                    if (sVc.STRING() != null) {
+                        value = cleanString(sVc.STRING().getSymbol());
+                    } else {
+                        value = constDclCtx.constValueDcl().simpleValueDcl().getText();
+                    }
                 } else if (constDclCtx.constValueDcl().taskValueDcl() != null) {
                     GreyCatModelParser.TaskValueDclContext taskDcl = constDclCtx.constValueDcl().taskValueDcl();
                     value = taskDcl.getText();
@@ -355,9 +370,10 @@ public class Model {
     private void addAttribute(Type type, GreyCatModelParser.AttributeDclContext attDcl) {
         String name = attDcl.name.getText();
         final Attribute attribute = type.getOrCreateAttribute(name);
-        attribute.setType(getType(attDcl.valueTypeDcl()));
-        if (attDcl.attributeValueDcl() != null) {
-            attribute.setValue(getAttributeValue(attDcl.attributeValueDcl()));
+        attribute.setType(attDcl.type.getText());
+        GreyCatModelParser.AttributeValueDclContext valDcl = attDcl.attributeValueDcl();
+        if (valDcl != null) {
+            attribute.setValue(getAttributeValue(valDcl));
         }
     }
 
@@ -365,8 +381,7 @@ public class Model {
         String name = annotationDcl.name.getText();
         final Annotation annotation = type.getOrCreateAnnotation(name);
         if (annotationDcl.value != null) {
-            String value = annotationDcl.value.getText();
-            annotation.setValue(value);
+            annotation.setValue(getAttributeValue(annotationDcl.attributeValueDcl()));
         }
     }
 
@@ -382,34 +397,31 @@ public class Model {
         final Index index = type.getOrCreateIndex(localIndexDcl.name.getText());
         index.setType(localIndexDcl.type.getText());
         final Class indexedClass = getOrAddClass(index.type());
-        for (TerminalNode idxDclIdent : localIndexDcl.indexAttributesDcl().IDENT()) {
-            index.addAttributeRef(new AttributeRef(indexedClass.getOrCreateAttribute(idxDclIdent.getText())));
+        if (localIndexDcl.indexAttributesDcl() != null) {
+            for (TerminalNode idxDclIdent : localIndexDcl.indexAttributesDcl().IDENT()) {
+                index.addAttributeRef(new AttributeRef(indexedClass.getOrCreateAttribute(idxDclIdent.getText())));
+            }
         }
     }
 
     private void addLocalConstant(Type type, GreyCatModelParser.ConstDclContext constDcl) {
         Constant constant = type.getOrCreateConstant(constDcl.name.getText());
-        constant.setType(getType(constDcl.valueTypeDcl()));
+        constant.setType(constDcl.type.getText());
         String value = null;
         if (constDcl.constValueDcl() != null) {
-            if (constDcl.constValueDcl().simpleValueDcl() != null) {
-                value = constDcl.constValueDcl().simpleValueDcl().getText();
+            GreyCatModelParser.SimpleValueDclContext simpleValueDclContext = constDcl.constValueDcl().simpleValueDcl();
+            if (simpleValueDclContext != null) {
+                if (simpleValueDclContext.STRING() != null) {
+                    value = cleanString(simpleValueDclContext.STRING().getSymbol());
+                } else {
+                    value = constDcl.constValueDcl().simpleValueDcl().getText();
+                }
             } else if (constDcl.constValueDcl().taskValueDcl() != null) {
                 GreyCatModelParser.TaskValueDclContext taskDcl = constDcl.constValueDcl().taskValueDcl();
                 value = taskDcl.getText();
             }
         }
         constant.setValue(value);
-    }
-
-    private String getType(GreyCatModelParser.ValueTypeDclContext typeDclContext) {
-        String type = null;
-        if (typeDclContext.builtInTypeDcl() != null) {
-            type = typeDclContext.builtInTypeDcl().getText();
-        } else if (typeDclContext.customBuiltTypeDcl() != null) {
-            type = typeDclContext.customBuiltTypeDcl().getText();
-        }
-        return type;
     }
 
     private Class getOrAddClass(String fqn) {
@@ -452,10 +464,8 @@ public class Model {
 
                         if (tnupleElemDcl.IDENT() != null) {
                             tuple.add(tnupleElemDcl.IDENT().getText());
-
                         } else if (tnupleElemDcl.STRING() != null) {
-                            tuple.add(tnupleElemDcl.STRING().getText());
-
+                            tuple.add(cleanString(tnupleElemDcl.STRING().getSymbol()));
                         } else if (tnupleElemDcl.NUMBER() != null) {
                             tuple.add(tnupleElemDcl.NUMBER().getText());
                         }
@@ -466,7 +476,7 @@ public class Model {
                     attValues.add(Arrays.asList(cvDclCtx.IDENT().getText()));
 
                 } else if (cvDclCtx.STRING() != null) {
-                    attValues.add(Arrays.asList(cvDclCtx.STRING().getText()));
+                    attValues.add(Arrays.asList(cleanString(cvDclCtx.STRING().getSymbol())));
 
                 } else if (cvDclCtx.NUMBER() != null) {
                     attValues.add(Arrays.asList(cvDclCtx.NUMBER().getText()));
@@ -477,7 +487,7 @@ public class Model {
             attValues.add(Arrays.asList(attValueDclCtx.IDENT().getText()));
 
         } else if (attValueDclCtx.STRING() != null) {
-            attValues.add(Arrays.asList(attValueDclCtx.STRING().getText()));
+            attValues.add(Arrays.asList(cleanString(attValueDclCtx.STRING().getSymbol())));
 
         } else if (attValueDclCtx.NUMBER() != null) {
             attValues.add(Arrays.asList(attValueDclCtx.NUMBER().getText()));
