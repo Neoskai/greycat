@@ -278,6 +278,7 @@ public class CoreGraph implements Graph {
 
     /**
      * @ignore ts
+     * @TODO Handle Nodes indexed multiple times
      */
     @Override
     public String toJson() {
@@ -365,6 +366,7 @@ public class CoreGraph implements Graph {
 
     /**
      * @ignore ts
+     * @TODO Handle Nodes indexed multiple times
      */
     @Override
     public final Buffer toJson(Buffer buffer){
@@ -451,6 +453,125 @@ public class CoreGraph implements Graph {
         buffer.writeString("]");
 
         return buffer;
+    }
+
+    /**
+     * @ignore ts
+     */
+    @Override
+    public final Buffer toJson(Buffer buffer, Long maxSize){
+        buffer.writeString("[");
+        final boolean[] isFirst = {true};
+
+        indexNames(0, 0, new Callback<String[]>() {
+            @Override
+            public void on(String[] result) {
+                for(String name : result){
+                    index(0, 0, name, new Callback<NodeIndex>() {
+                        @Override
+                        public void on(NodeIndex nodeIndex) {
+                            nodeIndex.findFrom(elems ->{
+                                for(Node node: elems){
+                                    if(isFirst[0]){
+                                        isFirst[0] = false;
+                                    } else {
+                                        buffer.writeString(",");
+                                    }
+
+                                    buffer.writeString(buildNode(node, Constants.BEGINNING_OF_TIME, Constants.END_OF_TIME, maxSize));
+                                }
+
+                            });
+                        }
+                    });
+                }
+            }
+        });
+        buffer.writeString("]");
+
+        return buffer;
+    }
+
+    private final String buildNode(Node node, Long startStamp, Long endStamp, Long maxSize){
+        StringBuilder builder = new StringBuilder();
+
+        builder.append("{");
+
+        builder.append("\"_world\":");
+        builder.append(node.world()+ "");
+        builder.append(",\"_id\":");
+        builder.append(node.id() + "");
+        builder.append(",\"_nodetype\":");
+        if(node.nodeTypeName() == null){
+            builder.append("null");
+        } else {
+            builder.append(node.nodeTypeName());
+        }
+
+        StringBuilder timeBuilder = new StringBuilder();
+        StringBuilder valueBuilder = new StringBuilder();
+
+        final Long[] currentStart = {startStamp};
+
+        final boolean[] isLast = {false};
+
+        final int limit = 1000;
+
+        while(valueBuilder.length() < maxSize) {
+            lookupTimes(0, currentStart[0], endStamp, node.id(), limit, new Callback<Node[]>() {
+                @Override
+                public void on(Node[] timeNodes) {
+                    if(timeBuilder.length() != 0){
+                        timeBuilder.append(",");
+                        valueBuilder.append(",");
+                    }
+
+                    for (int i = 0; i < timeNodes.length; i++) {
+                        timeBuilder.append(timeNodes[i].time());
+                        valueBuilder.append(JsonBuilder.buildJson(Type.NODE, timeNodes[i]));
+
+                        if(i != (timeNodes.length -1) && valueBuilder.length() < maxSize){
+                            valueBuilder.append(",");
+                            timeBuilder.append(",");
+                        }
+
+                        if((timeNodes.length%limit) != 0 && i == (timeNodes.length -1)){
+                            isLast[0] = true;
+                        }
+
+                        if( (i == (timeNodes.length -1)) || valueBuilder.length() > maxSize){
+                            currentStart[0]= timeNodes[i].time() +1;
+                            break;
+                        }
+
+                    }
+                }
+            });
+
+            if(isLast[0]){
+                break;
+            }
+        }
+
+
+        builder.append(", \"_times\":");
+        builder.append("[");
+        builder.append(timeBuilder.toString());
+        builder.append("],");
+
+        builder.append("\"_values\":");
+        builder.append("[");
+        builder.append(valueBuilder);
+        builder.append("]");
+
+        builder.append("}");
+
+        if(valueBuilder.length() > maxSize && !isLast[0]){
+            builder.append(",");
+            builder.append(buildNode(node,currentStart[0],endStamp,maxSize));
+        }
+
+        return builder.toString();
     }
 
     @Override

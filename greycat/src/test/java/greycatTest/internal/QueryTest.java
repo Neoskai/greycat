@@ -125,6 +125,14 @@ public class QueryTest implements Resolver, Graph {
         return null;
     }
 
+    /**
+     * @ignore ts
+     */
+    @Override
+    public Buffer toJson(Buffer buffer, Long maxSize) {
+        return null;
+    }
+
     @Override
     public <A extends Node> void lookup(long world, long time, long id, Callback<A> callback) {
 

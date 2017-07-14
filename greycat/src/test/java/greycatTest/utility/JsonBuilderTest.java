@@ -200,7 +200,12 @@ public class JsonBuilderTest {
                             index.update(node);
                         });
 
-                        System.out.println(graph.toJson());
+                        String sToJson = graph.toJson();
+
+                        Buffer buffer = graph.newBuffer();
+                        graph.toJson(buffer);
+
+                        assertEquals(sToJson, new String(buffer.data()));
 
                     }
                 });
@@ -461,5 +466,85 @@ public class JsonBuilderTest {
         graph.toJson(buffer);
 
         assertEquals(sToJson, new String(buffer.data()));
+    }
+
+    @Test
+    public void testMultiNodeSplitted(){
+        // 5 Nodes with many points
+        Graph graph = new GraphBuilder()
+                .withMemorySize(2000000)
+                .build();
+
+        graph.connect(new Callback<Boolean>() {
+            @Override
+            public void on(Boolean result) {
+                final long before = System.currentTimeMillis();
+                System.out.println("Connected to graph");
+
+                graph.declareIndex(0,"TestIndex", null);
+
+                final DeferCounter counter = graph.newCounter(valuesToInsert);
+
+                for(long i = 0 ; i < 5; i++){
+                    Node initialNode = graph.newNode(0,0);
+
+                    graph.index(0,0,"TestIndex", index ->{
+                        index.update(initialNode);
+                    });
+
+                    for(long j = 0 ; j < valuesToInsert; j++){
+                        if(j%(valuesToInsert/10) == 0) {
+                            graph.save(new Callback<Boolean>() {
+                                @Override
+                                public void on(Boolean result) {
+                                    // NOTHING
+                                }
+                            });
+                        }
+
+                        final double value= j * 0.3;
+                        final long time = initialStamp + j;
+
+                        graph.lookup(0, time, initialNode.id(), new Callback<Node>() {
+                            @Override
+                            public void on(Node timedNode) {
+                                timedNode.set("value", Type.DOUBLE, value);
+                                graph.index(0,0,"TestIndex", index ->{
+                                    index.update(timedNode);
+                                });
+                                counter.count();
+                                timedNode.free();
+                            }
+                        });
+                    }
+
+                    initialNode.free();
+                }
+
+
+                counter.then(new Job() {
+                    @Override
+                    public void run() {
+                        System.out.println("<end insert phase>" + " " + (System.currentTimeMillis() - before) / 1000 + "s");
+                        System.out.println( "Sparkey result: " + (valuesToInsert / ((System.currentTimeMillis() - before) / 1000) / 1000) + "kv/s");
+
+
+                        graph.disconnect(new Callback<Boolean>() {
+                            @Override
+                            public void on(Boolean result) {
+                                System.out.println("Disconnected from graph");
+                            }
+                        });
+                    }
+                });
+
+            }
+        });
+
+        Buffer buffer = graph.newBuffer();
+        graph.toJson(buffer, 1000L);
+
+        System.out.println(new String(buffer.data()));
+
     }
 }

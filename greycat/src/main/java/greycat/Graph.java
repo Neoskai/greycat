@@ -72,6 +72,15 @@ public interface Graph {
     Buffer toJson(Buffer buffer);
 
     /**
+     * @ignore ts
+     * Writed the JSONified graph into the given buffer, and splits records to fetch the maximum size
+     * @param buffer The buffer to write in
+     * @param maxSize The maximum size in bytes to write for each record
+     * @return The buffer filled with the graph
+     */
+    Buffer toJson(Buffer buffer, Long maxSize);
+
+    /**
      * Asynchronous lookup of a particular node.<br>
      * Based on the tuple &lt;World, Time, Node_ID&gt; this method seeks a {@link Node} in the Graph and returns it to the callback.
      *
