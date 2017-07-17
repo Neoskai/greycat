@@ -16,15 +16,18 @@
 
 package greycat.utility;
 
-import greycat.Node;
-import greycat.Task;
-import greycat.Type;
+import greycat.*;
+import greycat.internal.custom.KDTree;
+import greycat.internal.custom.NDTree;
 import greycat.internal.heap.HeapContainer;
 import greycat.plugin.NodeState;
 import greycat.plugin.NodeStateCallback;
 import greycat.struct.*;
+import greycat.struct.proxy.DoubleArrayProxy;
+import greycat.struct.proxy.EStructProxy;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import greycat.internal.heap.*;
 
 import java.util.*;
 import java.util.Map;
@@ -314,7 +317,7 @@ public class JsonBuilder {
                 builder.append("\"");
 
                 Task castedTask = (Task) elem;
-                // @Todo Switch from toString to toJson
+                // @Todo Switch from toString to toJson (value OK)
                 builder.append(castedTask.toString());
                 builder.append("\"");
                 break;
@@ -424,57 +427,78 @@ public class JsonBuilder {
                 break;
 
             case Type.INDEX:
+                Index castedIndex = (Index) elem;
+
+                builder.append(Type.INDEX);
+                builder.append(",{");
+                builder.append(castedIndex.all().toString());
+                builder.append("}");
                 break;
 
             case Type.KDTREE:
+                KDTree castedKTree = (KDTree) elem;
+
+                builder.append(Type.KDTREE);
+                builder.append(",{");
+                builder.append(buildJson(Type.ESTRUCT_ARRAY, castedKTree.backend()));
+                builder.append("}");
                 break;
 
             case Type.NDTREE:
+                NDTree castedNTree = (NDTree) elem;
+
+                builder.append(Type.NDTREE);
+                builder.append(",{");
+                builder.append(buildJson(Type.ESTRUCT_ARRAY, castedNTree.backend()));
+                builder.append("}");
                 break;
         }
         builder.append("]");
         return builder.toString();
     }
 
-    public static Object buildObject(String json, HeapContainer parent) {
+    public static Object buildObject(String json) {
         Object obj = null;
 
-        JSONObject jsonObject = new JSONObject(json);
-        int type = jsonObject.getInt("_type");
+        JSONArray baseArray = new JSONArray(json);
+
+        int type = baseArray.getInt(0);
 
         switch (type) {
             case Type.BOOL:
-                obj = jsonObject.getBoolean("_value");
+                obj = baseArray.getBoolean(1);
                 break;
 
             case Type.STRING:
-                obj = jsonObject.getString("_value");
+                obj = baseArray.getString(1);
                 break;
 
             case Type.LONG:
-                obj = jsonObject.getLong("_value");
+                obj = baseArray.getLong(1);
                 break;
 
             case Type.INT:
-                obj = jsonObject.getInt("_value");
+                obj = baseArray.getInt(1);
                 break;
 
             case Type.DOUBLE:
-                obj = jsonObject.getDouble("_value");
+                obj = baseArray.getDouble(1);
                 break;
 
 
             case Type.DOUBLE_ARRAY:
-                JSONArray jDArray = jsonObject.getJSONArray("_value");
+                JSONArray jDArray = baseArray.getJSONArray(1);
 
                 double[] darray = new double[jDArray.length()];
                 for(int i=0; i < jDArray.length(); i++){
                     darray[i] = jDArray.getDouble(i);
                 }
 
+                DoubleArray hdArray = (DoubleArray) new EStructProxy(null, null, 0).getOrCreate("test", 6);
+
                 break;
 
-            case Type.LONG_ARRAY:
+            /*case Type.LONG_ARRAY:
                 JSONArray jLArray = jsonObject.getJSONArray("_value");
 
                 long[] larray = new long[jLArray.length()];
@@ -664,7 +688,7 @@ public class JsonBuilder {
                 break;
 
             case Type.NDTREE:
-                break;
+                break;*/
         }
 
         return obj;

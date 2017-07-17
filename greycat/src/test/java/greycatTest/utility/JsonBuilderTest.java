@@ -21,6 +21,7 @@ import greycat.plugin.Job;
 import greycat.struct.*;
 import greycat.utility.HashHelper;
 import greycat.utility.JsonBuilder;
+import org.json.JSONArray;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -290,6 +291,8 @@ public class JsonBuilderTest {
                         Buffer buffer = graph.newBuffer();
                         graph.toJson(buffer);
 
+                        System.out.println(sToJson);
+
                         assertEquals(sToJson, new String(buffer.data()));
 
                     }
@@ -542,9 +545,54 @@ public class JsonBuilderTest {
         });
 
         Buffer buffer = graph.newBuffer();
-        graph.toJson(buffer, 1000L);
+        graph.toJson(buffer, 10000L);
 
         System.out.println(new String(buffer.data()));
+
+    }
+
+    @Test
+    public void testRebuild(){
+        String dBool = "[  \n" +
+                "                  1,\n" +
+                "                  true\n" +
+                "               ]";
+
+        assertEquals(JsonBuilder.buildObject(dBool), true);
+
+        String dString = "[  \n" +
+                "                  2,\n" +
+                "                  \"Olaketal\" \n" +
+                "               ]";
+
+        assertEquals(JsonBuilder.buildObject(dString), "Olaketal");
+
+        String dLong = "[  \n" +
+                "                  3,\n" +
+                "                  99999999999\n" +
+                "               ]";
+
+        assertEquals(JsonBuilder.buildObject(dLong), 99999999999L);
+
+        String dInt = "[  \n" +
+                "                  4,\n" +
+                "                  -40\n" +
+                "               ]";
+
+        assertEquals(JsonBuilder.buildObject(dInt), -40);
+
+        String dDouble = "[  \n" +
+                "                  5,\n" +
+                "                  0.6\n" +
+                "               ]";
+
+        assertEquals(JsonBuilder.buildObject(dDouble), 0.6);
+
+        String dDArray = "[6,[0.4,0.6,10.89, -14986.78]]";
+
+        double[] doArray = {0.4, 0.6, 10.89, -14986.78};
+
+
 
     }
 }
