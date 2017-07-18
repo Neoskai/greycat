@@ -551,7 +551,7 @@ public class JsonBuilderTest {
 
     }
 
-    @Test
+    /*@Test
     public void testRebuild(){
         String dBool = "[  \n" +
                 "                  1,\n" +
@@ -592,7 +592,5 @@ public class JsonBuilderTest {
 
         double[] doArray = {0.4, 0.6, 10.89, -14986.78};
 
-
-
-    }
+    }*/
 }

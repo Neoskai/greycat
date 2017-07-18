@@ -16,7 +16,6 @@
 package greycat.base;
 
 import greycat.*;
-import greycat.backup.NATSender;
 import greycat.chunk.StateChunk;
 import greycat.plugin.NodeStateCallback;
 
@@ -33,7 +32,6 @@ import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**

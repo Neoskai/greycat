@@ -19,18 +19,13 @@ package greycat.utility;
 import greycat.*;
 import greycat.internal.custom.KDTree;
 import greycat.internal.custom.NDTree;
-import greycat.internal.heap.HeapContainer;
 import greycat.plugin.NodeState;
 import greycat.plugin.NodeStateCallback;
 import greycat.struct.*;
-import greycat.struct.proxy.DoubleArrayProxy;
-import greycat.struct.proxy.EStructProxy;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import greycat.internal.heap.*;
 
 import java.util.*;
-import java.util.Map;
 
 /**
  * @ignore ts
@@ -457,12 +452,15 @@ public class JsonBuilder {
         return builder.toString();
     }
 
-    public static Object buildObject(String json) {
-        Object obj = null;
+    public static Node buildObject(String json, Node parent) {
+        JSONObject jsonObject = new JSONObject(json);
+        String name = jsonObject.getString("_name");
 
-        JSONArray baseArray = new JSONArray(json);
+        JSONArray baseArray = jsonObject.getJSONArray("_value");
 
         int type = baseArray.getInt(0);
+
+        Object obj = null;
 
         switch (type) {
             case Type.BOOL:
@@ -487,49 +485,68 @@ public class JsonBuilder {
 
 
             case Type.DOUBLE_ARRAY:
-                JSONArray jDArray = baseArray.getJSONArray(1);
+                obj = parent.getOrCreate(name, type);
+                DoubleArray castedArray = (DoubleArray) obj;
 
-                double[] darray = new double[jDArray.length()];
+                JSONArray jDArray = baseArray.getJSONArray(1);
+                castedArray.init(jDArray.length());
+
                 for(int i=0; i < jDArray.length(); i++){
-                    darray[i] = jDArray.getDouble(i);
+                    castedArray.set(i,jDArray.getDouble(i));
                 }
 
-                DoubleArray hdArray = (DoubleArray) new EStructProxy(null, null, 0).getOrCreate("test", 6);
+                obj = castedArray;
 
                 break;
 
-            /*case Type.LONG_ARRAY:
+            case Type.LONG_ARRAY:
+                obj = parent.getOrCreate(name, type);
                 JSONArray jLArray = jsonObject.getJSONArray("_value");
 
-                long[] larray = new long[jLArray.length()];
+                LongArray castedLArray = (LongArray) obj;
+                castedLArray.init(jLArray.length());
+
                 for(int i=0; i < jLArray.length(); i++){
-                    larray[i] = jLArray.getLong(i);
+                    castedLArray.set(i,jLArray.getLong(i));
                 }
+
+                obj = castedLArray;
 
                 break;
 
             case Type.INT_ARRAY:
+                obj = parent.getOrCreate(name, type);
                 JSONArray jIArray = jsonObject.getJSONArray("_value");
 
-                int[] iarray = new int[jIArray.length()];
+                IntArray castedIArray = (IntArray) obj;
+                castedIArray.init(jIArray.length());
+
                 for(int i=0; i < jIArray.length(); i++){
-                    iarray[i] = jIArray.getInt(i);
+                    castedIArray.set(i,jIArray.getInt(i));
                 }
+
+                obj = castedIArray;
 
                 break;
 
             case Type.STRING_ARRAY:
+                obj = parent.getOrCreate(name, type);
                 JSONArray jSArray = jsonObject.getJSONArray("_value");
 
-                String[] sarray = new String[jSArray.length()];
+                StringArray castedSArray = (StringArray) obj;
+                castedSArray.init(jSArray.length());
+
                 for(int i=0; i < jSArray.length(); i++){
-                    sarray[i] = jSArray.getString(i);
+                    castedSArray.set(i, jSArray.getString(i));
                 }
+
+                obj = castedSArray;
 
                 break;
 
             case Type.LONG_TO_LONG_MAP:
-                Map<Long, Long> llMap = new HashMap<>();
+                obj = parent.getOrCreate(name, type);
+                LongLongMap castedLLmap = (LongLongMap) obj;
 
                 JSONObject llObject = jsonObject.getJSONObject("_value");
 
@@ -539,51 +556,54 @@ public class JsonBuilder {
 
                     Long keyLong = Long.parseLong(key);
                     Long value = llObject.getLong(key);
-
-                    llMap.put(keyLong,value);
+                    castedLLmap.put(keyLong,value);
                 }
 
-
+                obj = castedLLmap;
                 break;
 
+            // @TODO A Verifier
             case Type.LONG_TO_LONG_ARRAY_MAP:
-                Map<Long, Long[]> llaMap = new HashMap<>();
+                obj = parent.getOrCreate(name, type);
 
+                LongLongArrayMap castedLLAMap = (LongLongArrayMap) obj;
                 JSONObject llaObject = jsonObject.getJSONObject("_value");
 
                 Iterator<String> keysllaItr = llaObject.keys();
                 while(keysllaItr.hasNext()){
                     String key = keysllaItr.next();
-
                     Long keyLong = Long.parseLong(key);
 
                     JSONArray array = llaObject.getJSONArray(key);
-                    Long[] values = new Long[array.length()];
 
                     for(int i = 0; i < array.length(); i++){
-                        values[i] = array.getLong(i);
+                        castedLLAMap.put(keyLong, array.getLong(i));
                     }
 
-                    llaMap.put(keyLong,values);
                 }
+
+                obj = castedLLAMap;
                 break;
 
             case Type.STRING_TO_INT_MAP:
-                Map<String, Integer> siMap = new HashMap<>();
+                obj = parent.getOrCreate(name, type);
+                StringIntMap castedSIMap = (StringIntMap) obj;
 
                 JSONObject siObject = jsonObject.getJSONObject("_value");
 
                 Iterator<String> keysSiItr = siObject.keys();
                 while(keysSiItr.hasNext()){
                     String key = keysSiItr.next();
-
                     Integer value = siObject.getInt(key);
 
-                    siMap.put(key,value);
+                    castedSIMap.put(key,value);
                 }
+
+                obj = castedSIMap;
                 break;
 
 
+                // @Todo
             case Type.RELATION:
                 JSONArray rjArray = jsonObject.getJSONArray("_value");
 
@@ -596,36 +616,39 @@ public class JsonBuilder {
 
 
             case Type.DMATRIX:
+                obj = parent.getOrCreate(name, type);
                 JSONArray dmjArray = jsonObject.getJSONArray("_value");
 
-                int ySize = dmjArray.getJSONArray(0).length();
+                DMatrix castedDmat = (DMatrix) obj;
 
-                Double[][] dmarray = new Double[dmjArray.length()][ySize];
+                int xSize = dmjArray.getInt(0);
+                int ySize = dmjArray.getInt(1);
 
-                for(int i=0; i < dmjArray.length(); i++){
-                    JSONArray dmjyArray = dmjArray.getJSONArray(i);
+                castedDmat.init(xSize, ySize);
 
-                    for(int j = 0 ; j < dmjyArray.length(); j++){
-                        dmarray[i][j] = dmjyArray.getDouble(j);
-                    }
+                for(int i=0; i < dmjArray.length()-2; i++){
+                    castedDmat.add(Math.floorDiv(i,xSize),i%ySize, dmjArray.getDouble(i+2));
                 }
 
+                obj = castedDmat;
                 break;
 
             case Type.LMATRIX:
+                obj = parent.getOrCreate(name, type);
                 JSONArray lmjArray = jsonObject.getJSONArray("_value");
 
-                int lySize = lmjArray.getJSONArray(0).length();
+                LMatrix castedLmat = (LMatrix) obj;
 
-                Long[][] lmarray = new Long[lmjArray.length()][lySize];
+                int xLSize = lmjArray.getInt(0);
+                int yLSize = lmjArray.getInt(1);
+
+                castedLmat.init(xLSize,yLSize);
 
                 for(int i=0; i < lmjArray.length(); i++){
-                    JSONArray lmjyArray = lmjArray.getJSONArray(i);
-
-                    for(int j = 0 ; j < lmjyArray.length(); j++){
-                        lmarray[i][j] = lmjyArray.getLong(j);
-                    }
+                    castedLmat.add(Math.floorDiv(i,xLSize),i%yLSize, lmjArray.getLong(i+2));
                 }
+
+                obj = castedLmat;
                 break;
 
 
@@ -650,7 +673,8 @@ public class JsonBuilder {
 
 
             case Type.INT_TO_INT_MAP:
-                Map<Integer, Integer> iiMap = new HashMap<>();
+                obj = parent.getOrCreate(name, type);
+                IntIntMap castedIIMap = (IntIntMap) obj;
 
                 JSONObject iiObject = jsonObject.getJSONObject("_value");
 
@@ -661,12 +685,15 @@ public class JsonBuilder {
                     Integer iKey = Integer.parseInt(key);
                     Integer value = iiObject.getInt(key);
 
-                    iiMap.put(iKey,value);
+                    castedIIMap.put(iKey,value);
                 }
+
+                obj = castedIIMap;
                 break;
 
             case Type.INT_TO_STRING_MAP:
-                Map<Integer, String> isMap = new HashMap<>();
+                obj = parent.getOrCreate(name, type);
+                IntStringMap castedISMap = (IntStringMap) obj;
 
                 JSONObject isObject = jsonObject.getJSONObject("_value");
 
@@ -677,8 +704,10 @@ public class JsonBuilder {
                     Integer iKey = Integer.parseInt(key);
                     String value = isObject.getString(key);
 
-                    isMap.put(iKey,value);
+                    castedISMap.put(iKey,value);
                 }
+
+                obj= castedISMap;
                 break;
 
             case Type.INDEX:
@@ -688,10 +717,12 @@ public class JsonBuilder {
                 break;
 
             case Type.NDTREE:
-                break;*/
+                break;
         }
 
-        return obj;
+        parent.set(name, type, obj);
+
+        return parent;
     }
 
 }
