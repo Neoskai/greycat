@@ -452,7 +452,7 @@ public class JsonBuilder {
         return builder.toString();
     }
 
-    public static Node buildObject(String json, Container parent) {
+    public static Container buildObject(String json, Container parent) {
         JSONObject jsonObject = new JSONObject(json);
         String name = jsonObject.getString("_name");
 
