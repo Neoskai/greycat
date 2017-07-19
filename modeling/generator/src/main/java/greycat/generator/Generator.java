@@ -19,6 +19,7 @@ import com.squareup.javapoet.JavaFile;
 import greycat.language.Checker;
 import greycat.language.Model;
 import java2typescript.SourceTranslator;
+import org.kevoree.resolver.MavenResolver;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
 public class Generator {
@@ -64,7 +66,7 @@ public class Generator {
         }
     }
 
-    private void generateJS(String packageName, String pluginName, File src, File target, String gcVersion, List<File> classPath) {
+    private void generateJS(String packageName, String pluginName, File src, File target, String gcVersion, String projectVersion, List<File> classPath) {
         File modelWeb = new File(target, "model");
         if (!modelWeb.exists()) {
             modelWeb.mkdirs();
@@ -114,18 +116,42 @@ public class Generator {
             e.printStackTrace();
         }
         boolean isSnaphot = (gcVersion.contains("SNAPSHOT"));
-        String tgzVersion = gcVersion.replace("-SNAPSHOT", "") + ".0.0";
         File greycatTgz = null;
-        try {
-            greycatTgz = new File(new File(new File(src.getParentFile().getParentFile().getParentFile().getParentFile().getParentFile().getCanonicalFile(), "greycat"), "target"), "greycat-" + tgzVersion + ".tgz");
-            greycatTgz = greycatTgz.getCanonicalFile();
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (isSnaphot) {
+
+            String tgzVersion = gcVersion.replace("-SNAPSHOT", "");
+            while (tgzVersion.split("\\.").length != 3) {
+                tgzVersion += ".0";
+            }
+
+
+            try {
+                MavenResolver resolver = new MavenResolver();
+                HashSet<String> urls = new HashSet<String>();
+                urls.add("https://oss.sonatype.org/content/repositories/snapshots");
+                greycatTgz = resolver.resolve("com.datathings", "greycat", gcVersion, "tgz", urls);
+                if(greycatTgz == null) {
+                    throw new RuntimeException("Could not resolve dependency: gp:com.datathings artifact:greycat version:" + gcVersion + " ext:tgz");
+                }
+                //greycatTgz = new File(new File(new File(src.getParentFile().getParentFile().getParentFile().getParentFile().getParentFile().getCanonicalFile(), "greycat"), "target"), "greycat-" + tgzVersion + ".tgz");
+                greycatTgz = greycatTgz.getCanonicalFile();
+                System.out.println("using GreyCat Snapshot from " + greycatTgz.getAbsolutePath());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            gcVersion = greycatTgz != null ? greycatTgz.getAbsolutePath() : tgzVersion;
         }
-        gcVersion = isSnaphot ? greycatTgz.getAbsolutePath() : tgzVersion;
+
+        if(projectVersion.contains("SNAPSHOT")) {
+            projectVersion = projectVersion.replace("-SNAPSHOT", "");
+            while (projectVersion.split("\\.").length != 3) {
+                projectVersion += ".0";
+            }
+        }
+
         String packageJsonContent = "{\n" +
                 "  \"name\": \"" + packageName + "\",\n" +
-                "  \"version\": \"1.0.0\",\n" +
+                "  \"version\": \""+projectVersion+"\",\n" +
                 "  \"description\": \"\",\n" +
                 "  \"main\": \"lib/" + packageName + "\",\n" +
                 "  \"author\": \"\",\n" +
@@ -178,7 +204,7 @@ public class Generator {
                     "  \"license\":\"UNLICENSED\"," +
                     "  \"dependencies\": {\n" +
                     "    \"greycat\": \"" + gcVersion + "\",\n" +
-                    "    \"" + packageName + "\": \"" + new File(modelWeb, "model-1.0.0.tgz").getAbsolutePath() + "\"\n" +
+                    "    \"" + packageName + "\": \"" + new File(modelWeb, packageName+"-"+projectVersion+".tgz").getAbsolutePath() + "\"\n" +
                     "  },\n" +
                     "  \"devDependencies\": {\n" +
                     "    \"typescript\": \"2.4.1\",\n" +
@@ -241,14 +267,14 @@ public class Generator {
         }
     }
 
-    public void generate(String packageName, String pluginName, File target, File targetWeb, boolean generateJava, boolean generateJS, String gcVersion, List<File> classPath) {
+    public void generate(String packageName, String pluginName, File target, File targetWeb, boolean generateJava, boolean generateJS, String gcVersion, String projectVersion, List<File> classPath) {
         model.consolidate();
         Checker.check(model);
         if (generateJava || generateJS) {
             generateJava(packageName, pluginName, target);
         }
         if (generateJS) {
-            generateJS(packageName, pluginName, target, targetWeb, gcVersion, classPath);
+            generateJS(packageName, pluginName, target, targetWeb, gcVersion, projectVersion, classPath);
         }
     }
 
