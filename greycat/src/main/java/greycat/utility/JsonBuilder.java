@@ -589,7 +589,7 @@ public class JsonBuilder {
                 break;
 
 
-                // @Todo
+            // @Todo
             case Type.RELATION:
                 JSONArray rjArray = jsonObject.getJSONArray("_value");
 
@@ -638,25 +638,45 @@ public class JsonBuilder {
                 obj = parent.getOrCreate(name,type);
 
                 JSONArray esJson = jsonObject.getJSONArray("_value");
-                EStruct castedObj = (EStruct) obj;
+                EStruct castedEstr = (EStruct) obj;
 
-                castedObj.fromJson(esJson.toString());
+                castedEstr.fromJson(esJson.toString());
                 break;
 
             case Type.ESTRUCT_ARRAY:
+                obj = parent.getOrCreate(name,type);
+
+                JSONArray esaJson = jsonObject.getJSONArray("_value");
+
+                EStructArray castedEarr = (EStructArray) obj;
+
+                castedEarr.fromJson(esaJson.toString());
+
                 break;
 
+            //@Todo
             case Type.ERELATION:
                 break;
 
-
+            //@Todo
             case Type.TASK:
                 break;
 
+            //@Todo
             case Type.TASK_ARRAY:
                 break;
 
             case Type.NODE:
+                obj = parent.getOrCreate(name, type);
+
+                JSONArray nodeJson = jsonObject.getJSONArray("_value");
+
+                Node castedNode = (Node) obj;
+
+                for(int i = 0; i < nodeJson.length(); i++){
+                    JsonBuilder.buildObject(nodeJson.getJSONObject(i).toString(), castedNode);
+                }
+
                 break;
 
 
@@ -694,13 +714,31 @@ public class JsonBuilder {
                 }
                 break;
 
+            //@Todo
             case Type.INDEX:
                 break;
 
+            //@TODO VERIFY IF BACKEND IS ENOUGH
             case Type.KDTREE:
+                obj = parent.getOrCreate(name, type);
+
+                JSONObject kdJson = jsonObject.getJSONObject("_value");
+
+                KDTree castedKD = (KDTree) obj;
+                castedKD.backend().fromJson(kdJson.toString());
+
                 break;
 
+                //@TODO VERIFY IF BACKEND IS ENOUGH
             case Type.NDTREE:
+                obj = parent.getOrCreate(name, type);
+
+                JSONObject ndJson = jsonObject.getJSONObject("_value");
+
+                NDTree castedND = (NDTree) obj;
+
+                castedND.backend().fromJson(ndJson.toString());
+
                 break;
         }
 

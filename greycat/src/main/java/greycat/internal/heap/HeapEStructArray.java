@@ -22,6 +22,8 @@ import greycat.struct.Buffer;
 import greycat.struct.EStructArray;
 import greycat.struct.EStruct;
 import greycat.utility.Base64;
+import greycat.utility.JsonBuilder;
+import org.json.JSONArray;
 
 class HeapEStructArray implements EStructArray {
 
@@ -90,6 +92,21 @@ class HeapEStructArray implements EStructArray {
         builder.append("]");
 
         return builder.toString();
+    }
+
+    /**
+     * @ignore ts
+     */
+    public EStructArray fromJson(String json){
+        JSONArray array = new JSONArray(json);
+
+        for(int i = 0; i< array.length(); i++){
+            EStruct intermediate = newEStruct();
+
+            JsonBuilder.buildObject(array.getJSONArray(i).toString(), intermediate);
+        }
+
+        return this;
     }
 
     private void allocate(int newCapacity) {

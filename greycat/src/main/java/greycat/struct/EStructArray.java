@@ -44,4 +44,10 @@ public interface EStructArray {
      * @ignore ts
      */
     String toJson();
+
+    /**
+     * @ignore ts
+     */
+    EStructArray fromJson(String json);
+
 }
