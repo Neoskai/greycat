@@ -452,7 +452,7 @@ public class JsonBuilder {
         return builder.toString();
     }
 
-    public static Node buildObject(String json, Node parent) {
+    public static Node buildObject(String json, Container parent) {
         JSONObject jsonObject = new JSONObject(json);
         String name = jsonObject.getString("_name");
 
@@ -495,8 +495,6 @@ public class JsonBuilder {
                     castedArray.set(i,jDArray.getDouble(i));
                 }
 
-                obj = castedArray;
-
                 break;
 
             case Type.LONG_ARRAY:
@@ -509,8 +507,6 @@ public class JsonBuilder {
                 for(int i=0; i < jLArray.length(); i++){
                     castedLArray.set(i,jLArray.getLong(i));
                 }
-
-                obj = castedLArray;
 
                 break;
 
@@ -525,8 +521,6 @@ public class JsonBuilder {
                     castedIArray.set(i,jIArray.getInt(i));
                 }
 
-                obj = castedIArray;
-
                 break;
 
             case Type.STRING_ARRAY:
@@ -539,8 +533,6 @@ public class JsonBuilder {
                 for(int i=0; i < jSArray.length(); i++){
                     castedSArray.set(i, jSArray.getString(i));
                 }
-
-                obj = castedSArray;
 
                 break;
 
@@ -558,8 +550,6 @@ public class JsonBuilder {
                     Long value = llObject.getLong(key);
                     castedLLmap.put(keyLong,value);
                 }
-
-                obj = castedLLmap;
                 break;
 
             // @TODO A Verifier
@@ -581,8 +571,6 @@ public class JsonBuilder {
                     }
 
                 }
-
-                obj = castedLLAMap;
                 break;
 
             case Type.STRING_TO_INT_MAP:
@@ -598,8 +586,6 @@ public class JsonBuilder {
 
                     castedSIMap.put(key,value);
                 }
-
-                obj = castedSIMap;
                 break;
 
 
@@ -629,8 +615,6 @@ public class JsonBuilder {
                 for(int i=0; i < dmjArray.length()-2; i++){
                     castedDmat.add(Math.floorDiv(i,xSize),i%ySize, dmjArray.getDouble(i+2));
                 }
-
-                obj = castedDmat;
                 break;
 
             case Type.LMATRIX:
@@ -647,12 +631,16 @@ public class JsonBuilder {
                 for(int i=0; i < lmjArray.length(); i++){
                     castedLmat.add(Math.floorDiv(i,xLSize),i%yLSize, lmjArray.getLong(i+2));
                 }
-
-                obj = castedLmat;
                 break;
 
 
             case Type.ESTRUCT:
+                obj = parent.getOrCreate(name,type);
+
+                JSONArray esJson = jsonObject.getJSONArray("_value");
+                EStruct castedObj = (EStruct) obj;
+
+                castedObj.fromJson(esJson.toString());
                 break;
 
             case Type.ESTRUCT_ARRAY:
@@ -687,8 +675,6 @@ public class JsonBuilder {
 
                     castedIIMap.put(iKey,value);
                 }
-
-                obj = castedIIMap;
                 break;
 
             case Type.INT_TO_STRING_MAP:
@@ -706,8 +692,6 @@ public class JsonBuilder {
 
                     castedISMap.put(iKey,value);
                 }
-
-                obj= castedISMap;
                 break;
 
             case Type.INDEX:

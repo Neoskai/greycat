@@ -15,6 +15,7 @@
  */
 package greycat.internal.heap;
 
+import com.google.gson.JsonArray;
 import greycat.*;
 import greycat.base.BaseCustomType;
 import greycat.internal.CoreConstants;
@@ -26,6 +27,7 @@ import greycat.struct.*;
 import greycat.utility.Base64;
 import greycat.utility.HashHelper;
 import greycat.utility.JsonBuilder;
+import org.json.JSONArray;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -989,6 +991,19 @@ class HeapEStruct implements EStruct, HeapContainer {
 
 
         return builder.toString();
+    }
+
+    /**
+     * @ignore ts
+     */
+    public EStruct fromJson(String json){
+        JSONArray elemArray = new JSONArray(json);
+
+        for(int i = 0; i < elemArray.length(); i++){
+            JsonBuilder.buildObject(elemArray.getJSONObject(i).toString(), this);
+        }
+
+        return this;
     }
 
     @SuppressWarnings("Duplicates")

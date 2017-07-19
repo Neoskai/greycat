@@ -52,4 +52,9 @@ public interface EStruct extends Container {
      * @ignore ts
      */
     String toJson();
+
+    /**
+     * @ignore ts
+     */
+    EStruct fromJson(String json);
 }
