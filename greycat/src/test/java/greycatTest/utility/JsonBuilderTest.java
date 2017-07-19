@@ -55,6 +55,78 @@ public class JsonBuilderTest {
         String doubleWriting = "[5,3.97322669947893E9]";
         assertEquals(doubleJson, doubleWriting);
 
+        Graph g = new GraphBuilder().build();
+        g.connect(null);
+        Node n = g.newNode(0,0);
+
+        DoubleArray dArray = (DoubleArray) n.getOrCreate("DArray", Type.DOUBLE_ARRAY);
+        double[] doArray = {0.4, 0.6, 10.89, -14986.78};
+        dArray.addAll(doArray);
+        String darrayJson = JsonBuilder.buildJson(Type.DOUBLE_ARRAY, dArray);
+        String dArrayWriting ="[6,[0.4,0.6,10.89,-14986.78]]";
+        assertEquals(dArrayWriting,darrayJson);
+
+        LongArray lArray = (LongArray) n.getOrCreate("LArray", Type.LONG_ARRAY);
+        long[] loArray = {888888888, 888884136, 16468489, -544844444, -156};
+        lArray.addAll(loArray);
+        String larrayJson = JsonBuilder.buildJson(Type.LONG_ARRAY, lArray);
+        String lArrayWriting = "[7,[888888888,888884136,16468489,-544844444,-156]]";
+        assertEquals(larrayJson, lArrayWriting);
+
+        IntArray iArray = (IntArray) n.getOrCreate("IArray", Type.INT_ARRAY);
+        int[] ioArray = {8,42,98,-985,-51,0};
+        iArray.addAll(ioArray);
+        String iArrayJson = JsonBuilder.buildJson(Type.INT_ARRAY, iArray);
+        String iArrayWriting = "[8,[8,42,98,-985,-51,0]]";
+        assertEquals(iArrayJson,iArrayWriting);
+
+        StringArray sArray = (StringArray) n.getOrCreate("SArray", Type.STRING_ARRAY);
+        String[] soArray = {"Hello","Goodbye","azerty!","123456_)zer", "back\nline"};
+        sArray.addAll(soArray);
+        String sArrayJson = JsonBuilder.buildJson(Type.STRING_ARRAY, sArray);
+        String sArrayWriting = "[9,[\"Hello\",\"Goodbye\",\"azerty!\",\"123456_)zer\",\"back\nline\"]]";
+        assertEquals(sArrayJson,sArrayWriting);
+
+        LongLongMap llMap = (LongLongMap) n.getOrCreate("LLmap", Type.LONG_TO_LONG_MAP);
+        for(int i =0; i <5; i++){
+            llMap.put(i,i*10);
+        }
+        String llMapJson = JsonBuilder.buildJson(Type.LONG_TO_LONG_MAP, llMap);
+        String llMapWriting = "[10,{\"0\":0,\"1\":10,\"2\":20,\"3\":30,\"4\":40}]";
+        assertEquals(llMapJson,llMapWriting);
+
+        LongLongArrayMap llaMap = (LongLongArrayMap) n.getOrCreate("LLAMap", Type.LONG_TO_LONG_ARRAY_MAP);
+        for(int i = 0; i < 10; i++){
+            llaMap.put(i%3, i);
+        }
+        String llaMapJson = JsonBuilder.buildJson(Type.LONG_TO_LONG_ARRAY_MAP, llaMap);
+        String llaMapWriting = "[11,{\"0\":[9,6,3,0],\"1\":[7,4,1],\"2\":[8,5,2]}]";
+        assertEquals(llaMapJson,llaMapWriting);
+
+        StringIntMap siMap = (StringIntMap) n.getOrCreate("SIMap", Type.STRING_TO_INT_MAP);
+        for(int i = 0; i<3; i++){
+            siMap.put("index"+i, i);
+        }
+        String siMapJson = JsonBuilder.buildJson(Type.STRING_TO_INT_MAP, siMap);
+        String siMapWriting = "[12,{\"index0\":0,\"index1\":1,\"index2\":2}]";
+        assertEquals(siMapJson,siMapWriting);
+
+        // @TODO RELATION
+
+        DMatrix dMatrix = (DMatrix) n.getOrCreate("DMatrix", Type.DMATRIX);
+        dMatrix.init(5,4);
+        for(int i= 0; i<5;i++){
+            for(int j=0; j<4; j++){
+                dMatrix.add(i,j, (i+j)/(double) 5);
+            }
+        }
+        String dmatrixJson = JsonBuilder.buildJson(Type.DMATRIX, dMatrix);
+        String dMatrixWriting = "[14,[5,4,0.0,0.2,0.4,0.6,0.2,0.4,0.6,0.8,0.4,0.6,0.8,1.0,0.6,0.8,1.0,1.2,0.8,1.0,1.2,1.4]]";
+        assertEquals(dmatrixJson, dMatrixWriting);
+
+
+        g.disconnect(null);
+
     }
 
     @Test
@@ -125,6 +197,7 @@ public class JsonBuilderTest {
 
                         Buffer buffer = graph.newBuffer();
                         graph.toJson(buffer);
+                        System.out.println(sToJson);
 
                         assertEquals(sToJson, new String(buffer.data()));
 
@@ -206,6 +279,7 @@ public class JsonBuilderTest {
                         Buffer buffer = graph.newBuffer();
                         graph.toJson(buffer);
 
+                        System.out.println(sToJson);
                         assertEquals(sToJson, new String(buffer.data()));
 
                     }
@@ -379,6 +453,7 @@ public class JsonBuilderTest {
                 Buffer buffer = graph.newBuffer();
                 graph.toJson(buffer);
 
+                System.out.println(sToJson);
                 assertEquals(sToJson, new String(buffer.data()));
 
             }
@@ -545,7 +620,7 @@ public class JsonBuilderTest {
         });
 
         Buffer buffer = graph.newBuffer();
-        graph.toJson(buffer, 10000L);
+        graph.toJson(buffer, 1000L);
 
         System.out.println(new String(buffer.data()));
 
