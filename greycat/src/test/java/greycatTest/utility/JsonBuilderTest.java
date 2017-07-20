@@ -21,11 +21,12 @@ import greycat.plugin.Job;
 import greycat.struct.*;
 import greycat.utility.HashHelper;
 import greycat.utility.JsonBuilder;
-import org.json.JSONArray;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
+import static greycat.Tasks.newTask;
+import static greycat.internal.task.CoreActions.createNode;
+import static greycat.internal.task.CoreActions.setAttribute;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -134,6 +135,44 @@ public class JsonBuilderTest {
         String lMatrixJson= JsonBuilder.buildJson(Type.LMATRIX,lMatrix);
         String lMatrixWriting = "[15,[4,5,1,2,3,4,5,2,4,6,8,10,3,6,9,12,15,4,8,12,16,20]]";
         assertEquals(lMatrixJson, lMatrixWriting);
+
+        // @TODO ESTRUCT - ESTRUCTARRAY - ERELATION
+
+        Task task = newTask().loopPar("1", "2",
+                newTask()
+                        .declareIndex("rooms","name")
+                        .createNode()
+                        .setAttribute("name", Type.STRING, "room_{{i}}")
+                        .updateIndex("rooms")
+                        .defineAsVar("parentRoom")
+                        .loop("1", "3",
+                                newTask()
+                                        .then(createNode())
+                                        .then(setAttribute("sensor", Type.STRING, "sensor_{{i}}"))
+                        )
+        );
+
+        String taskJson = JsonBuilder.buildJson(Type.TASK, task);
+        String taskWriting = "[19,\"loopPar('1','2',{declareIndex('rooms','name').createNode().setAttribute('name',STRING,'room_{{i}}').updateIndex('rooms').defineAsVar('parentRoom').loop('1','3',{createNode().setAttribute('sensor',STRING,'sensor_{{i}}')})})\"]";
+        assertEquals(taskJson,taskWriting);
+
+        // @TODO TASKARRAY - NODE - INDEX - KDTREE - NDTREE
+
+        IntIntMap castedIIMap = (IntIntMap) n.getOrCreate("IIMap", Type.INT_TO_INT_MAP);
+        for(int i = 0; i<5; i++){
+            castedIIMap.put(i, i*i);
+        }
+        String iimapJSon = JsonBuilder.buildJson(Type.INT_TO_INT_MAP, castedIIMap);
+        String iiMapWriting = "[22,{\"0\":0,\"1\":1,\"2\":4,\"3\":9,\"4\":16}]";
+        assertEquals(iimapJSon, iiMapWriting);
+
+        IntStringMap castedISMap = (IntStringMap) n.getOrCreate("ISMap", Type.INT_TO_STRING_MAP);
+        for(int i = 0; i<5; i++){
+            castedISMap.put(i, "index"+ i*i);
+        }
+        String isMapJson = JsonBuilder.buildJson(Type.INT_TO_STRING_MAP, castedISMap);
+        String isMapWriting = "[23,{\"0\":index0,\"1\":index1,\"2\":index4,\"3\":index9,\"4\":index16}]";
+        assertEquals(isMapJson,isMapWriting);
 
 
         g.disconnect(null);
@@ -636,47 +675,4 @@ public class JsonBuilderTest {
         System.out.println(new String(buffer.data()));
 
     }
-
-    /*@Test
-    public void testRebuild(){
-        String dBool = "[  \n" +
-                "                  1,\n" +
-                "                  true\n" +
-                "               ]";
-
-        assertEquals(JsonBuilder.buildObject(dBool), true);
-
-        String dString = "[  \n" +
-                "                  2,\n" +
-                "                  \"Olaketal\" \n" +
-                "               ]";
-
-        assertEquals(JsonBuilder.buildObject(dString), "Olaketal");
-
-        String dLong = "[  \n" +
-                "                  3,\n" +
-                "                  99999999999\n" +
-                "               ]";
-
-        assertEquals(JsonBuilder.buildObject(dLong), 99999999999L);
-
-        String dInt = "[  \n" +
-                "                  4,\n" +
-                "                  -40\n" +
-                "               ]";
-
-        assertEquals(JsonBuilder.buildObject(dInt), -40);
-
-        String dDouble = "[  \n" +
-                "                  5,\n" +
-                "                  0.6\n" +
-                "               ]";
-
-        assertEquals(JsonBuilder.buildObject(dDouble), 0.6);
-
-        String dDArray = "[6,[0.4,0.6,10.89, -14986.78]]";
-
-        double[] doArray = {0.4, 0.6, 10.89, -14986.78};
-
-    }*/
 }

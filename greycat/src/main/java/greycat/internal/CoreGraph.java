@@ -286,10 +286,22 @@ public class CoreGraph implements Graph {
         builder.append("[");
         final boolean[] isFirst = {true};
 
+        final boolean[] isFirstIndex = {true};
+        StringBuilder indexBuilder = new StringBuilder();
+        indexBuilder.append("{");
+
         indexNames(0, 0, new Callback<String[]>() {
             @Override
             public void on(String[] result) {
                 for(String name : result){
+                    if(isFirstIndex[0]){
+                        isFirstIndex[0] = false;
+                    } else {
+                        indexBuilder.append(",");
+                    }
+                    indexBuilder.append("\"");
+                    indexBuilder.append(name);
+                    indexBuilder.append("\":[");
                     index(0, 0, name, new Callback<NodeIndex>() {
                         @Override
                         public void on(NodeIndex nodeIndex) {
@@ -299,7 +311,9 @@ public class CoreGraph implements Graph {
                                         isFirst[0] = false;
                                     } else {
                                         builder.append(",");
+                                        indexBuilder.append(",");
                                     }
+                                    indexBuilder.append(node.id());
 
                                     builder.append("{");
 
@@ -361,9 +375,13 @@ public class CoreGraph implements Graph {
                             });
                         }
                     });
+                    indexBuilder.append("]");
+                    indexBuilder.append("}");
                 }
             }
         });
+        builder.append(",");
+        builder.append(indexBuilder.toString());
         builder.append("]");
         return builder.toString();
     }
@@ -378,10 +396,23 @@ public class CoreGraph implements Graph {
         buffer.writeString("[");
         final boolean[] isFirst = {true};
 
+        final boolean[] isFirstIndex = {true};
+        StringBuilder indexBuilder = new StringBuilder();
+        indexBuilder.append("{");
+
         indexNames(0, 0, new Callback<String[]>() {
             @Override
             public void on(String[] result) {
                 for(String name : result){
+                    if(isFirstIndex[0]){
+                        isFirstIndex[0] = false;
+                    } else {
+                        indexBuilder.append(",");
+                    }
+                    indexBuilder.append("\"");
+                    indexBuilder.append(name);
+                    indexBuilder.append("\":[");
+
                     index(0, 0, name, new Callback<NodeIndex>() {
                         @Override
                         public void on(NodeIndex nodeIndex) {
@@ -391,7 +422,9 @@ public class CoreGraph implements Graph {
                                         isFirst[0] = false;
                                     } else {
                                         buffer.writeString(",");
+                                        indexBuilder.append(",");
                                     }
+                                    indexBuilder.append(node.id());
 
                                     buffer.writeString("{");
 
@@ -453,9 +486,13 @@ public class CoreGraph implements Graph {
                             });
                         }
                     });
+                    indexBuilder.append("]");
+                    indexBuilder.append("}");
                 }
             }
         });
+        buffer.writeString(",");
+        buffer.writeString(indexBuilder.toString());
         buffer.writeString("]");
 
         return buffer;
@@ -469,10 +506,23 @@ public class CoreGraph implements Graph {
         buffer.writeString("[");
         final boolean[] isFirst = {true};
 
+        final boolean[] isFirstIndex = {true};
+        StringBuilder indexBuilder = new StringBuilder();
+        indexBuilder.append("{");
+
         indexNames(0, 0, new Callback<String[]>() {
             @Override
             public void on(String[] result) {
                 for(String name : result){
+                    if(isFirstIndex[0]){
+                        isFirstIndex[0] = false;
+                    } else {
+                        indexBuilder.append(",");
+                    }
+                    indexBuilder.append("\"");
+                    indexBuilder.append(name);
+                    indexBuilder.append("\":[");
+
                     index(0, 0, name, new Callback<NodeIndex>() {
                         @Override
                         public void on(NodeIndex nodeIndex) {
@@ -482,7 +532,9 @@ public class CoreGraph implements Graph {
                                         isFirst[0] = false;
                                     } else {
                                         buffer.writeString(",");
+                                        indexBuilder.append(",");
                                     }
+                                    indexBuilder.append(node.id());
 
                                     buffer.writeString(buildNode(node, Constants.BEGINNING_OF_TIME, Constants.END_OF_TIME, maxSize));
                                 }
@@ -490,9 +542,13 @@ public class CoreGraph implements Graph {
                             });
                         }
                     });
+                    indexBuilder.append("]");
+                    indexBuilder.append("}");
                 }
             }
         });
+        buffer.writeString(",");
+        buffer.writeString(indexBuilder.toString());
         buffer.writeString("]");
 
         return buffer;
