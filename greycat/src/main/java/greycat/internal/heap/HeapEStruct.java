@@ -976,11 +976,9 @@ class HeapEStruct implements EStruct, HeapContainer {
                 }
 
                 builder.append("{");
-
-                builder.append("\"_name\":\"");
+                builder.append("\"");
                 builder.append(resolveName);
-                builder.append("\",");
-                builder.append("\"_value\":");
+                builder.append("\":");
                 builder.append(JsonBuilder.buildJson(elemType,elem));
 
                 builder.append("}");

@@ -124,6 +124,17 @@ public class JsonBuilderTest {
         String dMatrixWriting = "[14,[5,4,0.0,0.2,0.4,0.6,0.2,0.4,0.6,0.8,0.4,0.6,0.8,1.0,0.6,0.8,1.0,1.2,0.8,1.0,1.2,1.4]]";
         assertEquals(dmatrixJson, dMatrixWriting);
 
+        LMatrix lMatrix = (LMatrix) n.getOrCreate("LMatrix", Type.LMATRIX);
+        lMatrix.init(4,5);
+        for(int i= 0; i<4;i++){
+            for(int j=0; j<5; j++){
+                lMatrix.add(i,j, (i+1)*(j+1));
+            }
+        }
+        String lMatrixJson= JsonBuilder.buildJson(Type.LMATRIX,lMatrix);
+        String lMatrixWriting = "[15,[4,5,1,2,3,4,5,2,4,6,8,10,3,6,9,12,15,4,8,12,16,20]]";
+        assertEquals(lMatrixJson, lMatrixWriting);
+
 
         g.disconnect(null);
 

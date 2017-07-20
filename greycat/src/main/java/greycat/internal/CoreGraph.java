@@ -303,22 +303,27 @@ public class CoreGraph implements Graph {
 
                                     builder.append("{");
 
-                                    builder.append("\"_world\":");
+                                    builder.append("\"world\":");
                                     builder.append(node.world());
-                                    builder.append(",\"_id\":");
+                                    builder.append(",\"id\":");
                                     builder.append(node.id());
-                                    builder.append(",\"_nodetype\":");
-                                    builder.append(node.nodeTypeName());
+                                    builder.append(",\"nodetype\":");
+                                    if(node.nodeTypeName() == null){
+                                        builder.append("\"\"");
+                                        //builder.append("null");
+                                    } else {
+                                        builder.append(node.nodeTypeName());
+                                    }
 
 
                                     lookupTimes(0, Constants.BEGINNING_OF_TIME, Constants.END_OF_TIME, node.id(),-1, new Callback<Node[]>() {
                                         @Override
                                         public void on(Node[] timeNodes) {
                                             if(timeNodes.length == 1){
-                                                builder.append(", \"_time\":");
+                                                builder.append(", \"time\":");
                                             }
                                             else{
-                                                builder.append(", \"_times\":");
+                                                builder.append(", \"times\":");
                                             }
 
                                             builder.append("[");
@@ -332,10 +337,10 @@ public class CoreGraph implements Graph {
                                             builder.append("],");
 
                                             if(timeNodes.length == 1){
-                                                builder.append("\"_value\":");
+                                                builder.append("\"value\":");
                                             }
                                             else{
-                                                builder.append("\"_values\":");
+                                                builder.append("\"values\":");
                                             }
                                             builder.append("[");
 
@@ -390,13 +395,14 @@ public class CoreGraph implements Graph {
 
                                     buffer.writeString("{");
 
-                                    buffer.writeString("\"_world\":");
+                                    buffer.writeString("\"world\":");
                                     buffer.writeString(node.world()+ "");
-                                    buffer.writeString(",\"_id\":");
+                                    buffer.writeString(",\"id\":");
                                     buffer.writeString(node.id() + "");
-                                    buffer.writeString(",\"_nodetype\":");
+                                    buffer.writeString(",\"nodetype\":");
                                     if(node.nodeTypeName() == null){
-                                        buffer.writeString("null");
+                                        //buffer.writeString("null");
+                                        buffer.writeString("\"\"");
                                     } else {
                                         buffer.writeString(node.nodeTypeName());
                                     }
@@ -406,10 +412,10 @@ public class CoreGraph implements Graph {
                                         @Override
                                         public void on(Node[] timeNodes) {
                                             if(timeNodes.length == 1){
-                                                buffer.writeString(", \"_time\":");
+                                                buffer.writeString(", \"time\":");
                                             }
                                             else{
-                                                buffer.writeString(", \"_times\":");
+                                                buffer.writeString(", \"times\":");
                                             }
 
                                             buffer.writeString("[");
@@ -423,10 +429,10 @@ public class CoreGraph implements Graph {
                                             buffer.writeString("],");
 
                                             if(timeNodes.length == 1){
-                                                buffer.writeString("\"_value\":");
+                                                buffer.writeString("\"value\":");
                                             }
                                             else{
-                                                buffer.writeString("\"_values\":");
+                                                buffer.writeString("\"values\":");
                                             }
                                             buffer.writeString("[");
 
@@ -500,13 +506,14 @@ public class CoreGraph implements Graph {
 
         builder.append("{");
 
-        builder.append("\"_world\":");
+        builder.append("\"world\":");
         builder.append(node.world()+ "");
-        builder.append(",\"_id\":");
+        builder.append(",\"id\":");
         builder.append(node.id() + "");
-        builder.append(",\"_nodetype\":");
+        builder.append(",\"nodetype\":");
         if(node.nodeTypeName() == null){
-            builder.append("null");
+            builder.append("\"\"");
+            //builder.append("null");
         } else {
             builder.append(node.nodeTypeName());
         }
@@ -557,12 +564,12 @@ public class CoreGraph implements Graph {
         }
 
 
-        builder.append(", \"_times\":");
+        builder.append(", \"times\":");
         builder.append("[");
         builder.append(timeBuilder.toString());
         builder.append("],");
 
-        builder.append("\"_values\":");
+        builder.append("\"values\":");
         builder.append("[");
         builder.append(valueBuilder);
         builder.append("]");

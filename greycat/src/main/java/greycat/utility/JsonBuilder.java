@@ -35,6 +35,7 @@ public class JsonBuilder {
     public static String buildJson(int type, Object elem) {
         final boolean[] isFirst = {true};
         final StringBuilder builder = new StringBuilder();
+
         builder.append("[");
         switch(type){
             case Type.BOOL:
@@ -337,11 +338,14 @@ public class JsonBuilder {
                 break;
 
             case Type.NODE:
-                Node castedNode = (Node) elem;
+                builder.append(Type.NODE);
+                builder.append(",");
 
+                Node castedNode = (Node) elem;
                 final NodeState state = castedNode.graph().resolver().resolveState(castedNode);
                 isFirst[0] = true;
 
+                builder.append("{");
                 if (state != null) {
                     state.each(new NodeStateCallback() {
                         @Override
@@ -353,24 +357,21 @@ public class JsonBuilder {
                                     builder.append(",");
                                 }
 
-                                builder.append("{");
                                 String resolveName = castedNode.graph().resolver().hashToString(attributeKey);
                                 if (resolveName == null) {
                                     resolveName = attributeKey + "";
                                 }
 
-                                builder.append("\"_name\":\"");
+                                builder.append("\"");
                                 builder.append(resolveName);
-                                builder.append("\",");
-                                builder.append("\"_value\":");
+                                builder.append("\":");
                                 builder.append(JsonBuilder.buildJson(elemType,elem));
-                                builder.append("}");
 
                             }
                         }
                     });
                 }
-
+                builder.append("}");
 
                 break;
 
@@ -718,7 +719,6 @@ public class JsonBuilder {
             case Type.INDEX:
                 break;
 
-            //@TODO VERIFY IF BACKEND IS ENOUGH
             case Type.KDTREE:
                 obj = parent.getOrCreate(name, type);
 
@@ -729,7 +729,6 @@ public class JsonBuilder {
 
                 break;
 
-                //@TODO VERIFY IF BACKEND IS ENOUGH
             case Type.NDTREE:
                 obj = parent.getOrCreate(name, type);
 
