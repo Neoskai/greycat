@@ -112,7 +112,16 @@ public class JsonBuilderTest {
         String siMapWriting = "[12,{\"index0\":0,\"index1\":1,\"index2\":2}]";
         assertEquals(siMapJson,siMapWriting);
 
-        // @TODO RELATION
+        Node nRel1 = g.newNode(0,0);
+        Node nRel2 = g.newNode(0,0);
+        Node nRel3 = g.newNode(0,0);
+        nRel1.addToRelation("TestRelation", nRel2);
+        nRel1.addToRelation("TestRelation", nRel3);
+
+        Relation r1 = nRel1.getRelation("TestRelation");
+        String relJson = JsonBuilder.buildJson(Type.RELATION, r1);
+        String relWriting ="[13,[3,4]]";
+        assertEquals(relJson,relWriting);
 
         DMatrix dMatrix = (DMatrix) n.getOrCreate("DMatrix", Type.DMATRIX);
         dMatrix.init(5,4);
@@ -156,7 +165,18 @@ public class JsonBuilderTest {
         String taskWriting = "[19,\"loopPar('1','2',{declareIndex('rooms','name').createNode().setAttribute('name',STRING,'room_{{i}}').updateIndex('rooms').defineAsVar('parentRoom').loop('1','3',{createNode().setAttribute('sensor',STRING,'sensor_{{i}}')})})\"]";
         assertEquals(taskJson,taskWriting);
 
-        // @TODO TASKARRAY - INDEX - KDTREE - NDTREE
+        // @TODO TASKARRAY -  KDTREE - NDTREE
+
+        g.declareIndex(0,"TestIndex", null);
+        g.index(0,0,"TestIndex", index ->{
+            index.update(nRel2);
+            index.update(nRel1);
+            index.update(nRel3);
+
+            String indexJson = JsonBuilder.buildJson(Type.INDEX, index);
+            String indexWriting = "[69808306,[21,{\"0\":[69808306,[16,[[{\"0\":[11,{\"-8753978149589990\":[4,2,3]}]},{\"1\":[10,{\"3\":-8753978149589990,\"2\":-8753978149589990,\"4\":-8753978149589990}]},{\"2\":[8,[]]}]]]]}]]";
+            assertEquals(indexJson,indexWriting);
+        });
 
         IntIntMap castedIIMap = (IntIntMap) n.getOrCreate("IIMap", Type.INT_TO_INT_MAP);
         for(int i = 0; i<5; i++){
@@ -176,7 +196,6 @@ public class JsonBuilderTest {
 
         String nodeJSon = JsonBuilder.buildJson(Type.NODE, n);
         String nodeWriting = "[21,{\"DArray\":[6,[0.4,0.6,10.89,-14986.78]],\"LArray\":[7,[888888888,888884136,16468489,-544844444,-156]],\"IArray\":[8,[8,42,98,-985,-51,0]],\"SArray\":[9,[\"Hello\",\"Goodbye\",\"azerty!\",\"123456_)zer\",\"back\\nline\"]],\"LLmap\":[10,{\"0\":0,\"1\":10,\"2\":20,\"3\":30,\"4\":40}],\"LLAMap\":[11,{\"0\":[9,6,3,0],\"1\":[7,4,1],\"2\":[8,5,2]}],\"SIMap\":[12,{\"index0\":0,\"index1\":1,\"index2\":2}],\"DMatrix\":[14,[5,4,0.0,0.2,0.4,0.6,0.2,0.4,0.6,0.8,0.4,0.6,0.8,1.0,0.6,0.8,1.0,1.2,0.8,1.0,1.2,1.4]],\"LMatrix\":[15,[4,5,1,2,3,4,5,2,4,6,8,10,3,6,9,12,15,4,8,12,16,20]],\"IIMap\":[22,{\"0\":0,\"1\":1,\"2\":4,\"3\":9,\"4\":16}],\"ISMap\":[23,{\"0\":\"index0\",\"1\":\"index1\",\"2\":\"index4\",\"3\":\"index9\",\"4\":\"index16\"}]}]";
-        System.out.println(nodeJSon);
         assertEquals(nodeJSon,nodeWriting);
 
         g.disconnect(null);

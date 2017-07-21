@@ -425,11 +425,19 @@ public class JsonBuilder {
                 break;
 
             case Type.INDEX:
-                EStructArray castedIndex = (EStructArray) elem;
+                try {
+                    EStructArray castedIndex = (EStructArray) elem;
 
-                builder.append(Type.INDEX);
-                builder.append(",");
-                builder.append(buildJson(Type.ESTRUCT_ARRAY, castedIndex));
+                    builder.append(Type.INDEX);
+                    builder.append(",");
+                    builder.append(buildJson(Type.ESTRUCT_ARRAY, castedIndex));
+                } catch(ClassCastException e){
+                    Node castedNodeIndex = (Node) elem;
+
+                    builder.append(Type.INDEX);
+                    builder.append(",");
+                    builder.append(buildJson(Type.NODE, castedNodeIndex));
+                }
                 break;
 
             case Type.KDTREE:
