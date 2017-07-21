@@ -423,12 +423,11 @@ public class JsonBuilder {
                 break;
 
             case Type.INDEX:
-                Index castedIndex = (Index) elem;
+                EStructArray castedIndex = (EStructArray) elem;
 
                 builder.append(Type.INDEX);
-                builder.append(",{");
-                builder.append(castedIndex.all().toString());
-                builder.append("}");
+                builder.append(",");
+                builder.append(buildJson(Type.ESTRUCT_ARRAY, castedIndex));
                 break;
 
             case Type.KDTREE:
