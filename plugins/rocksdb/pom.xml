@@ -30,7 +30,7 @@
     </parent>
 
     <properties>
-        <rocksdb.version>5.2.1</rocksdb.version>
+        <rocksdb.version>5.5.5</rocksdb.version>
         <minio.version>3.0.4</minio.version>
         <header.path>${basedir}/../../HEADER</header.path>
     </properties>

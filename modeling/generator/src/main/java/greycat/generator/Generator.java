@@ -66,6 +66,12 @@ public class Generator {
         }
     }
 
+    private static String OS = System.getProperty("os.name").toLowerCase();
+
+    public static boolean isWindows() {
+        return (OS.indexOf("win") >= 0);
+    }
+
     private void generateJS(String packageName, String pluginName, File src, File target, String gcVersion, String projectVersion, List<File> classPath) {
         File modelWeb = new File(target, "model");
         if (!modelWeb.exists()) {
@@ -130,7 +136,7 @@ public class Generator {
                 HashSet<String> urls = new HashSet<String>();
                 urls.add("https://oss.sonatype.org/content/repositories/snapshots");
                 greycatTgz = resolver.resolve("com.datathings", "greycat", gcVersion, "tgz", urls);
-                if(greycatTgz == null) {
+                if (greycatTgz == null) {
                     throw new RuntimeException("Could not resolve dependency: gp:com.datathings artifact:greycat version:" + gcVersion + " ext:tgz");
                 }
                 //greycatTgz = new File(new File(new File(src.getParentFile().getParentFile().getParentFile().getParentFile().getParentFile().getCanonicalFile(), "greycat"), "target"), "greycat-" + tgzVersion + ".tgz");
@@ -139,10 +145,10 @@ public class Generator {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            gcVersion = greycatTgz != null ? greycatTgz.getAbsolutePath() : tgzVersion;
+            gcVersion = greycatTgz != null ? greycatTgz.getAbsolutePath().replace('\\','/') : tgzVersion;
         }
 
-        if(projectVersion.contains("SNAPSHOT")) {
+        if (projectVersion.contains("SNAPSHOT")) {
             projectVersion = projectVersion.replace("-SNAPSHOT", "");
             while (projectVersion.split("\\.").length != 3) {
                 projectVersion += ".0";
@@ -151,7 +157,7 @@ public class Generator {
 
         String packageJsonContent = "{\n" +
                 "  \"name\": \"" + packageName + "\",\n" +
-                "  \"version\": \""+projectVersion+"\",\n" +
+                "  \"version\": \"" + projectVersion + "\",\n" +
                 "  \"description\": \"\",\n" +
                 "  \"main\": \"lib/" + packageName + "\",\n" +
                 "  \"author\": \"\",\n" +
@@ -204,7 +210,7 @@ public class Generator {
                     "  \"license\":\"UNLICENSED\"," +
                     "  \"dependencies\": {\n" +
                     "    \"greycat\": \"" + gcVersion + "\",\n" +
-                    "    \"" + packageName + "\": \"" + new File(modelWeb, packageName+"-"+projectVersion+".tgz").getAbsolutePath() + "\"\n" +
+                    "    \"" + packageName + "\": \"" + new File(modelWeb, packageName + "-" + projectVersion + ".tgz").getAbsolutePath().replace('\\','/') + "\"\n" +
                     "  },\n" +
                     "  \"devDependencies\": {\n" +
                     "    \"typescript\": \"2.4.1\",\n" +
@@ -241,20 +247,33 @@ public class Generator {
             e.printStackTrace();
         }
 
+        ProcessBuilder processBuilder;
+        ProcessBuilder processBuilder2;
+        ProcessBuilder processBuilder3;
+        ProcessBuilder processBuilder4;
+
         // Install required package in TS
-        ProcessBuilder processBuilder = new ProcessBuilder("npm", "install");
+        if (isWindows()) {
+            processBuilder = new ProcessBuilder("CMD", "/C", "npm", "install");
+            processBuilder2 = new ProcessBuilder("CMD", "/C", "node", "node_modules/typescript/lib/tsc.js");
+            processBuilder3 = new ProcessBuilder("CMD", "/C", "npm", "pack");
+            processBuilder4 = new ProcessBuilder("CMD", "/C", "npm", "install");
+        } else {
+            processBuilder = new ProcessBuilder("npm", "install");
+            processBuilder2 = new ProcessBuilder("node", "node_modules/typescript/lib/tsc.js");
+            processBuilder3 = new ProcessBuilder("npm", "pack");
+            processBuilder4 = new ProcessBuilder("npm", "install");
+        }
+
         processBuilder.directory(modelWeb);
         processBuilder.inheritIO();
         // Run TSC
-        ProcessBuilder processBuilder2 = new ProcessBuilder("node", "node_modules/typescript/lib/tsc.js");
         processBuilder2.directory(modelWeb);
         processBuilder2.inheritIO();
         // Pack Model
-        ProcessBuilder processBuilder3 = new ProcessBuilder("npm", "pack");
         processBuilder3.directory(modelWeb);
         processBuilder3.inheritIO();
         //Install required packaged in JS project
-        ProcessBuilder processBuilder4 = new ProcessBuilder("npm", "install");
         processBuilder4.directory(modelWebStarter);
         processBuilder4.inheritIO();
         try {

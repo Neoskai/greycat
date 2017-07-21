@@ -36,11 +36,20 @@ import java.util.HashSet;
 @Mojo(name = "web", defaultPhase = LifecyclePhase.GENERATE_RESOURCES, requiresDependencyResolution = ResolutionScope.COMPILE)
 public class WebPlugin extends AbstractMojo {
 
+    private static String OS = System.getProperty("os.name").toLowerCase();
+
+    public static boolean isWindows() {
+        return (OS.indexOf("win") >= 0);
+    }
+
     @Parameter(defaultValue = "${basedir}/package.json")
     private File target;
 
     @Parameter(defaultValue = "${project}", required = true, readonly = true)
     private MavenProject project;
+
+    @Parameter()
+    private String moduleToClean;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -88,9 +97,45 @@ public class WebPlugin extends AbstractMojo {
             if (packageLock.exists()) {
                 packageLock.delete();
             }
+
+            //now cleanup node module if exists
+            File nodeModules = new File(target.getParentFile(), "node_modules");
+            if (nodeModules.exists()) {
+                //we have to clean greycat
+                File greyCatModule = new File(nodeModules, "greycat");
+                if (greyCatModule.exists()) {
+                    greyCatModule.delete();
+                }
+                File greyCatMLModule = new File(nodeModules, "greycat-ml");
+                if (greyCatMLModule.exists()) {
+                    greyCatMLModule.delete();
+                }
+                File greyCatWSModule = new File(nodeModules, "greycat-websocket");
+                if (greyCatWSModule.exists()) {
+                    greyCatWSModule.delete();
+                }
+                if (moduleToClean != null) {
+                    File toClean = new File(nodeModules, moduleToClean);//magic
+                    if (toClean.exists()) {
+                        toClean.delete();
+                    }
+                }
+            }
+            //Now let's start the npm install
+            getLog().info("running npm install");
+            ProcessBuilder processBuilder;
+            if (isWindows()) {
+                processBuilder = new ProcessBuilder("CMD", "/C", "npm", "install");
+            } else {
+                processBuilder = new ProcessBuilder("npm", "install");
+            }
+            processBuilder.directory(target.getParentFile());
+            processBuilder.inheritIO();
+            processBuilder.start().waitFor();
         } catch (Exception e) {
             getLog().error(e);
         }
     }
+
 
 }
