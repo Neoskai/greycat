@@ -17,7 +17,11 @@
 package greycatTest.utility;
 
 import greycat.*;
+import greycat.chunk.ChunkSpace;
+import greycat.chunk.ChunkType;
+import greycat.chunk.StateChunk;
 import greycat.plugin.Job;
+import greycat.plugin.MemoryFactory;
 import greycat.struct.*;
 import greycat.utility.HashHelper;
 import greycat.utility.JsonBuilder;
@@ -145,7 +149,40 @@ public class JsonBuilderTest {
         String lMatrixWriting = "[15,[4,5,1,2,3,4,5,2,4,6,8,10,3,6,9,12,15,4,8,12,16,20]]";
         assertEquals(lMatrixJson, lMatrixWriting);
 
-        // @TODO ESTRUCT - ESTRUCTARRAY - ERELATION
+        Node eNode = g.newNode(0,0);
+
+        EStructArray egraph = (EStructArray) eNode.getOrCreateAt(0, Type.ESTRUCT_ARRAY);
+        //test primitive attribute
+        EStruct eStruct = egraph.newEStruct();
+        egraph.setRoot(eStruct);
+        eStruct.set("name", Type.STRING, "hello");
+        Assert.assertEquals("{\"name\":\"hello\"}", eStruct.toString());
+        //test single eRelation
+        EStruct secondEStruct = egraph.newEStruct();
+        secondEStruct.set("name", Type.STRING, "secondNode");
+        eStruct.set("children", Type.ESTRUCT, secondEStruct);
+        EStruct retrieved = (EStruct) eStruct.get("children");
+        Assert.assertEquals(retrieved.toString(), retrieved.toString());
+        //test eRelation
+        ERelation eRelation = (ERelation) eStruct.getOrCreate("testRel", Type.ERELATION);
+        for (int i = 0; i < 3; i++) {
+            EStruct loopNode = egraph.newEStruct();
+            loopNode.set("name", Type.STRING, "node_" + i);
+            eRelation.add(loopNode);
+        }
+        ERelation resolvedERelation = (ERelation) eStruct.get("testRel");
+
+        String erelJson = JsonBuilder.buildJson(Type.ERELATION, resolvedERelation);
+        String erelWriting = "[18, [2,3,4]]";
+        assertEquals(erelJson,erelWriting);
+
+        String estructJson = JsonBuilder.buildJson(Type.ESTRUCT, eStruct);
+        String estructWriting = "[17,[{\"name\":[2,\"hello\"]},{\"children\":[17,[{\"name\":[2,\"secondNode\"]}]]},{\"testRel\":[18, [2,3,4]]}]]";
+        assertEquals(estructJson,estructWriting);
+
+        String estructAJson = JsonBuilder.buildJson(Type.ESTRUCT_ARRAY, egraph);
+        String estructAWriting = "[16,[[{\"name\":[2,\"hello\"]},{\"children\":[17,[{\"name\":[2,\"secondNode\"]}]]},{\"testRel\":[18, [2,3,4]]}],[{\"name\":[2,\"secondNode\"]}],[{\"name\":[2,\"node_0\"]}],[{\"name\":[2,\"node_1\"]}],[{\"name\":[2,\"node_2\"]}]]]";
+        assertEquals(estructAJson,estructAWriting);
 
         Task task = newTask().loopPar("1", "2",
                 newTask()
@@ -165,7 +202,15 @@ public class JsonBuilderTest {
         String taskWriting = "[19,\"loopPar('1','2',{declareIndex('rooms','name').createNode().setAttribute('name',STRING,'room_{{i}}').updateIndex('rooms').defineAsVar('parentRoom').loop('1','3',{createNode().setAttribute('sensor',STRING,'sensor_{{i}}')})})\"]";
         assertEquals(taskJson,taskWriting);
 
-        // @TODO TASKARRAY -  KDTREE - NDTREE
+        // @TODO KDTREE - NDTREE (Treated by Estruct Backup)
+
+        Task t1 = newTask().createNode();
+        Task t2 = newTask().setAttribute("name", Type.STRING, "NoNamed");
+
+        Task[] tasks = {t1, t2};
+        String taskAJson = JsonBuilder.buildJson(Type.TASK_ARRAY, tasks);
+        String taskAWriting = "[20,[\"createNode()\",\"setAttribute('name',STRING,'NoNamed')\"]]";
+        assertEquals(taskAJson, taskAWriting);
 
         g.declareIndex(0,"TestIndex", null);
         g.index(0,0,"TestIndex", index ->{
