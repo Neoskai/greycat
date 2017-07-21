@@ -82,10 +82,10 @@ public class JsonBuilderTest {
         assertEquals(iArrayJson,iArrayWriting);
 
         StringArray sArray = (StringArray) n.getOrCreate("SArray", Type.STRING_ARRAY);
-        String[] soArray = {"Hello","Goodbye","azerty!","123456_)zer", "back\nline"};
+        String[] soArray = {"Hello","Goodbye","azerty!","123456_)zer", "back\\nline"};
         sArray.addAll(soArray);
         String sArrayJson = JsonBuilder.buildJson(Type.STRING_ARRAY, sArray);
-        String sArrayWriting = "[9,[\"Hello\",\"Goodbye\",\"azerty!\",\"123456_)zer\",\"back\nline\"]]";
+        String sArrayWriting = "[9,[\"Hello\",\"Goodbye\",\"azerty!\",\"123456_)zer\",\"back\\nline\"]]";
         assertEquals(sArrayJson,sArrayWriting);
 
         LongLongMap llMap = (LongLongMap) n.getOrCreate("LLmap", Type.LONG_TO_LONG_MAP);
@@ -156,7 +156,7 @@ public class JsonBuilderTest {
         String taskWriting = "[19,\"loopPar('1','2',{declareIndex('rooms','name').createNode().setAttribute('name',STRING,'room_{{i}}').updateIndex('rooms').defineAsVar('parentRoom').loop('1','3',{createNode().setAttribute('sensor',STRING,'sensor_{{i}}')})})\"]";
         assertEquals(taskJson,taskWriting);
 
-        // @TODO TASKARRAY - NODE - INDEX - KDTREE - NDTREE
+        // @TODO TASKARRAY - INDEX - KDTREE - NDTREE
 
         IntIntMap castedIIMap = (IntIntMap) n.getOrCreate("IIMap", Type.INT_TO_INT_MAP);
         for(int i = 0; i<5; i++){
@@ -171,9 +171,13 @@ public class JsonBuilderTest {
             castedISMap.put(i, "index"+ i*i);
         }
         String isMapJson = JsonBuilder.buildJson(Type.INT_TO_STRING_MAP, castedISMap);
-        String isMapWriting = "[23,{\"0\":index0,\"1\":index1,\"2\":index4,\"3\":index9,\"4\":index16}]";
+        String isMapWriting = "[23,{\"0\":\"index0\",\"1\":\"index1\",\"2\":\"index4\",\"3\":\"index9\",\"4\":\"index16\"}]";
         assertEquals(isMapJson,isMapWriting);
 
+        String nodeJSon = JsonBuilder.buildJson(Type.NODE, n);
+        String nodeWriting = "[21,{\"DArray\":[6,[0.4,0.6,10.89,-14986.78]],\"LArray\":[7,[888888888,888884136,16468489,-544844444,-156]],\"IArray\":[8,[8,42,98,-985,-51,0]],\"SArray\":[9,[\"Hello\",\"Goodbye\",\"azerty!\",\"123456_)zer\",\"back\\nline\"]],\"LLmap\":[10,{\"0\":0,\"1\":10,\"2\":20,\"3\":30,\"4\":40}],\"LLAMap\":[11,{\"0\":[9,6,3,0],\"1\":[7,4,1],\"2\":[8,5,2]}],\"SIMap\":[12,{\"index0\":0,\"index1\":1,\"index2\":2}],\"DMatrix\":[14,[5,4,0.0,0.2,0.4,0.6,0.2,0.4,0.6,0.8,0.4,0.6,0.8,1.0,0.6,0.8,1.0,1.2,0.8,1.0,1.2,1.4]],\"LMatrix\":[15,[4,5,1,2,3,4,5,2,4,6,8,10,3,6,9,12,15,4,8,12,16,20]],\"IIMap\":[22,{\"0\":0,\"1\":1,\"2\":4,\"3\":9,\"4\":16}],\"ISMap\":[23,{\"0\":\"index0\",\"1\":\"index1\",\"2\":\"index4\",\"3\":\"index9\",\"4\":\"index16\"}]}]";
+        System.out.println(nodeJSon);
+        assertEquals(nodeJSon,nodeWriting);
 
         g.disconnect(null);
 
@@ -247,7 +251,6 @@ public class JsonBuilderTest {
 
                         Buffer buffer = graph.newBuffer();
                         graph.toJson(buffer);
-                        System.out.println(sToJson);
 
                         assertEquals(sToJson, new String(buffer.data()));
 
@@ -329,7 +332,6 @@ public class JsonBuilderTest {
                         Buffer buffer = graph.newBuffer();
                         graph.toJson(buffer);
 
-                        System.out.println(sToJson);
                         assertEquals(sToJson, new String(buffer.data()));
 
                     }
@@ -414,8 +416,6 @@ public class JsonBuilderTest {
 
                         Buffer buffer = graph.newBuffer();
                         graph.toJson(buffer);
-
-                        System.out.println(sToJson);
 
                         assertEquals(sToJson, new String(buffer.data()));
 
@@ -503,7 +503,6 @@ public class JsonBuilderTest {
                 Buffer buffer = graph.newBuffer();
                 graph.toJson(buffer);
 
-                System.out.println(sToJson);
                 assertEquals(sToJson, new String(buffer.data()));
 
             }
@@ -671,8 +670,5 @@ public class JsonBuilderTest {
 
         Buffer buffer = graph.newBuffer();
         graph.toJson(buffer, 1000L);
-
-        System.out.println(new String(buffer.data()));
-
     }
 }

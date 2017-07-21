@@ -416,7 +416,9 @@ public class JsonBuilder {
                         builder.append("\"");
                         builder.append(key);
                         builder.append("\":");
+                        builder.append("\"");
                         builder.append(value);
+                        builder.append("\"");
                     }
                 });
                 builder.append("}");
