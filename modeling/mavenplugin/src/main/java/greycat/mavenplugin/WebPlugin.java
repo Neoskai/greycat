@@ -74,9 +74,9 @@ public class WebPlugin extends AbstractMojo {
                 File greycatWebSocketTgz = resolver.resolve("com.datathings", "greycat-websocket", gcVersion, "tgz", urls);
                 File greycatMLTgz = resolver.resolve("com.datathings", "greycat-ml", gcVersion, "tgz", urls);
                 content = content
-                        .replaceAll("\"greycat\": \".*\"", "\"greycat\": \"" + greycatTgz.getAbsolutePath() + "\"")
-                        .replaceAll("\"greycat-websocket\": \".*\"", "\"greycat-websocket\": \"" + greycatWebSocketTgz.getAbsolutePath() + "\"")
-                        .replaceAll("\"greycat-ml\": \".*\"", "\"greycat-ml\": \"" + greycatMLTgz.getAbsolutePath() + "\"");
+                        .replaceAll("\"greycat\": \".*\"", "\"greycat\": \"" + greycatTgz.getAbsolutePath().replace('\\','/') + "\"")
+                        .replaceAll("\"greycat-websocket\": \".*\"", "\"greycat-websocket\": \"" + greycatWebSocketTgz.getAbsolutePath().replace('\\','/') + "\"")
+                        .replaceAll("\"greycat-ml\": \".*\"", "\"greycat-ml\": \"" + greycatMLTgz.getAbsolutePath().replace('\\','/') + "\"");
                 Files.write(target.toPath(), content.getBytes(charset));
             } else {
                 while (gcVersion.split("\\.").length != 3) {
