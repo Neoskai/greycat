@@ -21,11 +21,15 @@ import greycat.scheduler.NoopScheduler;
 import org.junit.Assert;
 import org.junit.Test;
 
+import static greycat.Tasks.newTask;
+
 public class NodeValueTest {
 
     /**
      * @ignore ts
      */
+
+    /*
     @Test
     public void test() {
         Graph g = GraphBuilder.newBuilder().withScheduler(new NoopScheduler()).build();
@@ -52,7 +56,7 @@ public class NodeValueTest {
             }
         });
     }
-
+    */
     @Test
     public void testRelation() {
         Graph g = GraphBuilder.newBuilder().withScheduler(new NoopScheduler()).build();
@@ -72,10 +76,23 @@ public class NodeValueTest {
                     }
                 });
 
+                g.lookupAll(0, 0, new long[]{nodeValue.id()}, new Callback<Node[]>() {
+                    @Override
+                    public void on(Node[] result) {
+                        Assert.assertNotNull(result[0]);
+                        NodeValue nd = (NodeValue) result[0];
+                        Assert.assertEquals(nd.getValue() + "", "42.5");
+                        Assert.assertNotNull(nd.getValue());
+                    }
+                });
+
                 g.lookupBatch(new long[]{0}, new long[]{0}, new long[]{nodeValue.id()}, new Callback<Node[]>() {
                     @Override
                     public void on(Node[] result) {
                         Assert.assertNotNull(result[0]);
+                        NodeValue nd = (NodeValue) result[0];
+                        Assert.assertEquals(nd.getValue() + "", "42.5");
+                        Assert.assertNotNull(nd.getValue());
                     }
                 });
 
@@ -83,13 +100,40 @@ public class NodeValueTest {
                     @Override
                     public void on(Node[] result) {
                         Assert.assertNotNull(result[0]);
+                        NodeValue nd = (NodeValue) result[0];
+                        Assert.assertEquals(nd.getValue() + "", "42.5");
+                        Assert.assertNotNull(nd);
+                    }
+                });
+
+                /*
+                nodeValue.timepoints(Constants.BEGINNING_OF_TIME, Constants.END_OF_TIME, new Callback<long[]>() {
+                    @Override
+                    public void on(long[] result) {
+                        System.out.println(result);
+                    }
+                });
+*/
+
+                Task traverse = newTask().traverse("sub").setAsVar("v1").readVar("v1").timepoints(Constants.BEGINNING_OF_TIME_STR, Constants.END_OF_TIME_STR);
+                TaskContext ctx = traverse.prepare(g, parent, new Callback<TaskResult>() {
+                    @Override
+                    public void on(TaskResult result) {
+                        Assert.assertEquals(result.size(), 1);
+                    }
+                });
+                traverse.executeUsing(ctx);
+
+                g.lookupTimes(0, Constants.BEGINNING_OF_TIME, Constants.END_OF_TIME, nodeValue.id(), -1, new Callback<Node[]>() {
+                    @Override
+                    public void on(Node[] result) {
+                        Assert.assertEquals("{\"world\":0,\"time\":0,\"id\":1,\"value\":42.5}", result[0].toString());
                     }
                 });
 
             }
         });
     }
-
 
     @Test
     public void testNull() {

@@ -29,7 +29,7 @@ class HeapEStructArray implements EStructArray {
 
     private final Graph _graph;
     private final HeapContainer parent;
-    
+
     HeapEStruct[] _nodes = null;
     private int _nodes_capacity = 0;
     private int _nodes_index = 0;
@@ -193,8 +193,7 @@ class HeapEStructArray implements EStructArray {
 
     @Override
     public final EStructArray drop(final EStruct eStruct) {
-        HeapEStruct casted = (HeapEStruct) eStruct;
-        int previousId = casted._id;
+        int previousId = eStruct.id();
         if (previousId == _nodes_index - 1) {
             //free
             _nodes[previousId] = null;

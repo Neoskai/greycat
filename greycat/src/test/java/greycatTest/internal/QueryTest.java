@@ -104,6 +104,11 @@ public class QueryTest implements Resolver, Graph {
         return null;
     }
 
+    @Override
+    public Node newTypedNodeFrom(long world, long time, int nodeType) {
+        return null;
+    }
+
     /**
      * @ignore ts
      */

@@ -20,7 +20,9 @@ import greycat.chunk.StateChunk;
 import greycat.plugin.NodeStateCallback;
 
 import greycat.chunk.WorldOrderChunk;
+import greycat.plugin.*;
 import greycat.struct.*;
+
 import greycat.plugin.NodeDeclaration;
 import greycat.plugin.NodeState;
 import greycat.plugin.Resolver;
@@ -1005,7 +1007,14 @@ public class BaseNode implements Node {
     }
 
     public final Node createClone() {
-        final Node cloned = _graph.newNode(_world, _time);
+        final WorldOrderChunk worldOrderChunk = (WorldOrderChunk) _graph.space().get(_index_worldOrder);
+        final long type = worldOrderChunk.type();
+        final Node cloned;
+        if (type == Constants.NULL_LONG) {
+            cloned = _graph.newNode(_world, _time);
+        } else {
+            cloned = _graph.newTypedNodeFrom(_world, _time, (int)type);
+        }
         final StateChunk clonedStateChunk = (StateChunk) _resolver.resolveState(cloned);
         final StateChunk currentStateChunk = (StateChunk) _resolver.resolveState(this);
         clonedStateChunk.loadFrom(currentStateChunk);

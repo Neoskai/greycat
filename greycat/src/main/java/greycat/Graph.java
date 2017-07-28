@@ -50,6 +50,8 @@ public interface Graph {
      */
     Node newTypedNode(long world, long time, String nodeType);
 
+    Node newTypedNodeFrom(long world, long time, int nodeType);
+
     /**
      * @ignore ts
      */

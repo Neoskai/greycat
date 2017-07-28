@@ -169,6 +169,23 @@ public class CoreGraph implements Graph {
         return newNode;
     }
 
+    @Override
+    public final Node newTypedNodeFrom(long world, long time, int nodeType) {
+        if (!_isConnected.get()) {
+            throw new RuntimeException(CoreConstants.DISCONNECTED_ERROR);
+        }
+        final NodeFactory resolvedFactory = factoryByCode(nodeType);
+        BaseNode newNode;
+        if (resolvedFactory == null) {
+            System.out.println("WARNING: UnKnow NodeType " + nodeType + ", missing plugin configuration in the builder ? Using generic node as a fallback");
+            newNode = new BaseNode(world, time, this._nodeKeyCalculator.newKey(), this);
+        } else {
+            newNode = (BaseNode) resolvedFactory.create(world, time, this._nodeKeyCalculator.newKey(), this);
+        }
+        this._resolver.initNode(newNode, nodeType);
+        return newNode;
+    }
+
     /**
      * @ignore ts
      */
@@ -192,7 +209,10 @@ public class CoreGraph implements Graph {
             throw new RuntimeException(CoreConstants.DEAD_NODE_ERROR + " node id: " + casted.id());
         } else {
             //Duplicate marks on all chunks
-            this._space.mark(casted._index_stateChunk);
+            if (casted._index_stateChunk != -1) {
+                this._space.mark(casted._index_stateChunk);
+            }
+
             this._space.mark(casted._index_superTimeTree);
             this._space.mark(casted._index_timeTree);
             this._space.mark(casted._index_worldOrder);
