@@ -22,7 +22,7 @@ import greycat.struct.Buffer;
 import greycat.struct.EStructArray;
 import greycat.struct.EStruct;
 import greycat.utility.Base64;
-import greycat.utility.JsonBuilder;
+import greycat.utility.json.JsonBuilder;
 import org.json.JSONArray;
 
 class HeapEStructArray implements EStructArray {

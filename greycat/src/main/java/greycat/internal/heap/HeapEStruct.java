@@ -15,18 +15,16 @@
  */
 package greycat.internal.heap;
 
-import com.google.gson.JsonArray;
 import greycat.*;
 import greycat.base.BaseCustomType;
 import greycat.internal.CoreConstants;
-import greycat.plugin.NodeState;
 import greycat.plugin.NodeStateCallback;
 import greycat.plugin.Resolver;
 import greycat.plugin.TypeDeclaration;
 import greycat.struct.*;
 import greycat.utility.Base64;
 import greycat.utility.HashHelper;
-import greycat.utility.JsonBuilder;
+import greycat.utility.json.JsonBuilder;
 import org.json.JSONArray;
 
 import java.util.Arrays;

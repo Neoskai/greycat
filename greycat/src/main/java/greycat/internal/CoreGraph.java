@@ -28,7 +28,7 @@ import greycat.internal.task.CoreTask;
 import greycat.TaskHook;
 import greycat.utility.Base64;
 
-import greycat.utility.JsonBuilder;
+import greycat.utility.json.JsonBuilder;
 import greycat.utility.KeyHelper;
 
 

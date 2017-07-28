@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package greycat.utility;
+package greycat.utility.json;
 
 import greycat.*;
 import greycat.internal.custom.KDTree;
