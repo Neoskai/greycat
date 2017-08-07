@@ -23,18 +23,15 @@ import java.util.*;
 
 import static greycat.utility.json.JsonConst.*;
 
-
 public class JsonParserV2 {
     private Stack _list;
     private Graph _graph;
 
-    private Node _current;
     private Map<String, Object> _values;
 
     public JsonParserV2(Graph g){
         _list = new Stack();
         _graph = g;
-        _current = null;
         _values = new HashMap<>();
     }
 
@@ -71,43 +68,35 @@ public class JsonParserV2 {
         long cursor = start;
         long end = buffer.length();
 
-        Map<Integer,Long> startLevel= new HashMap<>();
-        startLevel.put(_list.size(), start); // Putting start of first element
-
-        boolean isLast = false;
+        long tempStart = start;
 
         while(cursor != end){
             switch(buffer.read(cursor)){
                 case OBJS:
-                    isLast= false;
-                    startLevel.put(_list.size(), cursor+1);
                     _list.push(OBJS);
                     break;
 
                 case OBJE:
-                    if(_list.size() == 2) {
-                        buildValue(buffer,startLevel.get(_list.size()), cursor-1);
-                        isLast = true;
-                    }
                     _list.pop();
                     if(_list.size() ==1){ // If we finished to parse the record
+                        // Build last value in record
+                        buildValue(buffer,tempStart,cursor-1);
                         return cursor;
                     }
                     break;
 
                 case ARRS:
                     _list.push(ARRS);
-                    startLevel.put(_list.size(), cursor+1);
                     break;
 
                 case ARRE:
                     _list.pop();
                     break;
                 case SEP:
-                    if(_list.size() == 2 && !isLast) {
-                        buildValue(buffer,startLevel.get(_list.size()), cursor);
+                    if(_list.size() == 2) {
+                        buildValue(buffer, tempStart, cursor-1);
+                        tempStart = cursor+1;
                     }
-                    startLevel.put(_list.size(), cursor+1);
                     break;
             }
             cursor++;
@@ -116,8 +105,6 @@ public class JsonParserV2 {
     }
 
     public void buildValue(Buffer buffer, long start, long end){
-        System.out.println("Building value for: " + new String(buffer.slice(start,end)));
-
         long cursor = start;
 
         while(buffer.read(cursor) != TEXT){
@@ -135,17 +122,17 @@ public class JsonParserV2 {
 
         switch(key){
             case "world":
-                long world = Long.parseLong(new String(buffer.slice(cursor,end-1)));
+                long world = Long.parseLong(new String(buffer.slice(cursor,end)));
                 _values.put("world", world);
                 break;
 
             case "id":
-                long id = Long.parseLong(new String(buffer.slice(cursor,end-1)));
+                long id = Long.parseLong(new String(buffer.slice(cursor,end)));
                 _values.put("id", id);
                 break;
 
             case "nodetype":
-                String nodetype = new String(buffer.slice(cursor+1, end-2));
+                String nodetype = new String(buffer.slice(cursor+1, end-1));
                 _values.put("nodetype", nodetype);
                 break;
 
@@ -173,8 +160,6 @@ public class JsonParserV2 {
                 int currentTime = -1;
                 long temVStart = 0;
 
-                List<Long> times = (List<Long>) _values.get("times");
-
                 while(cursor != end){
                     switch(buffer.read(cursor)){
                         case ARRS:
@@ -186,20 +171,7 @@ public class JsonParserV2 {
                             break;
                         case ARRE:
                             if(stack == 2){ // End of an array, so of a node
-                                cursor = getNode(buffer,temVStart+1);
-
-                                _graph.lookup((long) _values.get("world"), times.get(currentTime), (long) _values.get("id"), new Callback<Node>() {
-                                    @Override
-                                    public void on(Node result) {
-                                        if (result == null){
-                                            // @TODO : Use nodetype to create an instance of the good type
-                                            Node newNode = new BaseNode((long) _values.get("world"), times.get(0), (long) _values.get("id"), _graph);
-                                            _graph.resolver().initNode(newNode, Constants.NULL_LONG);
-                                        }
-
-                                        // Set all the values in the node
-                                    }
-                                });
+                                getNode(buffer,temVStart+1, cursor-1, currentTime);
                             }
                             stack--;
                             break;
@@ -214,61 +186,103 @@ public class JsonParserV2 {
 
     }
 
-    public long getNode(Buffer buffer, long start){
-        // 21,{"value":[5,22.5], "value2":[4,azeaze]}
+    public long getNode(Buffer buffer, long start, long end, int currentTime){
+        System.out.println("Build: " + new String(buffer.slice(start,end)));
         long cursor = start;
 
         while (buffer.read(cursor) != SEP){
             cursor++;
         }
         int type = Integer.parseInt(new String(buffer.slice(start,cursor-1)));
+        // Check if type is different from Node
+        if(type != Type.NODE){
+            System.err.println("Expecting node, but received: " + type);
+        }
 
         int stack = 0;
         while(buffer.read(cursor) != OBJS){
             cursor++;
         }
-        stack++;
         cursor++;
+        stack++;
 
         long valueStart = cursor;
         boolean isFirstText = true;
 
-        String currentName;
-        Object currentObject;
+        String currentName = "";
+        TypedObject currentObject= null;
 
-        while(buffer.read(cursor) != OBJE){
+        while(cursor != end && stack > 0){
             switch(buffer.read(cursor)){
                 case SEP:
-                    if(stack == 1){
+                    if(stack == 2){
                         isFirstText = true;
-                        currentObject= getObject(buffer,valueStart,cursor-1);
-                        // Seek node and set value
                     }
                     break;
+
                 case TEXT:
-                    if(isFirstText) {
-                        valueStart = ++cursor;
-                        isFirstText = false;
-                    } else {
-                        currentName = new String(buffer.slice(valueStart,cursor-1));
+                    if(stack == 1) {
+                        if (isFirstText) {
+                            valueStart = cursor + 1;
+                            isFirstText = false;
+                        } else {
+                            currentName = new String(buffer.slice(valueStart, cursor - 1));}
                     }
                     break;
+
+
                 case ARRS:
                     stack++;
+                    if(stack == 2){
+                        valueStart= cursor+1;
+                    }
                     break;
 
                 case ARRE:
+                    stack--;
+                    if(stack ==1){
+                        currentObject= getObject(buffer,valueStart,cursor);
+
+                        _graph.connect(null);
+                        List<Long> times = (List<Long>) _values.get("times");
+                        TypedObject finalCurrentObject = currentObject;
+                        String finalCurrentName = currentName;
+
+                        _graph.lookup((long) _values.get("world"), times.get(currentTime), (long) _values.get("id"), new Callback<Node>() {
+                            @Override
+                            public void on(Node result) {
+                                if (result == null){
+                                    // @TODO : Use nodetype to create an instance of the good type
+                                    Node newNode = new BaseNode((long) _values.get("world"), times.get(0), (long) _values.get("id"), _graph);
+                                    _graph.resolver().initNode(newNode, Constants.NULL_LONG);
+
+                                    if(finalCurrentObject != null) {
+                                        //Object obj = newNode.getOrCreate(finalCurrentName,finalCurrentObject.getType());
+                                        // Init obj to it's value @Todo
+                                    }
+                                } else {
+                                    if(finalCurrentObject != null) {
+                                        //Object obj = result.getOrCreate(finalCurrentName,finalCurrentObject.getType());
+                                        //Init obj to it's value @todo
+                                    }
+                                }
+                            }
+                        });
+                        _graph.disconnect(null);
+                    }
+                    break;
+
+                case OBJS:
+                    stack++;
+                    break;
+
+                case OBJE:
                     stack--;
                     break;
             }
 
             cursor++;
         }
-        // Retrieve last object
-        currentObject= getObject(buffer,valueStart,cursor-1);
-        //Seek node and set value
-
-        stack--;
 
         return cursor;
     }
@@ -277,7 +291,11 @@ public class JsonParserV2 {
      * @TODO
      * General architecture is not correct, just check algorithm part
      */
-    private Object getObject(Buffer buffer, long start, long end ){
+    private TypedObject getObject(Buffer buffer, long start, long end ){
+        if(start == end+1){
+            return null;
+        }
+
         long cursor = start;
 
         while (buffer.read(cursor) != SEP){
@@ -291,10 +309,10 @@ public class JsonParserV2 {
 
         switch(type){
             case Type.BOOL:
-                while(buffer.read(cursor) != OBJE){
+                while(buffer.read(cursor) != OBJE && buffer.read(cursor) != ARRE){
                     cursor++;
                 }
-                return Boolean.valueOf(new String(buffer.slice(startValue, cursor-1)));
+                return new TypedObject(Type.BOOL,Boolean.valueOf(new String(buffer.slice(startValue, cursor-1))));
 
             case Type.STRING:
                 while(buffer.read(cursor) != TEXT){
@@ -304,26 +322,25 @@ public class JsonParserV2 {
                 while(buffer.read(cursor) != TEXT){
                     cursor++;
                 }
-                return new String(buffer.slice(startValue, cursor-1));
+                return new TypedObject(Type.STRING, new String(buffer.slice(startValue, cursor-1)));
 
             case Type.LONG:
-                while(buffer.read(cursor) != OBJE){
+                while(buffer.read(cursor) != OBJE && buffer.read(cursor) != ARRE){
                     cursor++;
                 }
-                return Long.parseLong(new String(buffer.slice(startValue, cursor-1)));
+                return new TypedObject(Type.LONG, Long.parseLong(new String(buffer.slice(startValue, cursor-1))));
 
             case Type.INT:
-                while(buffer.read(cursor) != OBJE){
+                while(buffer.read(cursor) != OBJE && buffer.read(cursor) != ARRE){
                     cursor++;
                 }
-                return Integer.parseInt(new String(buffer.slice(startValue, cursor-1)));
+                return new TypedObject(Type.INT, Integer.parseInt(new String(buffer.slice(startValue, cursor-1))));
 
             case Type.DOUBLE:
-                while(buffer.read(cursor) != OBJE){
+                while(buffer.read(cursor) != OBJE && buffer.read(cursor) != ARRE){
                     cursor++;
                 }
-                return Double.parseDouble(new String(buffer.slice(startValue, cursor-1)));
-
+                return new TypedObject(Type.DOUBLE, Double.parseDouble(new String(buffer.slice(startValue, cursor-1))));
 
             case Type.DOUBLE_ARRAY:
                 List<Double> doubleList = new ArrayList<>();
@@ -340,8 +357,9 @@ public class JsonParserV2 {
                 }
                 //Retrieve last element
                 doubleList.add(Double.parseDouble(new String(buffer.slice(startValue,cursor-1))));
+                // @Todo Transform to final type
 
-                return doubleList;
+                return new TypedObject(Type.DOUBLE_ARRAY,doubleList);
 
             case Type.LONG_ARRAY:
                 List<Long> longList = new ArrayList<>();
@@ -359,7 +377,8 @@ public class JsonParserV2 {
                 //Retrieve last element
                 longList.add(Long.parseLong(new String(buffer.slice(startValue,cursor-1))));
 
-                return longList;
+                // @Todo Transform to final type
+                return new TypedObject(Type.LONG_ARRAY, longList);
 
 
             case Type.INT_ARRAY:
@@ -378,7 +397,8 @@ public class JsonParserV2 {
                 //Retrieve last element
                 intList.add(Integer.parseInt(new String(buffer.slice(startValue,cursor-1))));
 
-                return intList;
+                // @Todo Transform to final type
+                return new TypedObject(Type.INT_ARRAY, intList);
 
             case Type.STRING_ARRAY:
                 List<String> stringList = new ArrayList<>();
@@ -401,7 +421,7 @@ public class JsonParserV2 {
                 //Retrieve last element
                 stringList.add(new String(buffer.slice(startValue,cursor-2)));
 
-                return stringList;
+                return new TypedObject(Type.STRING_ARRAY, stringList);
 
             case Type.LONG_TO_LONG_MAP:
                 Map<Long,Long> llMap = new HashMap<>();
@@ -428,7 +448,7 @@ public class JsonParserV2 {
                 }
                 llMap.put(Long.parseLong(currentLLName), Long.parseLong(new String(buffer.slice(startValue, cursor-1))));
 
-                return llMap;
+                return new TypedObject(Type.LONG_TO_LONG_MAP, llMap);
 
             case Type.LONG_TO_LONG_ARRAY_MAP:
                 break;
@@ -458,7 +478,7 @@ public class JsonParserV2 {
                 }
                 siMap.put(currentSIName, Integer.parseInt(new String(buffer.slice(startValue, cursor-1))));
 
-                return siMap;
+                return new TypedObject(Type.STRING_TO_INT_MAP, siMap);
 
 
             case Type.RELATION:
@@ -516,7 +536,7 @@ public class JsonParserV2 {
                 }
                 iiMap.put(Integer.parseInt(currentIIName), Integer.parseInt(new String(buffer.slice(startValue, cursor-1))));
 
-                return iiMap;
+                return new TypedObject(Type.INT_TO_INT_MAP, iiMap);
 
             case Type.INT_TO_STRING_MAP:
                 Map<Integer, String> isMap = new HashMap<>();
@@ -543,7 +563,7 @@ public class JsonParserV2 {
                 }
                 isMap.put(Integer.parseInt(currentISName), new String(buffer.slice(startValue, cursor-2)));
 
-                return isMap;
+                return new TypedObject(Type.INT_TO_STRING_MAP, isMap);
 
             case Type.INDEX:
                 break;

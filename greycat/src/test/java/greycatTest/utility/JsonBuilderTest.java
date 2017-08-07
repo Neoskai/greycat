@@ -439,26 +439,25 @@ public class JsonBuilderTest {
                         Assert.assertTrue(HashHelper.equals("MyValue", node0.get("value").toString()));
 
                         //check the simple json print
-
-                        String flatNode0 = "{\"world\":0,\"time\":0,\"id\":1,\"name\":\"MyName2\",\"value\":\"MyValue\"}";
+                        String flatNode0 = "{\"world\":0,\"time\":0,\"id\":1,\"group\":0,\"name\":\"MyName2\",\"value\":\"MyValue\"}";
 
                         Assert.assertTrue(flatNode0.length() == node0.toString().length());
-                        Assert.assertTrue(HashHelper.equals("{\"world\":0,\"time\":0,\"id\":1,\"name\":\"MyName2\",\"value\":\"MyValue\"}", node0.toString()));
+                        Assert.assertTrue(HashHelper.equals("{\"world\":0,\"time\":0,\"id\":1,\"group\":0,\"name\":\"MyName2\",\"value\":\"MyValue\"}", node0.toString()));
 
                         //Create a new node
                         Node node1 = graph.newNode(0, 0);
-                        Assert.assertTrue(HashHelper.equals("{\"world\":0,\"time\":0,\"id\":2}", node1.toString()));
+                        Assert.assertTrue(HashHelper.equals("{\"world\":0,\"time\":0,\"id\":2,\"group\":0}", node1.toString()));
 
                         //attach the new node
                         node1.addToRelation("children", node0);
-                        Assert.assertTrue(HashHelper.equals("{\"world\":0,\"time\":0,\"id\":2,\"children\":[1]}", node1.toString()));
+                        Assert.assertTrue(HashHelper.equals("{\"world\":0,\"time\":0,\"id\":2,\"group\":0,\"children\":[1]}", node1.toString()));
 
                         node1.addToRelation("children", node0);
-                        Assert.assertTrue(HashHelper.equals("{\"world\":0,\"time\":0,\"id\":2,\"children\":[1,1]}", node1.toString()));
+                        Assert.assertTrue(HashHelper.equals("{\"world\":0,\"time\":0,\"id\":2,\"group\":0,\"children\":[1,1]}", node1.toString()));
 
                         Node node2 = graph.newNode(0, 0);
                         node1.addToRelation("children", node2);
-                        Assert.assertTrue(HashHelper.equals("{\"world\":0,\"time\":0,\"id\":2,\"children\":[1,1,3]}", node1.toString()));
+                        Assert.assertTrue(HashHelper.equals("{\"world\":0,\"time\":0,\"id\":2,\"group\":0,\"children\":[1,1,3]}", node1.toString()));
 
                         Relation refValuesThree = (Relation) node1.get("children");
                         Assert.assertTrue(refValuesThree.size() == 3);
