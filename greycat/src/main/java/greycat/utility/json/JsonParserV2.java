@@ -257,13 +257,23 @@ public class JsonParserV2 {
                                     _graph.resolver().initNode(newNode, Constants.NULL_LONG);
 
                                     if(finalCurrentObject != null) {
-                                        //Object obj = newNode.getOrCreate(finalCurrentName,finalCurrentObject.getType());
-                                        // Init obj to it's value @Todo
+                                        if(isComplexType(finalCurrentObject.getType())){
+                                            Object obj = newNode.getOrCreate(finalCurrentName,finalCurrentObject.getType());
+                                            // @TODO Init obj to it's value
+                                        }
+                                        else {
+                                            newNode.set(finalCurrentName,finalCurrentObject.getType(),finalCurrentObject.getObject());
+                                        }
                                     }
                                 } else {
                                     if(finalCurrentObject != null) {
-                                        //Object obj = result.getOrCreate(finalCurrentName,finalCurrentObject.getType());
-                                        //Init obj to it's value @todo
+                                        if(isComplexType(finalCurrentObject.getType())){
+                                            Object obj = result.getOrCreate(finalCurrentName,finalCurrentObject.getType());
+                                            // @TODO Init obj to it's value
+                                        }
+                                        else {
+                                            result.set(finalCurrentName,finalCurrentObject.getType(),finalCurrentObject.getObject());
+                                        }
                                     }
                                 }
                             }
@@ -576,5 +586,9 @@ public class JsonParserV2 {
         }
 
         return null;
+    }
+
+    private boolean isComplexType(int type){
+        return type != Type.BOOL && type != Type.INT && type != Type.DOUBLE && type != Type.LONG && type != Type.STRING;
     }
 }
