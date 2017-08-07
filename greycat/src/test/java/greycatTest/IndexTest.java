@@ -39,11 +39,43 @@ public class IndexTest {
                 t.execute(g, new Callback<TaskResult>() {
                     @Override
                     public void on(TaskResult result) {
-                        Assert.assertEquals("{\"result\":[{\"world\":0,\"time\":-9007199254740990,\"id\":2,\"name\":\"sensor_1\"}]}", result.toString());
+                        Assert.assertEquals("{\"result\":[{\"world\":0,\"time\":-9007199254740990,\"id\":2,\"group\":0,\"name\":\"sensor_1\"}]}", result.toString());
 
                         newTask().readIndex("nodes", "sensor_1").unindexFrom("nodes").readIndex("nodes").execute(g, result2 -> {
-                            Assert.assertEquals("{\"result\":[{\"world\":0,\"time\":-9007199254740990,\"id\":3,\"name\":\"sensor_2\"}]}", result2.toString());
+                            Assert.assertEquals("{\"result\":[{\"world\":0,\"time\":-9007199254740990,\"id\":3,\"group\":0,\"name\":\"sensor_2\"}]}", result2.toString());
                         });
+                    }
+                });
+            }
+        });
+    }
+
+
+    @Test
+    public void testLocalIndex() {
+        Graph g = GraphBuilder.newBuilder().withScheduler(new NoopScheduler()).build();
+        g.connect(new Callback<Boolean>() {
+            @Override
+            public void on(Boolean result) {
+                Task t = newTask()
+                        .createNode()
+                        .setAsVar("container")
+                        .declareLocalIndex("files", "name")
+                        .createNode()
+                        .setAttribute("name", Type.STRING, "myFile")
+                        .setAsVar("file")
+                        .readVar("container")
+                        .addVarTo("files", "file")
+                        .traverse("files")
+                        //.log("Files: {{result}}")
+                        .readVar("container")
+                        .traverse("files", "myFile");
+                        //.log("MyFile: {{result}}");
+                t.execute(g, new Callback<TaskResult>() {
+                    @Override
+                    public void on(TaskResult result) {
+                        //System.out.println("res:" + result.get(0));
+                        Assert.assertTrue(result.get(0) != null);
                     }
                 });
             }

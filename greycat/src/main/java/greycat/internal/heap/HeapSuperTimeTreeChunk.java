@@ -16,6 +16,7 @@
 package greycat.internal.heap;
 
 import greycat.Constants;
+import greycat.chunk.Chunk;
 import greycat.chunk.ChunkType;
 import greycat.chunk.SuperTimeTreeChunk;
 import greycat.chunk.SuperTreeWalker;
@@ -46,6 +47,7 @@ public class HeapSuperTimeTreeChunk implements SuperTimeTreeChunk {
     private volatile long _timeSensitivity;
     private volatile long _timeSensitivityOffset;
     private volatile long _end;
+    private int _group;
 
     public HeapSuperTimeTreeChunk(final HeapChunkSpace p_space, final long p_index) {
         _space = p_space;
@@ -56,6 +58,7 @@ public class HeapSuperTimeTreeChunk implements SuperTimeTreeChunk {
         _timeSensitivity = 0;
         _timeSensitivityOffset = 0;
         _end = 0;
+        _group = 0;
     }
 
     @Override
@@ -84,6 +87,17 @@ public class HeapSuperTimeTreeChunk implements SuperTimeTreeChunk {
             return Constants.NULL_LONG;
         }
         return _k[_size - 1];
+    }
+
+    @Override
+    public final int group() {
+        return _group;
+    }
+
+    @Override
+    public final Chunk setGroup(int g) {
+        _group = g;
+        return this;
     }
 
     @Override
@@ -174,6 +188,10 @@ public class HeapSuperTimeTreeChunk implements SuperTimeTreeChunk {
     @Override
     public synchronized final void save(final Buffer buffer) {
         final long beginIndex = buffer.writeIndex();
+        if (_group != 0) {
+            Base64.encodeIntToBuffer(_group, buffer);
+            buffer.write(CoreConstants.CHUNK_META_SEP);
+        }
         Base64.encodeIntToBuffer(_size, buffer);
         buffer.write(CoreConstants.CHUNK_SEP);
         if (_timeSensitivity != 0) {
@@ -251,6 +269,12 @@ public class HeapSuperTimeTreeChunk implements SuperTimeTreeChunk {
         while (cursor < payloadSize) {
             final byte current = buffer.read(cursor);
             switch (current) {
+                case Constants.CHUNK_META_SEP:
+                    if (previous != cursor) {
+                        _group = Base64.decodeToIntWithBounds(buffer, previous, cursor);
+                    }
+                    previous = cursor + 1;
+                    break;
                 case Constants.CHUNK_SEP:
                     switch (extraCursor) {
                         case 0:

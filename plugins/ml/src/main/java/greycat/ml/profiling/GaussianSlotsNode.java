@@ -82,7 +82,7 @@ public class GaussianSlotsNode extends BaseNode {
         if (!load()) {
             return null;
         }
-        GaussianENode backend = gsgraph.getGaussian(getSlotNumber());
+        GaussianWrapper backend = gsgraph.getGaussian(getSlotNumber());
         if (load()) {
             return backend.getAvg();
         } else {
@@ -96,7 +96,7 @@ public class GaussianSlotsNode extends BaseNode {
         if (!load()) {
             return null;
         }
-        GaussianENode backend = gsgraph.getGaussian(getSlotNumber());
+        GaussianWrapper backend = gsgraph.getGaussian(getSlotNumber());
         switch (attributeName) {
             case Gaussian.MIN:
 

@@ -46,9 +46,9 @@ public class ActionLookupTest extends AbstractActionTest {
                     @Override
                     public void eval(TaskContext ctx) {
                         TaskResult<Node> nodes = ctx.resultAsNodes();
-                        Assert.assertEquals(nodes.get(0).toString(), "{\"world\":0,\"time\":10,\"id\":1,\"name\":\"n0\",\"value\":8}");
-                        Assert.assertEquals(nodes.get(1).toString(), "{\"world\":0,\"time\":10,\"id\":2,\"name\":\"n1\",\"value\":3}");
-                        Assert.assertEquals(nodes.get(2).toString(), "{\"world\":0,\"time\":10,\"id\":3,\"name\":\"root\",\"children\":[1,2]}");
+                        Assert.assertEquals(nodes.get(0).toString(), "{\"world\":0,\"time\":10,\"id\":1,\"group\":0,\"name\":\"n0\",\"value\":8}");
+                        Assert.assertEquals(nodes.get(1).toString(), "{\"world\":0,\"time\":10,\"id\":2,\"group\":0,\"name\":\"n1\",\"value\":3}");
+                        Assert.assertEquals(nodes.get(2).toString(), "{\"world\":0,\"time\":10,\"id\":3,\"group\":0,\"name\":\"root\",\"children\":[1,2]}");
 
                     }
                 })

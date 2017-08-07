@@ -96,7 +96,7 @@ public class WSSharedServerTest {
 
                 //   graph.index("nodes", node, "name", null);
 
-                Assert.assertEquals("{\"world\":0,\"time\":0,\"id\":1,\"name\":\"hello\"}", node.toString());
+                Assert.assertEquals("{\"world\":0,\"time\":0,\"id\":1,\"group\":0,\"name\":\"hello\"}", node.toString());
 
                 int port = 8050;
                 try {
@@ -125,7 +125,7 @@ public class WSSharedServerTest {
                                         Node newNode = graph2.newNode(0, 0);
                                         newNode.set("name", Type.STRING, "hello2");
 
-                                        Assert.assertEquals("{\"world\":0,\"time\":0,\"id\":137438953473,\"name\":\"hello2\"}", newNode.toString());
+                                        Assert.assertEquals("{\"world\":0,\"time\":0,\"id\":137438953473,\"group\":0,\"name\":\"hello2\"}", newNode.toString());
 
                                         graph2.declareIndex(0, "nodes", new Callback<NodeIndex>() {
                                             @Override
@@ -151,8 +151,8 @@ public class WSSharedServerTest {
                                                             @Override
                                                             public void on(Node[] result) {
                                                                 Assert.assertEquals(2, result.length);
-                                                                Assert.assertEquals(result[0].toString(), "{\"world\":0,\"time\":0,\"id\":1,\"name\":\"hello\"}");
-                                                                Assert.assertEquals(result[1].toString(), "{\"world\":0,\"time\":0,\"id\":137438953473,\"name\":\"hello2\"}");
+                                                                Assert.assertEquals(result[0].toString(), "{\"world\":0,\"time\":0,\"id\":1,\"group\":0,\"name\":\"hello\"}");
+                                                                Assert.assertEquals(result[1].toString(), "{\"world\":0,\"time\":0,\"id\":137438953473,\"group\":0,\"name\":\"hello2\"}");
                                                                 latch.countDown();
                                                             }
                                                         }, grapIndex.world(), grapIndex.time());

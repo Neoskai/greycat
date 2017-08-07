@@ -61,21 +61,7 @@ class ActionTraverseOrAttribute implements Action {
             final LArray times = new LArray();
             final LArray ids = new LArray();
 
-            final Query query;
-            if (_params != null && _params.length > 0) {
-                query = ctx.graph().newQuery();
-                String previous = null;
-                for (int k = 0; k < _params.length; k++) {
-                    if (previous != null) {
-                        query.add(previous, ctx.template(_params[k]));
-                        previous = null;
-                    } else {
-                        previous = _params[k];
-                    }
-                }
-            } else {
-                query = null;
-            }
+            Query query = null;
             for (int i = 0; i < previousSize; i++) {
                 final Object loop = previousResult.get(i);
                 //TODO manage eNode here
@@ -96,6 +82,15 @@ class ActionTraverseOrAttribute implements Action {
                         case Type.INDEX:
                             final Index relationIndexed = (Index) casted.getAt(flatHash);
                             if (relationIndexed != null) {
+                                final int[] keys = relationIndexed.keys();
+                                if (_params != null && _params.length > 0) {
+                                    query = ctx.graph().newQuery();
+                                    for (int k = 0; k < keys.length && k < _params.length; k++) {
+                                        query.addRaw(keys[i], ctx.template(_params[k]));
+                                    }
+                                } else {
+                                    query = null;
+                                }
                                 if (query != null) {
                                     final long[] candidates = relationIndexed.selectByQuery(query);
                                     for (int k = 0; k < candidates.length; k++) {
@@ -131,6 +126,7 @@ class ActionTraverseOrAttribute implements Action {
                     finalResult.add(loop);
                 }
             }
+            final Query finalQuery = query;
             Callback secondStep = new Callback() {
                 @Override
                 public void on(Object result) {
@@ -144,14 +140,14 @@ class ActionTraverseOrAttribute implements Action {
                                 for (int i = 0; i < result.length; i++) {
                                     final Node resolvedNode = result[i];
                                     if (resolvedNode != null) {
-                                        if (query == null) {
+                                        if (finalQuery == null) {
                                             finalResult.add(resolvedNode);
                                         } else {
                                             final NodeState resolvedState = resolver.resolveState(resolvedNode);
                                             boolean exact = true;
-                                            for (int j = 0; j < query.attributes().length; j++) {
-                                                Object obj = resolvedState.getAt(query.attributes()[j]);
-                                                if (query.values()[j] == null) {
+                                            for (int j = 0; j < finalQuery.attributes().length; j++) {
+                                                Object obj = resolvedState.getAt(finalQuery.attributes()[j]);
+                                                if (finalQuery.values()[j] == null) {
                                                     if (obj != null) {
                                                         exact = false;
                                                         break;
@@ -162,8 +158,8 @@ class ActionTraverseOrAttribute implements Action {
                                                         break;
                                                     } else {
                                                         if (obj instanceof long[]) {
-                                                            if (query.values()[j] instanceof long[]) {
-                                                                if (!Constants.longArrayEquals((long[]) query.values()[j], (long[]) obj)) {
+                                                            if (finalQuery.values()[j] instanceof long[]) {
+                                                                if (!Constants.longArrayEquals((long[]) finalQuery.values()[j], (long[]) obj)) {
                                                                     exact = false;
                                                                     break;
                                                                 }
@@ -172,7 +168,7 @@ class ActionTraverseOrAttribute implements Action {
                                                                 break;
                                                             }
                                                         } else {
-                                                            if (!Constants.equals(query.values()[j].toString(), obj.toString())) {
+                                                            if (!Constants.equals(finalQuery.values()[j].toString(), obj.toString())) {
                                                                 exact = false;
                                                                 break;
                                                             }

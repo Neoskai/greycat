@@ -151,7 +151,7 @@ public class ActionTraverseTest extends AbstractActionTest {
         newTask()
                 .then(travelInTime("0"))
                 .then(readIndex("roots", "root2"))
-                .then(traverse("childrenIndexed", "name", "node2"))
+                .then(traverse("childrenIndexed", "node2"))
                 .thenDo(new ActionFunction() {
                     @Override
                     public void eval(TaskContext ctx) {
@@ -160,8 +160,8 @@ public class ActionTraverseTest extends AbstractActionTest {
                     }
                 }).execute(graph, null);
 
-        newTask().then(readIndex("rootIndex", "name", "root2"))
-                .then(traverse("childrenIndexed", "name", "node3"))
+        newTask().then(readIndex("rootIndex", "root2"))
+                .then(traverse("childrenIndexed", "node3"))
                 .thenDo(new ActionFunction() {
                     @Override
                     public void eval(TaskContext ctx) {
@@ -172,7 +172,7 @@ public class ActionTraverseTest extends AbstractActionTest {
         newTask()
                 .then(travelInTime("12"))
                 .then(readIndex("roots", "root2"))
-                .then(traverse("childrenIndexed", "name", "node2"))
+                .then(traverse("childrenIndexed", "node2"))
                 .thenDo(new ActionFunction() {
                     @Override
                     public void eval(TaskContext ctx) {
@@ -224,7 +224,7 @@ public class ActionTraverseTest extends AbstractActionTest {
                 .inject("toto")
                 .setAsVar("child_name")
                 .readVar("parent")
-                .traverse("children", "name", "{{child_name}}")
+                .traverse("children", "{{child_name}}")
                 .println("{{result}}")
                 .thenDo(context -> {
                     Assert.assertEquals(1, context.result().size());

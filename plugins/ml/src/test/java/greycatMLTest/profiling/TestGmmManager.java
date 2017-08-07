@@ -17,7 +17,7 @@ package greycatMLTest.profiling;
 
 import greycat.*;
 import greycat.internal.custom.NDTree;
-import greycat.ml.profiling.GaussianENode;
+import greycat.ml.profiling.GaussianWrapper;
 import greycat.ml.profiling.GmmManager;
 import greycat.struct.EStructArray;
 import greycat.struct.ProfileResult;
@@ -71,7 +71,7 @@ public class TestGmmManager {
                 for(int i=0;i<res.size();i++){
                     int ind= (int)res.value(i);
                     //System.out.println(ind);
-                    GaussianENode gn= new GaussianENode(ndTree.estruct(ind));
+                    GaussianWrapper gn= new GaussianWrapper(ndTree.estruct(ind));
                     double[] av1=gn.getAvg();
                     double[] k1=res.keys(i);
                     System.out.println("Id: "+ind+" distance: "+res.distance(i)+" keys: ["+k1[0]+" "+k1[1]+" "+k1[2]+" "+k1[3]+" "+"] gmm avg:["+av1[0]+" "+av1[1]+" "+av1[2]+" "+av1[3]+" "+"] gmm Total: "+gn.getTotal());

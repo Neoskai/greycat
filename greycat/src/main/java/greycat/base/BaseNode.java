@@ -142,11 +142,13 @@ public class BaseNode implements Node {
 
     @Override
     public final String nodeTypeName() {
-        final NodeDeclaration declaration = this.graph().nodeRegistry().declarationByHash(this._resolver.typeCode(this));
+        int typeHash = this._resolver.typeCode(this);
+        final NodeDeclaration declaration = this.graph().nodeRegistry().declarationByHash(typeHash);
         if (declaration != null) {
             return declaration.name();
+        } else {
+            return _resolver.hashToString(typeHash);
         }
-        return null;
     }
 
     protected final NodeState unphasedState() {
@@ -628,6 +630,11 @@ public class BaseNode implements Node {
     }
 
     @Override
+    public final int[] attributeIndexes() {
+        return this._resolver.resolveState(this).attributeIndexes();
+    }
+
+    @Override
     public final void timepoints(final long beginningOfSearch, final long endOfSearch, final Callback<long[]> callback) {
         this._resolver.resolveTimepoints(this, beginningOfSearch, endOfSearch, callback);
     }
@@ -681,6 +688,8 @@ public class BaseNode implements Node {
         builder.append(time());
         builder.append(",\"id\":");
         builder.append(id());
+        builder.append(",\"group\":");
+        builder.append(group());
         final NodeState state = this._resolver.resolveState(this);
         if (state != null) {
             state.each(new NodeStateCallback() {
@@ -1013,7 +1022,7 @@ public class BaseNode implements Node {
         if (type == Constants.NULL_LONG) {
             cloned = _graph.newNode(_world, _time);
         } else {
-            cloned = _graph.newTypedNodeFrom(_world, _time, (int)type);
+            cloned = _graph.newTypedNodeFrom(_world, _time, (int) type);
         }
         final StateChunk clonedStateChunk = (StateChunk) _resolver.resolveState(cloned);
         final StateChunk currentStateChunk = (StateChunk) _resolver.resolveState(this);
@@ -1169,5 +1178,20 @@ public class BaseNode implements Node {
         ((WorldOrderChunk) this._graph.space().get(_index_worldOrder)).unlisten(registrationID);
     }
 
+    @Override
+    public final Node setGroup(int group_id) {
+        this._graph.space().get(_index_worldOrder).setGroup(group_id);
+        this._graph.space().get(_index_superTimeTree).setGroup(group_id);
+        this._graph.space().get(_index_timeTree).setGroup(group_id);
+        if (_index_stateChunk != -1) {
+            this._graph.space().get(_index_stateChunk).setGroup(group_id);
+        }
+        return this;
+    }
+
+    @Override
+    public int group() {
+        return this._graph.space().get(_index_worldOrder).group();
+    }
 
 }

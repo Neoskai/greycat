@@ -17,6 +17,7 @@ package greycat.internal.heap;
 
 import greycat.*;
 import greycat.base.BaseCustomType;
+import greycat.chunk.Chunk;
 import greycat.chunk.ChunkType;
 import greycat.chunk.StateChunk;
 import greycat.internal.CoreConstants;
@@ -41,6 +42,7 @@ class HeapStateChunk implements StateChunk, HeapContainer {
     private int[] next_and_hash;
     private long _hash;
     private boolean _inSync;
+    private int _group;
 
     @Override
     public final Graph graph() {
@@ -58,6 +60,7 @@ class HeapStateChunk implements StateChunk, HeapContainer {
         _capacity = 0;
         _hash = 0;
         _inSync = true;
+        _group = 0;
     }
 
     @Override
@@ -108,6 +111,17 @@ class HeapStateChunk implements StateChunk, HeapContainer {
     @Override
     public synchronized Object getRawAt(final int p_key) {
         return internal_get(p_key, true);
+    }
+
+    @Override
+    public final int group() {
+        return _group;
+    }
+
+    @Override
+    public final Chunk setGroup(int g) {
+        _group = g;
+        return this;
     }
 
     @Override
@@ -423,6 +437,10 @@ class HeapStateChunk implements StateChunk, HeapContainer {
     @Override
     public synchronized final void save(final Buffer buffer) {
         final long beginIndex = buffer.writeIndex();
+        if (_group != 0) {
+            Base64.encodeIntToBuffer(_group, buffer);
+            buffer.write(CoreConstants.CHUNK_META_SEP);
+        }
         Base64.encodeIntToBuffer(_size, buffer);
         for (int i = 0; i < _size; i++) {
             final Object loopValue = _v[i]; //there is a real value
@@ -519,6 +537,7 @@ class HeapStateChunk implements StateChunk, HeapContainer {
         HeapStateChunk casted = (HeapStateChunk) origin;
         _capacity = casted._capacity;
         _size = casted._size;
+        _group = casted._group;
         //copy keys
         if (casted._k != null) {
             int[] cloned_k = new int[_capacity];
@@ -946,7 +965,13 @@ class HeapStateChunk implements StateChunk, HeapContainer {
             int read_key = -1;
             while (cursor < payloadSize) {
                 byte current = buffer.read(cursor);
-                if (current == Constants.CHUNK_SEP) {
+                if (current == Constants.CHUNK_META_SEP) {
+                    if (previous != cursor) {
+                        _group = Base64.decodeToIntWithBounds(buffer, previous, cursor);
+                    }
+                    cursor++;
+                    previous = cursor;
+                } else if (current == Constants.CHUNK_SEP) {
                     switch (state) {
                         case LOAD_WAITING_ALLOC:
                             allocate(Base64.decodeToIntWithBounds(buffer, previous, cursor));
@@ -1307,6 +1332,13 @@ class HeapStateChunk implements StateChunk, HeapContainer {
     @Override
     public final LongLongArrayMap getLongLongArrayMap(String name) {
         return (LongLongArrayMap) get(name);
+    }
+
+    @Override
+    public final int[] attributeIndexes() {
+        final int[] result = new int[_size];
+        System.arraycopy(_k, 0, result, 0, _size);
+        return result;
     }
 
 }

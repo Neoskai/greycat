@@ -16,6 +16,7 @@
 package greycat.internal.heap;
 
 import greycat.Constants;
+import greycat.chunk.Chunk;
 import greycat.chunk.ChunkType;
 import greycat.chunk.TimeTreeChunk;
 import greycat.chunk.TreeWalker;
@@ -46,6 +47,7 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
     private volatile int _size;
 
     private long _max;
+    private int _group;
 
     HeapTimeTreeChunk(final HeapChunkSpace p_space, final long p_index) {
         _space = p_space;
@@ -55,6 +57,7 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
         _capacity = 0;
         _size = 0;
         _inSync = true;
+        _group = 0;
     }
 
     @Override
@@ -108,6 +111,17 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
     }
 
     @Override
+    public final int group() {
+        return _group;
+    }
+
+    @Override
+    public final Chunk setGroup(int g) {
+        _group = g;
+        return this;
+    }
+
+    @Override
     public synchronized final void range(final long startKey, final long endKey, final long maxElements, final TreeWalker walker) {
         //lock and load fromVar main memory
         int nbElements = 0;
@@ -122,6 +136,10 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
     @Override
     public synchronized final void save(Buffer buffer) {
         final long beginIndex = buffer.writeIndex();
+        if (_group != 0) {
+            Base64.encodeIntToBuffer(_group, buffer);
+            buffer.write(CoreConstants.CHUNK_META_SEP);
+        }
         Base64.encodeIntToBuffer(_size, buffer);
         buffer.write(CoreConstants.CHUNK_SEP);
         Base64.encodeLongToBuffer(_capacity, buffer);
@@ -184,6 +202,12 @@ class HeapTimeTreeChunk implements TimeTreeChunk {
         while (cursor < payloadSize) {
             final byte current = buffer.read(cursor);
             switch (current) {
+                case Constants.CHUNK_META_SEP:
+                    if (previous != cursor) {
+                        _group = Base64.decodeToIntWithBounds(buffer, previous, cursor);
+                    }
+                    previous = cursor + 1;
+                    break;
                 case Constants.CHUNK_SEP:
                     switch (extraCursor) {
                         case 0:

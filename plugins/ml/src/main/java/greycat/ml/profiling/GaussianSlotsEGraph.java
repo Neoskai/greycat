@@ -29,8 +29,8 @@ public class GaussianSlotsEGraph {
     private EStructArray backend = null;
 
     private EStruct root = null;
-    private GaussianENode[] slots = null;
-    private GaussianENode generic_slot = null;
+    private GaussianWrapper[] slots = null;
+    private GaussianWrapper generic_slot = null;
 
 
     public GaussianSlotsEGraph(EStructArray backend) {
@@ -43,7 +43,7 @@ public class GaussianSlotsEGraph {
             backend.setRoot(root);
             ERelation rel = (ERelation) root.getOrCreate(GENERIC_SLOT, Type.ERELATION);
             rel.add(backend.newEStruct());
-            generic_slot = new GaussianENode(rel.node(0));
+            generic_slot = new GaussianWrapper(rel.node(0));
         }
 
     }
@@ -57,11 +57,11 @@ public class GaussianSlotsEGraph {
         ERelation relation = (ERelation) root.getOrCreate(SLOTS, Type.ERELATION);
         relation.clear();
         EStruct temp;
-        slots = new GaussianENode[number];
+        slots = new GaussianWrapper[number];
         for (int i = 0; i < number; i++) {
             temp = root.egraph().newEStruct();
             relation.add(temp);
-            slots[i] = new GaussianENode(temp);
+            slots[i] = new GaussianWrapper(temp);
         }
     }
 
@@ -77,7 +77,7 @@ public class GaussianSlotsEGraph {
         generic_slot.learn(values);
     }
 
-    public GaussianENode getGaussian(int slot) {
+    public GaussianWrapper getGaussian(int slot) {
         if (slots == null) {
             throw new RuntimeException("Please set the number of slots first!");
         }
@@ -87,7 +87,7 @@ public class GaussianSlotsEGraph {
         return slots[slot];
     }
 
-    public GaussianENode getGeneric() {
+    public GaussianWrapper getGeneric() {
         return generic_slot;
     }
 
@@ -103,15 +103,15 @@ public class GaussianSlotsEGraph {
             root = backend.root();
             ERelation rel = (ERelation) root.get(SLOTS);
             if (rel != null) {
-                slots = new GaussianENode[rel.size()];
+                slots = new GaussianWrapper[rel.size()];
                 for (int i = 0; i < rel.size(); i++) {
-                    slots[i] = new GaussianENode(rel.node(i));
+                    slots[i] = new GaussianWrapper(rel.node(i));
                 }
             }
 
             rel = (ERelation) root.get(GENERIC_SLOT);
             if (rel != null) {
-                generic_slot = new GaussianENode(rel.node(0));
+                generic_slot = new GaussianWrapper(rel.node(0));
             }
             return true;
         }

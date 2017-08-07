@@ -43,4 +43,9 @@ public interface Chunk {
 
     boolean sync(long remoteHash);
 
+    /* Security Header */
+    int group();
+
+    Chunk setGroup(int g);
+
 }

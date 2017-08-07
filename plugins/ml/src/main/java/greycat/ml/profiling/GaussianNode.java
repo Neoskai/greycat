@@ -27,7 +27,7 @@ public class GaussianNode extends BaseNode {
     private static final String BACKEND = "backend";
 
     private EStructArray egraph;
-    private GaussianENode backend;
+    private GaussianWrapper backend;
 
     public GaussianNode(long p_world, long p_time, long p_id, Graph p_graph) {
         super(p_world, p_time, p_id, p_graph);
@@ -57,7 +57,7 @@ public class GaussianNode extends BaseNode {
         invalidate();
         if (!load()) {
             egraph = (EStructArray) super.getOrCreate(BACKEND, Type.ESTRUCT_ARRAY);
-            backend = new GaussianENode(egraph.newEStruct());
+            backend = new GaussianWrapper(egraph.newEStruct());
         }
         switch (name) {
             case Gaussian.VALUES:
@@ -107,7 +107,7 @@ public class GaussianNode extends BaseNode {
                 if (egraph.root() == null) {
                     return false;
                 }
-                backend = new GaussianENode(egraph.root());
+                backend = new GaussianWrapper(egraph.root());
                 return true;
             }
         }

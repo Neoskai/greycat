@@ -130,6 +130,9 @@ public class WSClient implements Storage, TaskExecutor {
             }
             _channel = futureChannel.get();
             _channel.getReceiveSetter().set(new MessageReceiver());
+            _channel.addCloseTask(channel -> {
+                System.err.println("Channel closed !");
+            });
             _channel.resumeReceives();
             if (callback != null) {
                 callback.on(true);
@@ -253,9 +256,7 @@ public class WSClient implements Storage, TaskExecutor {
         WebSockets.sendBinary(wrapped, _channel, new WebSocketCallback<Void>() {
             @Override
             public void complete(WebSocketChannel webSocketChannel, Void aVoid) {
-
             }
-
             @Override
             public void onError(WebSocketChannel webSocketChannel, Void aVoid, Throwable throwable) {
                 throwable.printStackTrace();

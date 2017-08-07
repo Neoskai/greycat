@@ -84,6 +84,11 @@ final class CoreNodeIndex extends BaseNode implements NodeIndex {
     }
 
     @Override
+    public final int[] keys() {
+        return ((Index) getAt(0)).keys();
+    }
+
+    @Override
     public final void findFrom(Callback<Node[]> callback, String... params) {
         ((Index) getAt(0)).find(callback, _world, _time, params);
     }

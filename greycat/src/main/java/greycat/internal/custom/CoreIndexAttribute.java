@@ -227,4 +227,13 @@ public class CoreIndexAttribute extends BaseCustomTypeSingle implements Index {
         final LongLongArrayMap relationIndexed = (LongLongArrayMap) getAt(P_MAP);
         return relationIndexed.get(query.hash());
     }
+
+    @Override
+    public final int[] keys() {
+        final IntArray hashes = (IntArray) getAt(HASHES);
+        if (hashes == null) {
+            return new int[0];
+        }
+        return hashes.extract();
+    }
 }

@@ -20,12 +20,19 @@ import greycat.plugin.*;
 import greycat.struct.Buffer;
 import greycat.chunk.ChunkSpace;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Graph is the main structure of GreyCat.
  * Use the {@link GraphBuilder} to get an instance.
  */
 public interface Graph {
 
+    Graph setProperty(String key, Object value);
+
+    Object getProperty(String key);
+    
     /**
      * @ignore ts
      */

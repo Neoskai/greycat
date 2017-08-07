@@ -33,6 +33,7 @@ import greycat.utility.KeyHelper;
 
 
 import java.util.*;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CoreGraph implements Graph {
@@ -55,6 +56,9 @@ public class CoreGraph implements Graph {
     private MemoryFactory _memoryFactory;
     private TaskHook[] _taskHooks;
     private List<Callback<Callback<Boolean>>> _connectHooks;
+
+    //general properties
+    private final HashMap<String, Object> _properties = new HashMap<String, Object>();
 
     public CoreGraph(final Storage p_storage, final long memorySize, final long batchSize, final Scheduler p_scheduler, final Plugin[] p_plugins, final boolean deepPriority) {
         //initiate the two registry
@@ -136,6 +140,17 @@ public class CoreGraph implements Graph {
         long childWorld = this._worldKeyCalculator.newKey();
         this._resolver.initWorld(world, childWorld);
         return childWorld;
+    }
+
+    @Override
+    public final Graph setProperty(String key, Object value) {
+        _properties.put(key, value);
+        return this;
+    }
+
+    @Override
+    public final Object getProperty(String key) {
+        return _properties.get(key);
     }
 
     @Override

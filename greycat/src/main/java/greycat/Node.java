@@ -183,4 +183,8 @@ public interface Node extends Container {
 
     void unlisten(int registrationID);
 
+    Node setGroup(int group_id);
+
+    int group();
+
 }

@@ -24,6 +24,9 @@ import java.util.*;
 
 import static greycat.utility.json.JsonConst.*;
 
+/**
+ * @ignore ts
+ */
 public class JsonParser {
     private LinkedList _list;
     private Graph _graph;

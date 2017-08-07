@@ -22,7 +22,7 @@ import greycat.struct.EStruct;
 import greycat.struct.matrix.MatrixOps;
 import greycat.struct.matrix.VolatileDMatrix;
 
-public class GaussianENode {
+public class GaussianWrapper {
     //Getters and setters
     public final static String NAME = "GaussianENode";
 
@@ -34,7 +34,7 @@ public class GaussianENode {
     private DMatrix cov = null;
 
 
-    public GaussianENode(EStruct backend) {
+    public GaussianWrapper(EStruct backend) {
         if (backend == null) {
             throw new RuntimeException("backend can't be null for Gaussian node!");
         }
@@ -48,14 +48,14 @@ public class GaussianENode {
 
     public void learnWithOccurence(double[] values, int occ){
         int features = values.length;
-        int total = backend.getWithDefault(Gaussian.TOTAL, 0);
+        long total = backend.getWithDefault(Gaussian.TOTAL, 0l);
         //Create dirac only save total and sum
         if (total == 0) {
             double[] sum = new double[features];
             if(occ==1) {
                 System.arraycopy(values, 0, sum, 0, features);
                 total = 1;
-                backend.set(Gaussian.TOTAL, Type.INT, total);
+                backend.set(Gaussian.TOTAL, Type.LONG, total);
                 ((DoubleArray) backend.getOrCreate(Gaussian.SUM, Type.DOUBLE_ARRAY)).initWith(sum);
             }
             else{
@@ -73,7 +73,7 @@ public class GaussianENode {
                     }
                 }
                 total = occ;
-                backend.set(Gaussian.TOTAL, Type.INT, total);
+                backend.set(Gaussian.TOTAL, Type.LONG, total);
                 ((DoubleArray) backend.getOrCreate(Gaussian.SUM, Type.DOUBLE_ARRAY)).initWith(sum);
                 ((DoubleArray) backend.getOrCreate(Gaussian.MIN, Type.DOUBLE_ARRAY)).initWith(min);
                 ((DoubleArray) backend.getOrCreate(Gaussian.MAX, Type.DOUBLE_ARRAY)).initWith(max);
@@ -128,7 +128,7 @@ public class GaussianENode {
             }
             total+=occ;
             //Store everything
-            backend.set(Gaussian.TOTAL, Type.INT, total);
+            backend.set(Gaussian.TOTAL, Type.LONG, total);
         }
         // set all cached avg, std, and cov arrays to null
         invalidate();
@@ -151,7 +151,7 @@ public class GaussianENode {
             return true;
         }
 
-        int total = backend.getWithDefault(Gaussian.TOTAL, 0);
+        long total = backend.getWithDefault(Gaussian.TOTAL, 0l);
         if (total != 0) {
             double[] sum = ((DoubleArray) backend.get(Gaussian.SUM)).extract();
             avg = new double[sum.length];
@@ -169,7 +169,7 @@ public class GaussianENode {
         if (std != null) {
             return true;
         }
-        int total = backend.getWithDefault(Gaussian.TOTAL, 0);
+        long total = backend.getWithDefault(Gaussian.TOTAL, 0l);
         if (total >= 2) {
             initAvg();
             int dim = avg.length;
@@ -206,7 +206,7 @@ public class GaussianENode {
         if (cov != null) {
             return true;
         }
-        int total = backend.getWithDefault(Gaussian.TOTAL, 0);
+        long total = backend.getWithDefault(Gaussian.TOTAL, 0l);
         if (total >= 2) {
             initAvg();
             int dim = avg.length;
@@ -278,7 +278,7 @@ public class GaussianENode {
         return covtemp;
     }
 
-    public DMatrix getPearson() {
+    public DMatrix getCorrelation() {
         if (!initCov()) {
             return null;
         }
@@ -295,7 +295,7 @@ public class GaussianENode {
     }
 
     public double[] getSum() {
-        int total = backend.getWithDefault(Gaussian.TOTAL, 0);
+        long total = backend.getWithDefault(Gaussian.TOTAL, 0l);
         if (total != 0) {
             return ((DoubleArray) backend.get(Gaussian.SUM)).extract();
         } else {
@@ -304,7 +304,7 @@ public class GaussianENode {
     }
 
     public double[] getSumSq() {
-        int total = backend.getWithDefault(Gaussian.TOTAL, 0);
+        long total = backend.getWithDefault(Gaussian.TOTAL, 0l);
         if (total == 0) {
             return null;
         }
@@ -328,7 +328,7 @@ public class GaussianENode {
 
 
     public double[] getMin() {
-        int total = backend.getWithDefault(Gaussian.TOTAL, 0);
+        long total = backend.getWithDefault(Gaussian.TOTAL, 0l);
         if (total == 0) {
             return null;
         }
@@ -340,7 +340,7 @@ public class GaussianENode {
     }
 
     public double[] getMax() {
-        int total = backend.getWithDefault(Gaussian.TOTAL, 0);
+        long total = backend.getWithDefault(Gaussian.TOTAL, 0l);
         if (total == 0) {
             return null;
         }
@@ -352,12 +352,12 @@ public class GaussianENode {
     }
 
 
-    public int getTotal() {
-        return backend.getWithDefault(Gaussian.TOTAL, 0);
+    public long getTotal() {
+        return backend.getWithDefault(Gaussian.TOTAL, 0l);
     }
 
     public int getDimensions() {
-        int total = backend.getWithDefault(Gaussian.TOTAL, 0);
+        long total = backend.getWithDefault(Gaussian.TOTAL, 0l);
         if (total != 0) {
             return ((DoubleArray) backend.get(Gaussian.SUM)).size();
         } else {

@@ -58,7 +58,7 @@ public class DeriveAttributeTest {
                 Assert.assertEquals("6.6", result.get(0) + "");
             }
         });
-        Assert.assertEquals("{\"world\":0,\"time\":0,\"id\":1,\"x\":5.1,\"y\":1.5}", n.toString());
+        Assert.assertEquals("{\"world\":0,\"time\":0,\"id\":1,\"group\":0,\"x\":5.1,\"y\":1.5}", n.toString());
     }
 
 }

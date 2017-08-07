@@ -17,7 +17,7 @@ package greycatMLTest.profiling;
 
 import greycat.*;
 import greycat.ml.HelperForTest;
-import greycat.ml.profiling.GaussianENode;
+import greycat.ml.profiling.GaussianWrapper;
 import greycat.struct.EStructArray;
 import greycat.struct.EStruct;
 import org.junit.Assert;
@@ -44,9 +44,9 @@ public class TestGmmEnode {
                 EStruct en2=eg.newEStruct();
                 EStruct en3=eg.newEStruct();
 
-                GaussianENode gaussian= new GaussianENode(en);
-                GaussianENode gaussian2= new GaussianENode(en2);
-                GaussianENode gaussian3= new GaussianENode(en3);
+                GaussianWrapper gaussian= new GaussianWrapper(en);
+                GaussianWrapper gaussian2= new GaussianWrapper(en2);
+                GaussianWrapper gaussian3= new GaussianWrapper(en3);
 
                 double[] key={1.1,2.2,3.3};
                 int n=10;

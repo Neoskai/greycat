@@ -27,6 +27,7 @@ import greycat.struct.EStructArray;
 import greycat.struct.matrix.MatrixOps;
 import greycat.struct.matrix.RandomGenerator;
 import greycat.struct.matrix.VolatileDMatrix;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class TestVectorization {
@@ -55,6 +56,10 @@ public class TestVectorization {
                 DMatrix inputs = VolatileDMatrix.random(inputdim, trainset, randomGenerator, -1, 1);
                 DMatrix linearsys = VolatileDMatrix.random(outputdim, inputdim, randomGenerator,-2, 2);
                 DMatrix outputs = MatrixOps.multiply(linearsys, inputs);
+
+                DMatrix inputsBackup = MatrixOps.cloneMatrix(inputs);
+                DMatrix outputsBackup= MatrixOps.cloneMatrix(outputs);
+
                 //System.out.println(outputDimensions.rows() + " , " + outputDimensions.columns());
 
                 Node node1 = g.newNode(0, 0);
@@ -116,6 +121,9 @@ public class TestVectorization {
 //                System.out.println("time nonVectorized: "+(end-start)+" ms");
 
 
+                //Validate that the inputs and outputs are unchanged!
+                Assert.assertTrue(MatrixOps.compare(inputs,inputsBackup)==0);
+                Assert.assertTrue(MatrixOps.compare(outputs,outputsBackup)==0);
 
             }
         });

@@ -37,4 +37,6 @@ public interface Index {
 
     long[] selectByQuery(Query query);
 
+    int[] keys();
+
 }

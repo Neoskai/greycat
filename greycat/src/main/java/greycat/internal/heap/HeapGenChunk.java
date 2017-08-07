@@ -16,7 +16,9 @@
 package greycat.internal.heap;
 
 import greycat.Constants;
+import greycat.chunk.Chunk;
 import greycat.chunk.ChunkType;
+import greycat.internal.CoreConstants;
 import greycat.struct.Buffer;
 import greycat.utility.Base64;
 import greycat.chunk.GenChunk;
@@ -37,6 +39,7 @@ final class HeapGenChunk implements GenChunk {
 
     private long _hash;
     private boolean _inSync;
+    private int _group;
 
     /**
      * {@native ts
@@ -44,6 +47,7 @@ final class HeapGenChunk implements GenChunk {
      * this._space = p_space;
      * this._prefix = Long.fromNumber(p_id).shiftLeft((Constants.LONG_SIZE - Constants.PREFIX_SIZE));
      * this._seed = -1;
+     * this._group = 0;
      * }
      */
     HeapGenChunk(final HeapChunkSpace p_space, final long p_id, final long p_index) {
@@ -59,6 +63,10 @@ final class HeapGenChunk implements GenChunk {
     @Override
     public synchronized final void save(final Buffer buffer) {
         final long beginIndex = buffer.writeIndex();
+        if (_group != 0) {
+            Base64.encodeIntToBuffer(_group, buffer);
+            buffer.write(CoreConstants.CHUNK_META_SEP);
+        }
         Base64.encodeLongToBuffer(_seed, buffer);
         _hash = HashHelper.hashBuffer(buffer, beginIndex, buffer.writeIndex());
     }
@@ -98,6 +106,17 @@ final class HeapGenChunk implements GenChunk {
         } else {
             return false;
         }
+    }
+
+    @Override
+    public final int group() {
+        return _group;
+    }
+
+    @Override
+    public final Chunk setGroup(int g) {
+        _group = g;
+        return this;
     }
 
     private void internal_load(Buffer buffer, boolean diff) {

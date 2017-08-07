@@ -34,7 +34,7 @@ public class GmmManager implements NDManager {
     @Override
     public long updateExistingLeafNode(long oldKey, double[] key, Object valueToInsert) {
         EStruct node= _backend.estruct((int) oldKey);
-        GaussianENode gn= new GaussianENode(node);
+        GaussianWrapper gn= new GaussianWrapper(node);
         gn.learnWithOccurence(key,(int)(long)valueToInsert);
         return oldKey;
     }
@@ -57,7 +57,7 @@ public class GmmManager implements NDManager {
     @Override
     public long getNewLeafNode(double[] key, Object valueToInsert) {
         EStruct node= _backend.newEStruct();
-        GaussianENode gn= new GaussianENode(node);
+        GaussianWrapper gn= new GaussianWrapper(node);
         gn.learnWithOccurence(key,(int)(long)valueToInsert);
         return node.id();
     }
@@ -71,7 +71,7 @@ public class GmmManager implements NDManager {
     @Override
     public long updateParent(long parentkey, double[] key, Object valueToInsert) {
         EStruct node= _backend.estruct((int) parentkey);
-        GaussianENode gn= new GaussianENode(node);
+        GaussianWrapper gn= new GaussianWrapper(node);
         gn.learnWithOccurence(key,(int)(long)valueToInsert);
         return parentkey;
     }

@@ -718,6 +718,15 @@ public class CoreTask implements Task {
                         return new ActionTimepoints((String) params[0], (String) params[1]);
                     }
                 });
+        registry.getOrCreateDeclaration(CoreActionNames.LOOKUP)
+                .setParams(Type.STRING)
+                .setDescription("Looks for the node with given ID.")
+                .setFactory(new ActionFactory() {
+                    @Override
+                    public Action create(Object[] params) {
+                        return new ActionLookup((String) params[0]);
+                    }
+                });
         registry.getOrCreateDeclaration(CoreActionNames.DEFINE_AS_GLOBAL_VAR)
                 .setParams(Type.STRING)
                 .setDescription("Stores the task result as a global variable in the task context and starts a new scope (for sub tasks).")

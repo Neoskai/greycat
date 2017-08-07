@@ -18,6 +18,7 @@ package greycat.internal.heap;
 import greycat.Container;
 import greycat.Index;
 import greycat.Type;
+import greycat.chunk.Chunk;
 import greycat.chunk.StateChunk;
 import greycat.plugin.NodeStateCallback;
 import greycat.struct.*;
@@ -27,7 +28,7 @@ public class MockNodeStateDValue implements StateChunk {
     private HeapTimeTreeDValueChunk chunk;
     private int offset;
 
-    MockNodeStateDValue(HeapTimeTreeDValueChunk p_chunk, int p_offset){
+    MockNodeStateDValue(HeapTimeTreeDValueChunk p_chunk, int p_offset) {
         chunk = p_chunk;
         offset = p_offset;
     }
@@ -90,6 +91,17 @@ public class MockNodeStateDValue implements StateChunk {
     @Override
     public boolean sync(long remoteHash) {
         return false;
+    }
+
+    @Override
+    public final int group() {
+        return chunk.group();
+    }
+
+    @Override
+    public final Chunk setGroup(int g) {
+        chunk.setGroup(g);
+        return this;
     }
 
     @Override
@@ -174,7 +186,7 @@ public class MockNodeStateDValue implements StateChunk {
 
     @Override
     public final Object getAt(int index) {
-        if(chunk._values_is_null[offset]){
+        if (chunk._values_is_null[offset]) {
             return null;
         }
         return chunk._values[offset];
@@ -182,7 +194,7 @@ public class MockNodeStateDValue implements StateChunk {
 
     @Override
     public final Object getRawAt(int index) {
-        if(chunk._values_is_null[offset]){
+        if (chunk._values_is_null[offset]) {
             return null;
         }
         return chunk._values[offset];
@@ -211,7 +223,7 @@ public class MockNodeStateDValue implements StateChunk {
 
     @Override
     public final Container setAt(int index, int type, Object value) {
-        if(value == null){
+        if (value == null) {
             chunk._values[offset] = 0d;
             chunk._values_is_null[offset] = true;
         } else {
@@ -254,6 +266,11 @@ public class MockNodeStateDValue implements StateChunk {
     @Override
     public final Container rephase() {
         return this;
+    }
+
+    @Override
+    public final int[] attributeIndexes() {
+        return new int[0];
     }
 
     @Override

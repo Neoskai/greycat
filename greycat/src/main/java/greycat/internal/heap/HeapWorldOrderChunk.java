@@ -17,6 +17,7 @@ package greycat.internal.heap;
 
 import greycat.Constants;
 import greycat.NodeListener;
+import greycat.chunk.Chunk;
 import greycat.chunk.ChunkType;
 import greycat.struct.Buffer;
 import greycat.struct.LongLongMap;
@@ -53,13 +54,12 @@ final class HeapWorldOrderChunk implements WorldOrderChunk {
 
     private int[] _next;
     private int[] _hash;
+    private int _group;
 
     private long _chunkHash;
     private boolean _inSync;
 
     private Listeners _listeners = null;
-
-    private int[] _kac;
 
     /**
      * @ignore ts
@@ -95,6 +95,17 @@ final class HeapWorldOrderChunk implements WorldOrderChunk {
         }
     }
 
+    @Override
+    public final int group() {
+        return _group;
+    }
+
+    @Override
+    public final Chunk setGroup(final int g) {
+        _group = g;
+        return this;
+    }
+
     HeapWorldOrderChunk(final HeapChunkSpace p_space, final long p_index) {
         _index = p_index;
         _space = p_space;
@@ -109,6 +120,7 @@ final class HeapWorldOrderChunk implements WorldOrderChunk {
         _hash = null;
         _chunkHash = 0;
         _inSync = true;
+        _group = 0;
     }
 
     @Override
@@ -156,23 +168,12 @@ final class HeapWorldOrderChunk implements WorldOrderChunk {
         return _listeners;
     }
 
-    @Override
-    public final int[] kac() {
-        return _kac;
-    }
-
-    @Override
-    public final void setKac(final int[] keys) {
-        this._kac = keys;
-    }
-
     /**
      * @native ts
      */
     @Override
     public final void lock() {
         while (!unsafe.compareAndSwapInt(this, _lockOffset, 0, 1)) {
-
         }
     }
 
@@ -191,7 +192,9 @@ final class HeapWorldOrderChunk implements WorldOrderChunk {
      */
     @Override
     public final void externalLock() {
-        while (!unsafe.compareAndSwapInt(this, _externalLockOffset, 0, 1)) ;
+        while (!unsafe.compareAndSwapInt(this, _externalLockOffset, 0, 1)) {
+
+        }
     }
 
     /**
@@ -380,6 +383,12 @@ final class HeapWorldOrderChunk implements WorldOrderChunk {
             while (cursor < bufferSize) {
                 final byte current = buffer.read(cursor);
                 switch (current) {
+                    case Constants.CHUNK_META_SEP:
+                        if (previousStart != cursor) {
+                            _group = Base64.decodeToIntWithBounds(buffer, previousStart, cursor);
+                        }
+                        previousStart = cursor + 1;
+                        break;
                     case Constants.CHUNK_SEP:
                         switch (extraCursor) {
                             case 0:
@@ -436,6 +445,10 @@ final class HeapWorldOrderChunk implements WorldOrderChunk {
     @Override
     public final synchronized void save(final Buffer buffer) {
         final long beginIndex = buffer.writeIndex();
+        if (_group != 0) {
+            Base64.encodeIntToBuffer(_group, buffer);
+            buffer.write(CoreConstants.CHUNK_META_SEP);
+        }
         Base64.encodeIntToBuffer(_size, buffer);
         buffer.write(CoreConstants.CHUNK_SEP);
         if (_type != Constants.NULL_LONG) {

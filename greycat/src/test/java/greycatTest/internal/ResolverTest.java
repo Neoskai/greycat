@@ -33,12 +33,12 @@ public class ResolverTest {
             @Override
             public void on(Boolean connectionResult) {
                 Node n = g.newNode(0, 0);
-                Assert.assertEquals("{\"world\":0,\"time\":0,\"id\":1}", n.toString());
+                Assert.assertEquals("{\"world\":0,\"time\":0,\"id\":1,\"group\":0}", n.toString());
 
                 g.lookup(0, 10, n.id(), new Callback<Node>() {
                     @Override
                     public void on(final Node unPhased) {
-                        Assert.assertEquals("{\"world\":0,\"time\":10,\"id\":1}", unPhased.toString());
+                        Assert.assertEquals("{\"world\":0,\"time\":10,\"id\":1,\"group\":0}", unPhased.toString());
                         unPhased.end();
                         g.lookup(0, 15, n.id(), new Callback<Node>() {
                             @Override
@@ -133,7 +133,7 @@ public class ResolverTest {
         n.travelInTime(today + 100, new Callback<Node>() {
             @Override
             public void on(Node result) {
-                Assert.assertEquals("{\"world\":0,\"time\":1100,\"id\":1,\"name\":\"myName\"}", result.toString());
+                Assert.assertEquals("{\"world\":0,\"time\":1100,\"id\":1,\"group\":0,\"name\":\"myName\"}", result.toString());
                 Assert.assertEquals(100, result.timeDephasing());
             }
         });

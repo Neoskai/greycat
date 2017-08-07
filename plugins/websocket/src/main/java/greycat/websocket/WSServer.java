@@ -31,7 +31,6 @@ import io.undertow.server.handlers.PathHandler;
 import io.undertow.websockets.WebSocketConnectionCallback;
 import io.undertow.websockets.core.*;
 import io.undertow.websockets.spi.WebSocketHttpExchange;
-import org.xnio.ChannelListener;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -39,11 +38,11 @@ import java.util.*;
 
 public class WSServer implements WebSocketConnectionCallback, Callback<Buffer> {
 
-    private final GraphBuilder builder;
+    protected final GraphBuilder builder;
     private final int port;
     private Undertow server;
 
-    private Set<WebSocketChannel> peers;
+    protected Set<WebSocketChannel> peers;
     protected Map<String, HttpHandler> handlers;
 
     public static void attach(GraphBuilder storage, int port) {
@@ -87,6 +86,7 @@ public class WSServer implements WebSocketConnectionCallback, Callback<Buffer> {
     @Override
     public void onConnect(WebSocketHttpExchange webSocketHttpExchange, WebSocketChannel webSocketChannel) {
         final Graph graph = builder.build();
+        graph.setProperty("ws.source", webSocketChannel.getSourceAddress().getAddress());
         graph.connect(new Callback<Boolean>() {
             @Override
             public void on(Boolean result) {
@@ -112,12 +112,16 @@ public class WSServer implements WebSocketConnectionCallback, Callback<Buffer> {
         }
     }
 
-    private class PeerInternalListener extends AbstractReceiveListener {
+    protected class PeerInternalListener extends AbstractReceiveListener {
 
         private final Graph graph;
 
         PeerInternalListener(Graph p_graph) {
             graph = p_graph;
+        }
+
+        public Graph graph() {
+            return graph;
         }
 
         @Override
@@ -134,7 +138,7 @@ public class WSServer implements WebSocketConnectionCallback, Callback<Buffer> {
         }
 
         @Override
-        protected final void onClose(WebSocketChannel webSocketChannel, StreamSourceFrameChannel channel) throws IOException {
+        protected void onClose(WebSocketChannel webSocketChannel, StreamSourceFrameChannel channel) throws IOException {
             peers.remove(webSocketChannel);
             graph.disconnect(new Callback<Boolean>() {
                 @Override
@@ -144,7 +148,6 @@ public class WSServer implements WebSocketConnectionCallback, Callback<Buffer> {
             });
             super.onClose(webSocketChannel, channel);
         }
-        
     }
 
     protected void process_rpc(final Graph graph, final byte[] input, final WebSocketChannel channel) {
@@ -170,6 +173,7 @@ public class WSServer implements WebSocketConnectionCallback, Callback<Buffer> {
                     //Ignore
                     break;
                 case WSConstants.REQ_REMOVE:
+                    graph.setProperty("ws.last", System.currentTimeMillis());
                     final List<ChunkKey> rkeys = new ArrayList<ChunkKey>();
                     while (it.hasNext()) {
                         rkeys.add(ChunkKey.build(it.next()));
@@ -187,6 +191,7 @@ public class WSServer implements WebSocketConnectionCallback, Callback<Buffer> {
                     });
                     break;
                 case WSConstants.REQ_GET:
+                    graph.setProperty("ws.last", System.currentTimeMillis());
                     //build keys list
                     final List<ChunkKey> keys = new ArrayList<ChunkKey>();
                     while (it.hasNext()) {
@@ -208,6 +213,7 @@ public class WSServer implements WebSocketConnectionCallback, Callback<Buffer> {
                     });
                     break;
                 case WSConstants.REQ_TASK:
+                    graph.setProperty("ws.last", System.currentTimeMillis());
                     if (it.hasNext()) {
                         final Callback<TaskResult> end = new Callback<TaskResult>() {
                             @Override
@@ -281,6 +287,7 @@ public class WSServer implements WebSocketConnectionCallback, Callback<Buffer> {
                     }
                     break;
                 case WSConstants.REQ_LOCK:
+                    graph.setProperty("ws.last", System.currentTimeMillis());
                     process_lock(graph, new Callback<Buffer>() {
                         @Override
                         public void on(Buffer result) {
@@ -297,6 +304,7 @@ public class WSServer implements WebSocketConnectionCallback, Callback<Buffer> {
                     });
                     break;
                 case WSConstants.REQ_UNLOCK:
+                    graph.setProperty("ws.last", System.currentTimeMillis());
                     process_unlock(graph, it.next(), new Callback<Boolean>() {
                         @Override
                         public void on(Boolean result) {
@@ -310,6 +318,7 @@ public class WSServer implements WebSocketConnectionCallback, Callback<Buffer> {
                     });
                     break;
                 case WSConstants.REQ_PUT:
+                    graph.setProperty("ws.last", System.currentTimeMillis());
                     final List<ChunkKey> flatKeys = new ArrayList<ChunkKey>();
                     final List<Buffer> flatValues = new ArrayList<Buffer>();
                     while (it.hasNext()) {
@@ -350,7 +359,7 @@ public class WSServer implements WebSocketConnectionCallback, Callback<Buffer> {
         graph.storage().unlock(toUnlock, callback);
     }
 
-    private void process_put(Graph graph, final ChunkKey[] keys, final Buffer[] values, Job job) {
+    private void process_put(final Graph graph, final ChunkKey[] keys, final Buffer[] values, Job job) {
         final DeferCounter defer = graph.newCounter(keys.length);
         defer.then(job);
         for (int i = 0; i < keys.length; i++) {
@@ -375,7 +384,7 @@ public class WSServer implements WebSocketConnectionCallback, Callback<Buffer> {
         }
     }
 
-    private void process_remove(Graph graph, ChunkKey[] keys, final Callback callback) {
+    private void process_remove(final Graph graph, ChunkKey[] keys, final Callback callback) {
         Buffer buffer = graph.newBuffer();
         for (int i = 0; i < keys.length; i++) {
             if (i != 0) {
@@ -394,7 +403,7 @@ public class WSServer implements WebSocketConnectionCallback, Callback<Buffer> {
         });
     }
 
-    private void process_get(Graph graph, ChunkKey[] keys, final Callback<Buffer> callback) {
+    private void process_get(final Graph graph, ChunkKey[] keys, final Callback<Buffer> callback) {
         final DeferCounter defer = graph.newCounter(keys.length);
         final Buffer[] buffers = new Buffer[keys.length];
         defer.then(new Job() {
@@ -433,13 +442,13 @@ public class WSServer implements WebSocketConnectionCallback, Callback<Buffer> {
         }
     }
 
-    private void send_resp(Buffer stream, final WebSocketChannel channel) {
+    private void send_resp(final Buffer stream, final WebSocketChannel channel) {
         ByteBuffer finalBuf = ByteBuffer.wrap(stream.data());
         stream.free();
         WebSockets.sendBinary(finalBuf, channel, null);
     }
 
-    private void send_flat_resp(byte[] flat, final WebSocketChannel channel) {
+    private void send_flat_resp(final byte[] flat, final WebSocketChannel channel) {
         WebSockets.sendBinary(ByteBuffer.wrap(flat), channel, null);
     }
 

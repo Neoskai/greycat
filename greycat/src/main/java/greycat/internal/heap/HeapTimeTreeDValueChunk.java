@@ -46,6 +46,7 @@ class HeapTimeTreeDValueChunk implements TimeTreeDValueChunk {
     private volatile int _size;
 
     private long _max;
+    private int _group;
 
     HeapTimeTreeDValueChunk(final HeapChunkSpace p_space, final long p_index) {
         _space = p_space;
@@ -55,6 +56,7 @@ class HeapTimeTreeDValueChunk implements TimeTreeDValueChunk {
         _capacity = 0;
         _size = 0;
         _inSync = true;
+        _group = 0;
     }
 
     @Override
@@ -108,8 +110,23 @@ class HeapTimeTreeDValueChunk implements TimeTreeDValueChunk {
     }
 
     @Override
+    public final int group() {
+        return _group;
+    }
+
+    @Override
+    public final Chunk setGroup(int g) {
+        _group = g;
+        return this;
+    }
+
+    @Override
     public synchronized final void save(Buffer buffer) {
         final long beginIndex = buffer.writeIndex();
+        if (_group != 0) {
+            Base64.encodeIntToBuffer(_group, buffer);
+            buffer.write(CoreConstants.CHUNK_META_SEP);
+        }
         Base64.encodeIntToBuffer(_size, buffer);
         buffer.write(CoreConstants.CHUNK_SEP);
         Base64.encodeLongToBuffer(_capacity, buffer);
@@ -179,6 +196,12 @@ class HeapTimeTreeDValueChunk implements TimeTreeDValueChunk {
         while (cursor < payloadSize) {
             final byte current = buffer.read(cursor);
             switch (current) {
+                case Constants.CHUNK_META_SEP:
+                    if (previous != cursor) {
+                        _group = Base64.decodeToIntWithBounds(buffer, previous, cursor);
+                    }
+                    previous = cursor + 1;
+                    break;
                 case Constants.CHUNK_SEP:
                     switch (extraCursor) {
                         case 0:
