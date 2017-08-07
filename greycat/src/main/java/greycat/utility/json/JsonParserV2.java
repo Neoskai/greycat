@@ -15,11 +15,13 @@
  */
 package greycat.utility.json;
 
+import com.google.common.primitives.Doubles;
 import greycat.*;
 import greycat.base.BaseNode;
-import greycat.struct.Buffer;
+import greycat.struct.*;
 
 import java.util.*;
+import java.util.Map;
 
 import static greycat.utility.json.JsonConst.*;
 
@@ -61,7 +63,6 @@ public class JsonParserV2 {
             }
             cursor++;
         }
-        System.out.println("Ended with size: " + _list.size());
     }
 
     public long parseRecord(Buffer buffer, long start){
@@ -136,6 +137,7 @@ public class JsonParserV2 {
                 _values.put("nodetype", nodetype);
                 break;
 
+            case "time":
             case "times":
                 List<Long> timeList = new ArrayList<>();
                 cursor++; // Post array opening
@@ -155,6 +157,7 @@ public class JsonParserV2 {
                 _values.put("times", timeList);
                 break;
 
+            case "value":
             case "values":
                 int stack = 0;
                 int currentTime = -1;
@@ -179,15 +182,13 @@ public class JsonParserV2 {
                     cursor++;
                 }
                 break;
-
-            default: // We are reading an index
+            default:
                 break;
         }
 
     }
 
     public long getNode(Buffer buffer, long start, long end, int currentTime){
-        System.out.println("Build: " + new String(buffer.slice(start,end)));
         long cursor = start;
 
         while (buffer.read(cursor) != SEP){
@@ -259,7 +260,8 @@ public class JsonParserV2 {
                                     if(finalCurrentObject != null) {
                                         if(isComplexType(finalCurrentObject.getType())){
                                             Object obj = newNode.getOrCreate(finalCurrentName,finalCurrentObject.getType());
-                                            // @TODO Init obj to it's value
+                                            obj = initObject(obj,finalCurrentObject);
+                                            newNode.set(finalCurrentName,finalCurrentObject.getType(), obj);
                                         }
                                         else {
                                             newNode.set(finalCurrentName,finalCurrentObject.getType(),finalCurrentObject.getObject());
@@ -269,7 +271,8 @@ public class JsonParserV2 {
                                     if(finalCurrentObject != null) {
                                         if(isComplexType(finalCurrentObject.getType())){
                                             Object obj = result.getOrCreate(finalCurrentName,finalCurrentObject.getType());
-                                            // @TODO Init obj to it's value
+                                            obj = initObject(obj,finalCurrentObject);
+                                            result.set(finalCurrentName,finalCurrentObject.getType(), obj);
                                         }
                                         else {
                                             result.set(finalCurrentName,finalCurrentObject.getType(),finalCurrentObject.getObject());
@@ -367,7 +370,6 @@ public class JsonParserV2 {
                 }
                 //Retrieve last element
                 doubleList.add(Double.parseDouble(new String(buffer.slice(startValue,cursor-1))));
-                // @Todo Transform to final type
 
                 return new TypedObject(Type.DOUBLE_ARRAY,doubleList);
 
@@ -387,7 +389,6 @@ public class JsonParserV2 {
                 //Retrieve last element
                 longList.add(Long.parseLong(new String(buffer.slice(startValue,cursor-1))));
 
-                // @Todo Transform to final type
                 return new TypedObject(Type.LONG_ARRAY, longList);
 
 
@@ -407,7 +408,6 @@ public class JsonParserV2 {
                 //Retrieve last element
                 intList.add(Integer.parseInt(new String(buffer.slice(startValue,cursor-1))));
 
-                // @Todo Transform to final type
                 return new TypedObject(Type.INT_ARRAY, intList);
 
             case Type.STRING_ARRAY:
@@ -588,7 +588,120 @@ public class JsonParserV2 {
         return null;
     }
 
+    /**
+     * Returns if a type is a primitive one or not
+     * @param type Type to Test
+     * @return True if the object is a Complex Type / False if primitive type
+     */
     private boolean isComplexType(int type){
         return type != Type.BOOL && type != Type.INT && type != Type.DOUBLE && type != Type.LONG && type != Type.STRING;
+    }
+
+    private Object initObject(Object toSet, TypedObject base){
+        switch(base.getType()){
+            case Type.DOUBLE_ARRAY:
+                DoubleArray dArray = (DoubleArray) toSet;
+                List<Double> dList = (List<Double>) base.getObject();
+
+                dArray.initWith(dList.stream().mapToDouble(d -> d).toArray());
+                return dArray;
+
+            case Type.LONG_ARRAY:
+                LongArray lArray = (LongArray) toSet;
+                List<Long> lList = (List<Long>) base.getObject();
+
+                lArray.initWith(lList.stream().mapToLong(l -> l).toArray());
+                return lArray;
+
+            case Type.INT_ARRAY:
+                IntArray iArray = (IntArray) toSet;
+                List<Integer> iList = (List<Integer>) base.getObject();
+
+                iArray.initWith(iList.stream().mapToInt(l -> l).toArray());
+                return iArray;
+
+            case Type.STRING_ARRAY:
+                StringArray sArray = (StringArray) toSet;
+                List<String> sList = (List<String>) base.getObject();
+
+                sArray.initWith(sList.toArray(new String[sList.size()]));
+                return sArray;
+
+            case Type.LONG_TO_LONG_MAP:
+                LongLongMap llMap = (LongLongMap) toSet;
+                Map<Long, Long> llMapObject = (Map<Long,Long>) base.getObject();
+
+                for(Long id : llMapObject.keySet()){
+                    llMap.put(id, llMapObject.get(id));
+                }
+                return llMap;
+
+            case Type.LONG_TO_LONG_ARRAY_MAP:
+                break;
+
+            case Type.STRING_TO_INT_MAP:
+                StringIntMap siMap = (StringIntMap) toSet;
+                Map<String, Integer> siMapObject = (Map<String, Integer>) base.getObject();
+
+                for(String id : siMapObject.keySet()){
+                    siMap.put(id, siMapObject.get(id));
+                }
+                return siMap;
+
+            case Type.RELATION:
+                break;
+
+            case Type.DMATRIX:
+                break;
+
+            case Type.LMATRIX:
+                break;
+
+            case Type.ESTRUCT:
+                break;
+
+            case Type.ESTRUCT_ARRAY:
+                break;
+
+            case Type.ERELATION:
+                break;
+
+            case Type.TASK:
+                break;
+
+            case Type.TASK_ARRAY:
+                break;
+
+            case Type.NODE:
+                break;
+
+            case Type.INT_TO_INT_MAP:
+                IntIntMap iiMap = (IntIntMap) toSet;
+                Map<Integer, Integer> iiMapObject = (Map<Integer, Integer>) base.getObject();
+
+                for(Integer id : iiMapObject.keySet()){
+                    iiMap.put(id,iiMapObject.get(id));
+                }
+                return iiMap;
+
+            case Type.INT_TO_STRING_MAP:
+                IntStringMap isMap = (IntStringMap) toSet;
+                Map<Integer, String> isMapObject = (Map<Integer, String>) base.getObject();
+
+                for(Integer id : isMapObject.keySet()){
+                    isMap.put(id,isMapObject.get(id));
+                }
+                return isMap;
+
+            case Type.INDEX:
+                break;
+
+            case Type.KDTREE:
+                break;
+
+            case Type.NDTREE:
+                break;
+        }
+        return null;
     }
 }
