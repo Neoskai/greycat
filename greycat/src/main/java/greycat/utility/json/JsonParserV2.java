@@ -461,6 +461,54 @@ public class JsonParserV2 {
                 return new TypedObject(Type.LONG_TO_LONG_MAP, llMap);
 
             case Type.LONG_TO_LONG_ARRAY_MAP:
+                Map<Long, List<Long>> llaMap = new HashMap<>();
+
+                while(buffer.read(cursor) != OBJS){
+                    cursor++;
+                }
+                cursor++;
+                boolean isFirst = true;
+                long startLLA = 0;
+
+                long currentLValue = -1;
+                int stack = 0;
+                List<Long> llaList = new ArrayList<>();
+                while(cursor != end){
+                    switch(buffer.read(cursor)){
+                        case TEXT:
+                            if(isFirst){
+                                startLLA = cursor+1;
+                                isFirst = false;
+                            } else {
+                                isFirst = true;
+                                currentLValue = Long.parseLong(new String(buffer.slice(startLLA, cursor-1)));
+                            }
+                            break;
+
+                        case ARRS:
+                            stack++;
+                            startLLA=cursor+1;
+                            break;
+
+                        case SEP:
+                            if(stack == 1){
+                                llaList.add(Long.parseLong(new String(buffer.slice(startLLA, cursor-1))));
+                            }
+                            break;
+
+                        case ARRE:
+                            if(stack == 1){
+                                llaList.add(Long.parseLong(new String(buffer.slice(startLLA, cursor-1))));
+                                llaMap.put(currentLValue, llaList);
+                            }
+                            stack--;
+                            break;
+
+                        case OBJE:
+                            return new TypedObject(Type.LONG_TO_LONG_ARRAY_MAP, llaMap);
+                    }
+                    cursor++;
+                }
                 break;
 
             case Type.STRING_TO_INT_MAP:
@@ -637,7 +685,15 @@ public class JsonParserV2 {
                 return llMap;
 
             case Type.LONG_TO_LONG_ARRAY_MAP:
-                break;
+                LongLongArrayMap llaMap = (LongLongArrayMap) toSet;
+                Map<Long, List<Long>> llaObject = (Map<Long, List<Long>>) base.getObject();
+
+                for(Long id : llaObject.keySet()){
+                    for(Long value: llaObject.get(id)){
+                        llaMap.put(id,value);
+                    }
+                }
+                return llaMap;
 
             case Type.STRING_TO_INT_MAP:
                 StringIntMap siMap = (StringIntMap) toSet;
