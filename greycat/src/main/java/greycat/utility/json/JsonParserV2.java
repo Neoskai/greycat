@@ -510,7 +510,7 @@ public class JsonParserV2 {
                     }
                     cursor++;
                 }
-                break;
+                return new TypedObject(Type.LONG_TO_LONG_ARRAY_MAP, llaMap);
 
             case Type.STRING_TO_INT_MAP:
                 Map<String, Integer> siMap = new HashMap<>();
@@ -541,14 +541,59 @@ public class JsonParserV2 {
 
 
             case Type.RELATION:
-                break;
+                List<Long> relationList = new ArrayList<>();
+                while(buffer.read(cursor) != ARRS){
+                    cursor++;
+                }
+                startValue = ++cursor;
+                while(buffer.read(cursor) != ARRE){
+                    if(buffer.read(cursor) == SEP){
+                        relationList.add(Long.parseLong(new String(buffer.slice(startValue,cursor-1))));
+                        startValue = cursor+1;
+                    }
+                    cursor++;
+                }
+                //Retrieve last element
+                relationList.add(Long.parseLong(new String(buffer.slice(startValue,cursor-1))));
+
+                return new TypedObject(Type.LONG_ARRAY, relationList);
 
 
             case Type.DMATRIX:
-                break;
+                List<Double> dMatList = new ArrayList<>();
+                while(buffer.read(cursor) != ARRS){
+                    cursor++;
+                }
+                startValue = ++cursor;
+                while(buffer.read(cursor) != ARRE){
+                    if(buffer.read(cursor) == SEP){
+                        dMatList.add(Double.parseDouble(new String(buffer.slice(startValue,cursor-1))));
+                        startValue = cursor+1;
+                    }
+                    cursor++;
+                }
+                //Retrieve last element
+                dMatList.add(Double.parseDouble(new String(buffer.slice(startValue,cursor-1))));
+
+                return new TypedObject(Type.DMATRIX,dMatList);
 
             case Type.LMATRIX:
-                break;
+                List<Long> lMatList = new ArrayList<>();
+                while(buffer.read(cursor) != ARRS){
+                    cursor++;
+                }
+                startValue = ++cursor;
+                while(buffer.read(cursor) != ARRE){
+                    if(buffer.read(cursor) == SEP){
+                        lMatList.add(Long.parseLong(new String(buffer.slice(startValue,cursor-1))));
+                        startValue = cursor+1;
+                    }
+                    cursor++;
+                }
+                //Retrieve last element
+                lMatList.add(Long.parseLong(new String(buffer.slice(startValue,cursor-1))));
+
+                return new TypedObject(Type.LMATRIX,lMatList);
 
 
             case Type.ESTRUCT:
@@ -709,10 +754,36 @@ public class JsonParserV2 {
                 break;
 
             case Type.DMATRIX:
-                break;
+                DMatrix dMat = (DMatrix) toSet;
+                List<Double> dMatList = (List<Double>) base.getObject();
+
+                int xSize = dMatList.get(0).intValue();
+                int ySize = dMatList.get(1).intValue();
+
+                dMat.init(xSize, ySize);
+
+                for(int i = 0 ; i < xSize; i++) {
+                    for(int j= 0; j < ySize; j++){
+                        dMat.set(i,j,dMatList.get(i+j+2));
+                    }
+                }
+                return dMat;
 
             case Type.LMATRIX:
-                break;
+                LMatrix lMat = (LMatrix) toSet;
+                List<Long> lMatList = (List<Long>) base.getObject();
+
+                int xLSize = lMatList.get(0).intValue();
+                int yLSize = lMatList.get(1).intValue();
+
+                lMat.init(xLSize, yLSize);
+
+                for(int i = 0 ; i < xLSize; i++) {
+                    for(int j= 0; j < yLSize; j++){
+                        lMat.set(i,j,lMatList.get(i+j+2));
+                    }
+                }
+                return lMat;
 
             case Type.ESTRUCT:
                 break;
