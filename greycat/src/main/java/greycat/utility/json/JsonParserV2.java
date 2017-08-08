@@ -556,7 +556,7 @@ public class JsonParserV2 {
                 //Retrieve last element
                 relationList.add(Long.parseLong(new String(buffer.slice(startValue,cursor-1))));
 
-                return new TypedObject(Type.LONG_ARRAY, relationList);
+                return new TypedObject(Type.RELATION, relationList);
 
 
             case Type.DMATRIX:
@@ -597,22 +597,28 @@ public class JsonParserV2 {
 
 
             case Type.ESTRUCT:
+                //@TODO
                 break;
 
             case Type.ESTRUCT_ARRAY:
+                //@TODO
                 break;
 
             case Type.ERELATION:
+                //@TODO
                 break;
 
 
             case Type.TASK:
+                //@TODO
                 break;
 
             case Type.TASK_ARRAY:
+                //@TODO
                 break;
 
             case Type.NODE:
+                //@TODO
                 break;
 
             case Type.INT_TO_INT_MAP:
@@ -670,12 +676,15 @@ public class JsonParserV2 {
                 return new TypedObject(Type.INT_TO_STRING_MAP, isMap);
 
             case Type.INDEX:
+                //@TODO
                 break;
 
             case Type.KDTREE:
+                //@TODO
                 break;
 
             case Type.NDTREE:
+                //@TODO
                 break;
         }
 
@@ -751,6 +760,7 @@ public class JsonParserV2 {
                 return siMap;
 
             case Type.RELATION:
+                //@TODO
                 break;
 
             case Type.DMATRIX:
@@ -786,21 +796,27 @@ public class JsonParserV2 {
                 return lMat;
 
             case Type.ESTRUCT:
+                //@TODO
                 break;
 
             case Type.ESTRUCT_ARRAY:
+                //@TODO
                 break;
 
             case Type.ERELATION:
+                //@TODO
                 break;
 
             case Type.TASK:
+                //@TODO
                 break;
 
             case Type.TASK_ARRAY:
+                //@TODO
                 break;
 
             case Type.NODE:
+                //@TODO
                 break;
 
             case Type.INT_TO_INT_MAP:
@@ -822,12 +838,15 @@ public class JsonParserV2 {
                 return isMap;
 
             case Type.INDEX:
+                //@TODO
                 break;
 
             case Type.KDTREE:
+                //@TODO
                 break;
 
             case Type.NDTREE:
+                //@TODO
                 break;
         }
         return null;
