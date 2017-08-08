@@ -500,6 +500,7 @@ public class JsonParserV2 {
                             if(stack == 1){
                                 llaList.add(Long.parseLong(new String(buffer.slice(startLLA, cursor-1))));
                                 llaMap.put(currentLValue, llaList);
+                                llaList.clear();
                             }
                             stack--;
                             break;
