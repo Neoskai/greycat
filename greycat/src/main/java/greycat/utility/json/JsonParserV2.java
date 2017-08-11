@@ -15,7 +15,6 @@
  */
 package greycat.utility.json;
 
-import com.google.common.primitives.Doubles;
 import greycat.*;
 import greycat.base.BaseNode;
 import greycat.struct.*;
@@ -31,10 +30,13 @@ public class JsonParserV2 {
 
     private Map<String, Object> _values;
 
+    private LinkedList<TypedObject> stackList;
+
     public JsonParserV2(Graph g){
         _list = new Stack();
         _graph = g;
         _values = new HashMap<>();
+        stackList = new LinkedList<>();
     }
 
     public void parse(Buffer buffer){
@@ -102,6 +104,8 @@ public class JsonParserV2 {
             }
             cursor++;
         }
+
+        stackList.pop(); // Once the node is loaded, we don't need it in the stack anymore
         return start;
     }
 
@@ -151,13 +155,32 @@ public class JsonParserV2 {
                         cursor++;
                     }
                 }
-                if(temStart+1 < cursor){
+                if(temStart < cursor){
                     timeList.add(Long.parseLong(new String(buffer.slice(temStart, cursor-1))));
                 }
                 _values.put("times", timeList);
+
+                // We have enough information to build the node, so we build it and put it in the stack
+                _graph.connect(null);
+                _graph.lookup((long) _values.get("world"), timeList.get(0), (long) _values.get("id"), new Callback<Node>() {
+                    @Override
+                    public void on(Node result) {
+                        if (result == null){
+                            // @TODO : Use nodetype to create an instance of the good type
+                            Node newNode = new BaseNode((long) _values.get("world"), timeList.get(0), (long) _values.get("id"), _graph);
+                            _graph.resolver().initNode(newNode, Constants.NULL_LONG);
+
+                            stackList.push(new TypedObject(Type.NODE, newNode));
+
+                        } else {
+                            stackList.push(new TypedObject(Type.NODE, result));
+                        }
+                    }
+                });
+                _graph.disconnect(null);
                 break;
 
-            case "value":
+            //case "value":
             case "values":
                 int stack = 0;
                 int currentTime = -1;
@@ -173,7 +196,7 @@ public class JsonParserV2 {
                             }
                             break;
                         case ARRE:
-                            if(stack == 2){ // End of an array, so of a node
+                            if(stack == 2){ // End of an array, so of the values of a node at a given Time
                                 getNode(buffer,temVStart+1, cursor-1, currentTime);
                             }
                             stack--;
@@ -185,10 +208,11 @@ public class JsonParserV2 {
             default:
                 break;
         }
-
     }
 
     public long getNode(Buffer buffer, long start, long end, int currentTime){
+        System.out.println("Getting node: " + new String(buffer.slice(start,end)));
+
         long cursor = start;
 
         while (buffer.read(cursor) != SEP){
@@ -244,44 +268,30 @@ public class JsonParserV2 {
                     if(stack ==1){
                         currentObject= getObject(buffer,valueStart,cursor);
 
-                        _graph.connect(null);
-                        List<Long> times = (List<Long>) _values.get("times");
-                        TypedObject finalCurrentObject = currentObject;
-                        String finalCurrentName = currentName;
+                        if(currentObject != null) {
+                            _graph.connect(null);
+                            List<Long> times = (List<Long>) _values.get("times");
+                            TypedObject finalCurrentObject = currentObject;
+                            String finalCurrentName = currentName;
 
-                        _graph.lookup((long) _values.get("world"), times.get(currentTime), (long) _values.get("id"), new Callback<Node>() {
-                            @Override
-                            public void on(Node result) {
-                                if (result == null){
-                                    // @TODO : Use nodetype to create an instance of the good type
-                                    Node newNode = new BaseNode((long) _values.get("world"), times.get(0), (long) _values.get("id"), _graph);
-                                    _graph.resolver().initNode(newNode, Constants.NULL_LONG);
-
-                                    if(finalCurrentObject != null) {
-                                        if(isComplexType(finalCurrentObject.getType())){
-                                            Object obj = newNode.getOrCreate(finalCurrentName,finalCurrentObject.getType());
-                                            obj = initObject(obj,finalCurrentObject);
-                                            newNode.set(finalCurrentName,finalCurrentObject.getType(), obj);
-                                        }
-                                        else {
-                                            newNode.set(finalCurrentName,finalCurrentObject.getType(),finalCurrentObject.getObject());
+                            if (stackList.peek().getType() == Type.NODE) {
+                                Node n = (Node) stackList.peek().getObject();
+                                n.travelInTime(times.get(currentTime), new Callback<Node>() {
+                                    @Override
+                                    public void on(Node result) {
+                                        if (finalCurrentObject != null) {
+                                            if (isComplexType(finalCurrentObject.getType())) {
+                                                Object obj = result.getOrCreate(finalCurrentName, finalCurrentObject.getType());
+                                                obj = initObject(obj, finalCurrentObject);
+                                                result.set(finalCurrentName, finalCurrentObject.getType(), obj);
+                                            } else {
+                                                result.set(finalCurrentName, finalCurrentObject.getType(), finalCurrentObject.getObject());
+                                            }
                                         }
                                     }
-                                } else {
-                                    if(finalCurrentObject != null) {
-                                        if(isComplexType(finalCurrentObject.getType())){
-                                            Object obj = result.getOrCreate(finalCurrentName,finalCurrentObject.getType());
-                                            obj = initObject(obj,finalCurrentObject);
-                                            result.set(finalCurrentName,finalCurrentObject.getType(), obj);
-                                        }
-                                        else {
-                                            result.set(finalCurrentName,finalCurrentObject.getType(),finalCurrentObject.getObject());
-                                        }
-                                    }
-                                }
+                                });
                             }
-                        });
-                        _graph.disconnect(null);
+                        }
                     }
                     break;
 
@@ -305,7 +315,8 @@ public class JsonParserV2 {
      * General architecture is not correct, just check algorithm part
      */
     private TypedObject getObject(Buffer buffer, long start, long end ){
-        if(start == end+1){
+        System.out.println("Getting object: " + new String(buffer.slice(start,end)));
+        if(start == end+1){ // Object is empty
             return null;
         }
 
@@ -601,21 +612,87 @@ public class JsonParserV2 {
                 break;
 
             case Type.ESTRUCT_ARRAY:
-                //@TODO
+                System.out.println("Parse EstructArray: " + new String(buffer.slice(startValue, end)));
+                Map<String,TypedObject> elements = new HashMap<>();
+                int eaStack = 0;
+
+                String eaName = "";
+                long eaIndex = -1;
+                while(cursor != end){
+                    switch(buffer.read(cursor)){
+                        case OBJS:
+                            eaIndex = cursor+1;
+                            break;
+
+                        case COR:
+                            eaName = new String(buffer.slice(eaIndex,cursor-1));
+                            eaName = eaName.replace("\"", "");
+                            eaIndex = cursor+1;
+                            break;
+
+                        case OBJE:
+                            // Add the element to the list of elements
+                            elements.put(eaName, getObject(buffer, eaIndex+1, cursor));
+                            break;
+                        case ARRS:
+                            eaStack++;
+                            break;
+
+                        case ARRE:
+                            eaStack--;
+                            if(eaStack == 0){
+                                return new TypedObject(Type.ESTRUCT_ARRAY, elements);
+                            } else if (eaStack == 1){ // Array of Estruct
+                                // Last Estruct to Set
+                            } else if (eaStack == 2){ // Array of Values
+                                // Last value to set
+                            }
+                            break;
+                        case SEP:
+                            if(eaStack == 1){ // Array of Estruct Level
+                                elements.clear();
+                                // We now have all the values for an Estruct, We need to set it, and switch to the new estruct
+                            } else if (eaStack == 2){ // Array of Values Level
+                                elements.put(eaName, getObject(buffer, eaIndex+1, cursor));
+                                eaIndex = cursor+1;
+                            }
+                            break;
+                    }
+
+                    cursor++;
+                }
                 break;
 
             case Type.ERELATION:
                 //@TODO
                 break;
 
-
             case Type.TASK:
                 //@TODO
                 break;
 
             case Type.TASK_ARRAY:
-                //@TODO
-                break;
+                List<String> taList = new ArrayList<>();
+                while(buffer.read(cursor) != ARRS){
+                    cursor++;
+                }
+                boolean isTaText = true;
+                cursor++;
+                startValue = ++cursor;
+                while(buffer.read(cursor) != ARRE && isTaText){
+                    if(buffer.read(cursor) == SEP){
+                        taList.add(new String(buffer.slice(startValue,cursor-2)));
+                        startValue = ++cursor;
+                    }
+                    if(buffer.read(cursor) == TEXT){
+                        isText = !isTaText;
+                    }
+                    cursor++;
+                }
+                //Retrieve last element
+                taList.add(new String(buffer.slice(startValue,cursor-2)));
+
+                return new TypedObject(Type.TASK_ARRAY, taList);
 
             case Type.NODE:
                 //@TODO
@@ -812,8 +889,9 @@ public class JsonParserV2 {
                 break;
 
             case Type.TASK_ARRAY:
-                //@TODO
-                break;
+                //@Todo Won't work since no getorcreate for this
+                Task[] tArray = (Task[]) toSet;
+                List<String> taList = (List<String>) base.getObject();
 
             case Type.NODE:
                 //@TODO

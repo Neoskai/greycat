@@ -1,8 +1,10 @@
 package greycat.utility.json;
 
-import greycat.Graph;
-import greycat.GraphBuilder;
+import greycat.*;
 import greycat.struct.Buffer;
+import greycat.struct.DMatrix;
+import greycat.struct.EStruct;
+import greycat.struct.EStructArray;
 
 public class test {
 
@@ -17,6 +19,60 @@ public class test {
         //parser.buildGraph(b,0);
 
         JsonParserV2 parser2 = new JsonParserV2(g);
-        parser2.parse(b);
+        //parser2.parse(b);
+
+        Graph graph= GraphBuilder
+                .newBuilder()
+                .build();
+        graph.connect(new Callback<Boolean>() {
+            @Override
+            public void on(Boolean result) {
+
+                Node node = graph.newNode(0,0);
+
+                EStructArray eg= (EStructArray) node.getOrCreate("egraph", Type.ESTRUCT_ARRAY);
+                EStruct en =eg.newEStruct();
+                eg.setRoot(en);
+
+                EStruct en2 = eg.newEStruct();
+                DMatrix matrix2 =(DMatrix)en2.getOrCreate("matrix2", Type.DMATRIX);
+                matrix2.init(3,3);
+                matrix2.set(0,0,0);
+                matrix2.set(1,1,1);
+                matrix2.set(2,2,2);
+
+                DMatrix matrix= (DMatrix)en.getOrCreate("matrix", Type.DMATRIX);
+
+                matrix.init(3,3);
+                matrix.set(0,0,0);
+                matrix.set(1,1,1);
+                matrix.set(2,2,2);
+
+
+                node.travelInTime(1, new Callback<Node>() {
+                    @Override
+                    public void on(Node result1) {
+                        EStructArray eg= (EStructArray) result1.getOrCreate("egraph", Type.ESTRUCT_ARRAY);
+                        EStruct en =eg.root();
+                        DMatrix matrix_t1= (DMatrix)en.getOrCreate("matrix", Type.DMATRIX);
+
+                        matrix_t1.set(0,0,10);
+                        matrix_t1.set(1,1,11);
+                        matrix_t1.set(2,2,12);
+                    }
+                });
+
+                graph.declareIndex(0,"TestIndex", null);
+                graph.index(0,0,"TestIndex", index ->{
+                    index.update(node);
+                });
+
+                Buffer buffer = graph.newBuffer();
+                graph.toJson(buffer);
+
+                parser2.parse(buffer);
+            }
+        });
     }
+
 }
