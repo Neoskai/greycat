@@ -131,7 +131,8 @@ public class WSClient implements Storage, TaskExecutor {
             _channel = futureChannel.get();
             _channel.getReceiveSetter().set(new MessageReceiver());
             _channel.addCloseTask(channel -> {
-                System.err.println("Channel closed !");
+                //TODO notify the graph if graph is not disconnecting
+                this._channel = null;
             });
             _channel.resumeReceives();
             if (callback != null) {

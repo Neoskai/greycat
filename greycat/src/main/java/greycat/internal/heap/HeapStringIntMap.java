@@ -321,8 +321,7 @@ class HeapStringIntMap implements StringIntMap {
         }
     }
 
-    @Override
-    public final StringIntMap put(final String insertKey, final int insertValue) {
+    private StringIntMap internal_put(final String insertKey, final int insertValue, final boolean notify) {
         synchronized (parent) {
             final int keyHash = HashHelper.hash(insertKey);
             if (keys == null) {
@@ -371,16 +370,25 @@ class HeapStringIntMap implements StringIntMap {
                     setHash(hashIndex, lastIndex);
                     setNext(lastIndex, currentHash);
                     mapSize++;
-                    parent.declareDirty();
+                    if (notify) {
+                        parent.declareDirty();
+                    }
                 } else {
                     if (value(found) != insertValue) {
                         setValue(found, insertValue);
-                        parent.declareDirty();
+                        if (notify) {
+                            parent.declareDirty();
+                        }
                     }
                 }
             }
         }
         return this;
+    }
+
+    @Override
+    public final StringIntMap put(final String insertKey, final int insertValue) {
+        return internal_put(insertKey, insertValue, true);
     }
 
     public final void save(final Buffer buffer) {
@@ -403,6 +411,9 @@ class HeapStringIntMap implements StringIntMap {
         boolean isFirst = true;
         long previous = offset;
         String previousKey = null;
+
+        final boolean merge = capacity != 0;
+
         while (cursor < max && current != Constants.CHUNK_SEP && current != Constants.BLOCK_CLOSE) {
             if (current == Constants.CHUNK_VAL_SEP) {
                 if (isFirst) {
@@ -412,7 +423,7 @@ class HeapStringIntMap implements StringIntMap {
                     if (previousKey == null) {
                         previousKey = Base64.decodeToStringWithBounds(buffer, previous, cursor);
                     } else {
-                        put(previousKey, Base64.decodeToIntWithBounds(buffer, previous, cursor));
+                        internal_put(previousKey, Base64.decodeToIntWithBounds(buffer, previous, cursor), merge);
                         previousKey = null;
                     }
                 }
@@ -427,7 +438,7 @@ class HeapStringIntMap implements StringIntMap {
             reallocate(Base64.decodeToIntWithBounds(buffer, previous, cursor));
         } else {
             if (previousKey != null) {
-                put(previousKey, Base64.decodeToIntWithBounds(buffer, previous, cursor));
+                internal_put(previousKey, Base64.decodeToIntWithBounds(buffer, previous, cursor), merge);
             }
         }
         return cursor;

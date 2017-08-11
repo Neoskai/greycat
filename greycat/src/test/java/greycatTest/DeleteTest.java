@@ -48,7 +48,7 @@ public class DeleteTest {
     }
 
 
-    //@Test
+    @Test
     public void grandChildrenTest() {
         MockStorage storage = new MockStorage();
         final Graph graph_back = new GraphBuilder().withScheduler(new NoopScheduler()).withStorage(storage).withMemorySize(10000).build();
@@ -83,28 +83,16 @@ public class DeleteTest {
         newTask()
                 .travelInTime("0")
                 .lookup("" + parentId)
-                /*
-                ADD FOR MORE RED LINES
-                .travelInTime("1")
-
-                adds to the stack:
-                java.lang.NullPointerException
-                    at greycat.internal.heap.HeapChunkSpace.save(HeapChunkSpace.java:523)
-                    at greycat.internal.CoreGraph.save(CoreGraph.java:348)
-                    at greycat.internal.task.ActionSave.eval(ActionSave.java:30)
-                    at greycat.internal.task.CoreTaskContext.continueTask(CoreTaskContext.java:479)
-                    at greycat.internal.task.ActionRemove.eval(ActionRemove.java:47)
-                */
                 .setAsVar("parent")
                 .traverse("children") // get children
 
                 .setAsVar("children")
                 .traverse("children") // get grand-children
                 .delete()                   //Delete grand-children
+
                 .readVar("children")
                 .remove("children")         // remove children relation from child
-
-                .delete()                   // delete children
+                .delete()// delete children
                 .readVar("parent")
                 .remove("children")         // remove relation
                 .save()

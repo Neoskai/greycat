@@ -103,7 +103,13 @@ public final class HeapFixedStack implements Stack {
         int castedIndex = (int) index;
         int p = _prev[castedIndex];
         int n = _next[castedIndex];
+
         if (p == -1 && n == -1) {
+            if (_count == 1) {
+                this._first = -1;
+                this._last = -1;
+                this._count = 0;
+            }
             return false;
         }
         if (p == -1) {

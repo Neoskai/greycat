@@ -312,7 +312,9 @@ public class HeapChunkSpace implements ChunkSpace {
             }
         }
         if (found != -1) {
+            _dirtiesStack.dequeue(found);
             _chunkValues.set(found, null);
+                /*
             long markBefore = _chunkMarks.get(found);
             if (markBefore != 0) {
                 //System.err.println("Still mark deleted chunk " + markBefore);
@@ -323,6 +325,7 @@ public class HeapChunkSpace implements ChunkSpace {
                     this._lru.enqueue(found);
                 }
             }
+                */
         }
     }
 

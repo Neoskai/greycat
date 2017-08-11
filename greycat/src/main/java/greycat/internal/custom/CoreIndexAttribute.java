@@ -40,9 +40,14 @@ public class CoreIndexAttribute extends BaseCustomTypeSingle implements Index {
         getOrCreateAt(R_MAP, Type.LONG_TO_LONG_MAP);
         final String[] casted = attributeNames;
         final IntArray hashes = (IntArray) getOrCreateAt(HASHES, Type.INT_ARRAY);
-        hashes.init(casted.length);
+        if (hashes.size() != casted.length) {
+            hashes.init(casted.length);
+        }
         for (int i = 0; i < casted.length; i++) {
-            hashes.set(i, HashHelper.hash(casted[i]));
+            int hash = HashHelper.hash(casted[i]);
+            if (hashes.get(i) != hash) {
+                hashes.set(i, hash);
+            }
         }
         if (callback != null) {
             callback.on(this);

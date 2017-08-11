@@ -16,7 +16,7 @@
 package greycatMLTest.neuralnet;
 
 import greycat.*;
-import greycat.ml.neuralnet.NeuralNet;
+import greycat.ml.neuralnet.NeuralNetWrapper;
 import greycat.ml.neuralnet.activation.Activations;
 import greycat.ml.neuralnet.layer.Layers;
 import greycat.ml.neuralnet.loss.Losses;
@@ -49,7 +49,7 @@ public class TestNN {
                 Node node = g.newNode(0, 0);
                 EStructArray egraph = (EStructArray) node.getOrCreate("nn", Type.ESTRUCT_ARRAY);
 
-                NeuralNet net = new NeuralNet(egraph);
+                NeuralNetWrapper net = new NeuralNetWrapper(egraph);
                 net.setRandom(1234, 0.1);
 
                 net.addLayer(Layers.LINEAR_LAYER, input, output, Activations.LINEAR, null);

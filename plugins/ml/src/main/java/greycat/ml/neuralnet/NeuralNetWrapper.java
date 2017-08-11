@@ -30,7 +30,7 @@ import greycat.struct.EStruct;
 import greycat.struct.matrix.RandomGenerator;
 import greycat.struct.matrix.VolatileDMatrix;
 
-public class NeuralNet {
+public class NeuralNetWrapper {
 
     private static final String TRAIN_LOSS = "train_loss";
     private static final String REPORTING_LOSS = "reporting_loss";
@@ -49,7 +49,7 @@ public class NeuralNet {
     private RandomGenerator random;
     private double std;
 
-    public NeuralNet(EStructArray p_backend) {
+    public NeuralNetWrapper(EStructArray p_backend) {
         backend = p_backend;
         int nb = backend.size() - 1;
 
@@ -117,7 +117,7 @@ public class NeuralNet {
 
     }
 
-    public NeuralNet addLayer(int layerType, int inputs, int outputs, int activationUnit, double[] activationParams) {
+    public NeuralNetWrapper addLayer(int layerType, int inputs, int outputs, int activationUnit, double[] activationParams) {
         if (layers.length > 0) {
             if (layers[layers.length - 1].outputDimensions() != inputs) {
                 throw new RuntimeException("Layers last output size is different that current layer input");

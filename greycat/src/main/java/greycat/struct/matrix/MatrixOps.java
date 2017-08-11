@@ -266,8 +266,7 @@ public class MatrixOps {
     //MatA=MatA+matB
     public static void addtoMatrix(DMatrix original, DMatrix values) {
         testDim(original, values);
-        int total = original.length();
-        for (int i = 0; i < total; i++) {
+        for (int i = 0; i < original.length(); i++) {
             original.unsafeSet(i, original.unsafeGet(i) + values.unsafeGet(i));
         }
     }

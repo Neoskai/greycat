@@ -237,8 +237,7 @@ class HeapLongLongMap implements LongLongMap {
         }
     }
 
-    @Override
-    public final LongLongMap put(final long insertKey, final long insertValue) {
+    private LongLongMap internal_put(final long insertKey, final long insertValue, boolean notify) {
         synchronized (parent) {
             if (keys == null) {
                 reallocate(Constants.MAP_INITIAL_CAPACITY);
@@ -273,16 +272,25 @@ class HeapLongLongMap implements LongLongMap {
                     setHash((int) HashHelper.longHash(insertKey, capacity * 2), lastIndex);
                     setNext(lastIndex, currentHash);
                     mapSize++;
-                    parent.declareDirty();
+                    if (notify) {
+                        parent.declareDirty();
+                    }
                 } else {
                     if (value(found) != insertValue) {
                         setValue(found, insertValue);
-                        parent.declareDirty();
+                        if (notify) {
+                            parent.declareDirty();
+                        }
                     }
                 }
             }
         }
         return this;
+    }
+
+    @Override
+    public final LongLongMap put(final long insertKey, final long insertValue) {
+        return internal_put(insertKey, insertValue, true);
     }
 
     public final void save(final Buffer buffer) {
@@ -306,6 +314,7 @@ class HeapLongLongMap implements LongLongMap {
         long previous = offset;
         long previousKey = -1;
         boolean waitingVal = false;
+        final boolean merge = capacity != 0;
         while (cursor < max && current != Constants.CHUNK_SEP && current != Constants.BLOCK_CLOSE) {
             if (current == Constants.CHUNK_VAL_SEP) {
                 if (isFirst) {
@@ -317,7 +326,7 @@ class HeapLongLongMap implements LongLongMap {
                         waitingVal = true;
                     } else {
                         waitingVal = false;
-                        put(previousKey, Base64.decodeToLongWithBounds(buffer, previous, cursor));
+                        internal_put(previousKey, Base64.decodeToLongWithBounds(buffer, previous, cursor), merge);
                     }
                 }
                 previous = cursor + 1;
@@ -331,7 +340,7 @@ class HeapLongLongMap implements LongLongMap {
             reallocate(Base64.decodeToIntWithBounds(buffer, previous, cursor));
         } else {
             if (waitingVal) {
-                put(previousKey, Base64.decodeToLongWithBounds(buffer, previous, cursor));
+                internal_put(previousKey, Base64.decodeToLongWithBounds(buffer, previous, cursor), merge);
             }
         }
         return cursor;

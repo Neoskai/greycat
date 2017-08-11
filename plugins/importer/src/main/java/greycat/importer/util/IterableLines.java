@@ -26,6 +26,9 @@ public class IterableLines extends BaseTaskResult<String> {
 
     private final String _path;
 
+    private Reader reader = null;
+    private BufferedReader bufferedReader = null;
+
     public IterableLines(String p_path) {
         super(null, false);
         this._path = p_path;
@@ -33,20 +36,19 @@ public class IterableLines extends BaseTaskResult<String> {
 
     @Override
     public TaskResultIterator iterator() {
-        BufferedReader _buffer = null;
+        bufferedReader = null;
         try {
-            Reader reader;
-            File file = new File(_path);
-            if (file.exists()) {
-                reader = new FileReader(file);
+            File openFile = new File(_path);
+            if (openFile.exists()) {
+                reader = new FileReader(openFile);
             } else {
                 reader = new InputStreamReader(this.getClass().getClassLoader().getResourceAsStream(_path));
             }
-            _buffer = new BufferedReader(reader);
+            bufferedReader = new BufferedReader(reader);
         } catch (Exception e) {
             e.printStackTrace();
         }
-        final BufferedReader final_buffer = _buffer;
+        final BufferedReader final_buffer = bufferedReader;
         return new TaskResultIterator() {
 
             private int _i = 0;
@@ -128,7 +130,20 @@ public class IterableLines extends BaseTaskResult<String> {
 
     @Override
     public void free() {
-
+        if(bufferedReader != null){
+            try {
+                bufferedReader.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        if(reader != null){
+            try {
+                reader.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     @Override
