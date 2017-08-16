@@ -39,6 +39,18 @@ class PluginGenerator {
         javaClass.addModifiers(PUBLIC);
         javaClass.addSuperinterface(ClassName.get(Plugin.class));
 
+        javaClass.addField(FieldSpec.builder(TypeName.BOOLEAN, "_doInitialization")
+                .addModifiers(PRIVATE)
+                .initializer("$L", "true")
+                .build());
+
+        javaClass.addMethod(MethodSpec.methodBuilder("doNotInitialize")
+                .addModifiers(PUBLIC, FINAL)
+                .addStatement("this._doInitialization = false")
+                .addStatement("return this")
+                .returns(ClassName.get(packageName, pluginName))
+                .build());
+
         javaClass.addMethod(MethodSpec.methodBuilder("stop")
                 .addModifiers(PUBLIC, FINAL)
                 .addAnnotation(Override.class)
@@ -129,10 +141,15 @@ class PluginGenerator {
                     .addSuperinterface(ClassName.get(Job.class))
                     .addMethod(waiterRun.build())
                     .build());
-            startMethod.addStatement("graph.addConnectHook($L)", TypeSpec.anonymousClassBuilder("")
-                    .addSuperinterface(ParameterizedTypeName.get(gCallback, ParameterizedTypeName.get(gCallback, BOOLEAN.box())))
-                    .addMethod(onMethod.build())
-                    .build());
+
+            startMethod
+                    .beginControlFlow("if (this._doInitialization)")
+                    .addStatement("graph.addConnectHook($L)", TypeSpec.anonymousClassBuilder("")
+                            .addSuperinterface(ParameterizedTypeName.get(gCallback, ParameterizedTypeName.get(gCallback, BOOLEAN.box())))
+                            .addMethod(onMethod.build())
+                            .build())
+                    .endControlFlow();
+
         }
         javaClass.addMethod(startMethod.build());
 
