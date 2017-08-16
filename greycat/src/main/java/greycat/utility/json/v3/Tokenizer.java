@@ -17,7 +17,10 @@ package greycat.utility.json.v3;
 
 import greycat.struct.Buffer;
 
-public class JsonParserV3 {
+/**
+ * @ignore ts
+ */
+public class Tokenizer {
     private static final byte FIELD_NAME  = 1;
     private static final byte FIELD_VALUE = 2;
     private static final byte OBJECT      = 3;
@@ -38,26 +41,26 @@ public class JsonParserV3 {
 
             switch(buffer.read(cursor)) {
                 case '{' :
-                    setElementDataLength1(index, elementIndex, ValueType.JSON_OBJECT_START, cursor);
+                    setElement(index, elementIndex, JsonType.JSON_OBJECT_START, cursor);
                     elementIndex++; pushState(OBJECT);
                     setState(FIELD_NAME);
                     break;
 
                 case '}' :
-                    setElementDataLength1(index, elementIndex, ValueType.JSON_OBJECT_END, cursor);
+                    setElement(index, elementIndex, JsonType.JSON_OBJECT_END, cursor);
                     elementIndex++;
                     popState();
                     break;
 
                 case '[' :
-                    setElementDataLength1(index, elementIndex, ValueType.JSON_ARRAY_START, cursor);
+                    setElement(index, elementIndex, JsonType.JSON_ARRAY_START, cursor);
                     elementIndex++;
                     pushState(ARRAY);
                     setState(FIELD_VALUE);
                     break;
 
                 case ']' :
-                    setElementDataLength1(index, elementIndex, ValueType.JSON_ARRAY_END, cursor);
+                    setElement(index, elementIndex, JsonType.JSON_ARRAY_END, cursor);
                     elementIndex++;
                     popState();
                     break;
@@ -120,19 +123,19 @@ public class JsonParserV3 {
 
         if(this.stateStack[this.stateIndex-1] == OBJECT) {
             if(this.stateStack[this.stateIndex] == FIELD_NAME) {
-                setElementData(index, elementIndex, ValueType.JSON_PROPERTY_NAME, position + 1, tempPos - position - 1);
+                setElementData(index, elementIndex, JsonType.JSON_PROPERTY_NAME, position + 1, tempPos - position - 1);
             } else {
                 if(containsEncodedChars){
-                    setElementData(index, elementIndex, ValueType.JSON_PROPERTY_VALUE_STRING_ENC, position + 1, tempPos - position - 1);
+                    setElementData(index, elementIndex, JsonType.JSON_PROPERTY_VALUE_STRING_ENC, position + 1, tempPos - position - 1);
                 } else {
-                    setElementData(index, elementIndex, ValueType.JSON_PROPERTY_VALUE_STRING, position + 1, tempPos - position - 1);
+                    setElementData(index, elementIndex, JsonType.JSON_PROPERTY_VALUE_STRING, position + 1, tempPos - position - 1);
                 }
             }
-        } else { // this.stateStack[this.stateIndex -1] == ARRAY
+        } else {
             if(containsEncodedChars){
-                setElementData(index, elementIndex, ValueType.JSON_ARRAY_VALUE_STRING_ENC, position + 1, tempPos - position - 1);
+                setElementData(index, elementIndex, JsonType.JSON_ARRAY_VALUE_STRING_ENC, position + 1, tempPos - position - 1);
             } else {
-                setElementData(index, elementIndex, ValueType.JSON_ARRAY_VALUE_STRING, position + 1, tempPos - position - 1);
+                setElementData(index, elementIndex, JsonType.JSON_ARRAY_VALUE_STRING, position + 1, tempPos - position - 1);
             }
         }
 
@@ -149,11 +152,11 @@ public class JsonParserV3 {
                         buffer.read(this.cursor + 3) == 'e' )
         {
             if(this.stateStack[this.stateIndex-1] == OBJECT ) {
-                setElementData(index, this.elementIndex, ValueType.JSON_PROPERTY_VALUE_BOOLEAN, this.cursor, 4);
+                setElementData(index, this.elementIndex, JsonType.JSON_PROPERTY_VALUE_BOOLEAN, this.cursor, 4);
             } else {
-                setElementData(index, this.elementIndex, ValueType.JSON_ARRAY_VALUE_BOOLEAN, this.cursor, 4);
+                setElementData(index, this.elementIndex, JsonType.JSON_ARRAY_VALUE_BOOLEAN, this.cursor, 4);
             }
-            this.cursor += 3;  // +4, but the outer for-loop will add 1 too.
+            this.cursor += 3;
             return true;
         }
         return false;
@@ -167,11 +170,11 @@ public class JsonParserV3 {
                         buffer.read(this.cursor + 4) == 'e' )
         {
             if(this.stateStack[this.stateIndex-1] == OBJECT ) {
-                setElementData(index, this.elementIndex, ValueType.JSON_PROPERTY_VALUE_BOOLEAN, this.cursor, 5);
+                setElementData(index, this.elementIndex, JsonType.JSON_PROPERTY_VALUE_BOOLEAN, this.cursor, 5);
             } else {
-                setElementData(index, this.elementIndex, ValueType.JSON_ARRAY_VALUE_BOOLEAN, this.cursor, 5);
+                setElementData(index, this.elementIndex, JsonType.JSON_ARRAY_VALUE_BOOLEAN, this.cursor, 5);
             }
-            this.cursor += 4; // +5, but the outer for-loop will add 1 too
+            this.cursor += 4;
             return true;
         }
         return false;
@@ -199,11 +202,11 @@ public class JsonParserV3 {
             }
         }
         if(this.stateStack[this.stateIndex-1] == OBJECT) {
-            setElementData(index, this.elementIndex, ValueType.JSON_PROPERTY_VALUE_NUMBER, this.cursor, tempPos - this.cursor);
+            setElementData(index, this.elementIndex, JsonType.JSON_PROPERTY_VALUE_NUMBER, this.cursor, tempPos - this.cursor);
         } else {
-            setElementData(index, this.elementIndex, ValueType.JSON_ARRAY_VALUE_NUMBER, this.cursor, tempPos - this.cursor);
+            setElementData(index, this.elementIndex, JsonType.JSON_ARRAY_VALUE_NUMBER, this.cursor, tempPos - this.cursor);
         }
-        this.cursor = tempPos -1; // -1 because the outer for-loop adds 1 to the position too
+        this.cursor = tempPos -1;
     }
 
     private void setState(byte state){
@@ -218,7 +221,7 @@ public class JsonParserV3 {
         this.stateIndex--;
     }
 
-    private final void setElementDataLength1(BufferIndex bIndex, int index, byte type, int position) {
+    private final void setElement(BufferIndex bIndex, int index, byte type, int position) {
         bIndex.type[index] = type;
         bIndex.start[index] = position;
         bIndex.length[index] = 1;

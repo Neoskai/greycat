@@ -5,6 +5,10 @@ import greycat.struct.Buffer;
 import greycat.struct.DMatrix;
 import greycat.struct.EStruct;
 import greycat.struct.EStructArray;
+import greycat.utility.json.v1.JsonParser;
+import greycat.utility.json.v2.JsonParserV2;
+import greycat.utility.json.v3.BufferIndex;
+import greycat.utility.json.v3.Tokenizer;
 
 public class test {
 
@@ -70,7 +74,16 @@ public class test {
                 Buffer buffer = graph.newBuffer();
                 graph.toJson(buffer);
 
-                parser2.parse(buffer);
+                //parser2.parse(buffer);
+
+                BufferIndex index = new BufferIndex((int) buffer.length());
+                Tokenizer tokenizer = new Tokenizer();
+                tokenizer.parse(buffer,index);
+
+                System.out.println(index.size);
+                for(int i = 0 ; i < index.size; i++){
+                    System.out.println(new String(buffer.slice(index.start[i], (index.start[i] + index.length[i] -1) )));
+                }
             }
         });
     }

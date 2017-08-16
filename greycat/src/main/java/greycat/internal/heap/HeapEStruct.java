@@ -31,6 +31,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import static greycat.utility.json.v0.ObjectBuilder.buildObject;
+
 class HeapEStruct implements EStruct, HeapContainer {
 
     private final HeapEStructArray _parent;
@@ -1014,7 +1016,7 @@ class HeapEStruct implements EStruct, HeapContainer {
         JSONArray elemArray = new JSONArray(json);
 
         for(int i = 0; i < elemArray.length(); i++){
-            JsonBuilder.buildObject(elemArray.getJSONObject(i).toString(), this);
+           buildObject(elemArray.getJSONObject(i).toString(), this);
         }
 
         return this;

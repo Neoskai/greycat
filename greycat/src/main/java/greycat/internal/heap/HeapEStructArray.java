@@ -25,6 +25,8 @@ import greycat.utility.Base64;
 import greycat.utility.json.JsonBuilder;
 import org.json.JSONArray;
 
+import static greycat.utility.json.v0.ObjectBuilder.buildObject;
+
 class HeapEStructArray implements EStructArray {
 
     private final Graph _graph;
@@ -103,7 +105,7 @@ class HeapEStructArray implements EStructArray {
         for(int i = 0; i< array.length(); i++){
             EStruct intermediate = newEStruct();
 
-            JsonBuilder.buildObject(array.getJSONArray(i).toString(), intermediate);
+            buildObject(array.getJSONArray(i).toString(), intermediate);
         }
 
         return this;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package greycat.utility.json;
+package greycat.utility.json.v2;
 
 import greycat.*;
 import greycat.base.BaseNode;
@@ -24,6 +24,9 @@ import java.util.Map;
 
 import static greycat.utility.json.JsonConst.*;
 
+/**
+ * @ignore ts
+ */
 public class JsonParserV2 {
     private Stack _list;
     private Graph _graph;

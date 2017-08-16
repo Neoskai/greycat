@@ -22,7 +22,7 @@ public class BufferIndex {
     public int[] length;
     public int[] type;
 
-    public int size = 0;
+    public int size;
 
     public BufferIndex(int size){
         start = new int[size];
