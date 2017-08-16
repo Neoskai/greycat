@@ -110,6 +110,8 @@ public class JsonParserV2 {
     }
 
     public void buildValue(Buffer buffer, long start, long end){
+
+        System.out.println("BuildValue: " + new String(buffer.slice(start,end)));
         long cursor = start;
 
         while(buffer.read(cursor) != TEXT){
@@ -265,8 +267,8 @@ public class JsonParserV2 {
 
                 case ARRE:
                     stack--;
-                    if(stack ==1){
-                        currentObject= getObject(buffer,valueStart,cursor);
+                    if(stack ==2){
+                        currentObject= getObject(buffer,valueStart,cursor-1);
 
                         if(currentObject != null) {
                             _graph.connect(null);
