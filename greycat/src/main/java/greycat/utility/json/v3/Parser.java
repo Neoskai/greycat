@@ -22,14 +22,18 @@ import greycat.utility.json.v2.TypedObject;
 
 import java.util.*;
 
+import static greycat.utility.json.JsonConst.*;
+import static greycat.utility.json.JsonConst.SEP;
+
 public class Parser {
 
-    private byte RECORD_BUILD = 1;
-    private byte NODE_BUILD = 2;
-    private byte VALUE_BUILD = 3;
-    private byte INDEX_BUILD = 4;
+    private final byte RECORD_BUILD = 1;
+    private final byte NODE_BUILD = 2;
+    private final byte VALUE_BUILD = 3;
+    private final byte INDEX_BUILD = 4;
 
-    private byte TIMELIST_BUILD = 5;
+    private final byte TIMELIST_BUILD = 5;
+    private final byte UNTYPED_BUILD = 6;
 
     private Graph _graph;
 
@@ -49,49 +53,75 @@ public class Parser {
         byte state = -1;
 
         LinkedList<TypedObject> parents = new LinkedList<>();
-        List<Object> objectList = new ArrayList<>();
+        List<Long> timeList = new ArrayList<>();
 
-        int stack = 0;
+        List<Object> arrayElements = new ArrayList<>();
+
+        int objStack = 0;
+        int arrStack = 0;
+        int currentTime = -1;
+
+        int objType = -1;
 
         for(int i = 0; i < index.size; i++){
             int type = index.type[i];
             int length = index.length[i];
             int start = index.start[i];
 
+            System.out.println(new String(buffer.slice(start,start+length-1)));
+
             switch(type){
                 case JsonType.JSON_OBJECT_START:
-                    stack++;
-                    switch(stack){
-                        case 1:
+                    objStack++;
+                    switch(objStack){
+                        case 1: // [ {
                             state = RECORD_BUILD;
                             break;
-                        case 2:
+                        case 2: // [ { values:[ [ 21, {
                             state = NODE_BUILD;
                             break;
                     }
                     break;
 
                 case JsonType.JSON_ARRAY_START:
-                    stack++;
+                    arrStack++;
+                    if(arrStack == 3){ // [ { values: [ [ --> 21, {...
+                        currentTime++;
+                    }
+                    if(arrStack > 2 && !isFinal(parents.peek().getType())){
+                        state = UNTYPED_BUILD;
+                    }
                     break;
 
                 case JsonType.JSON_OBJECT_END:
-                    stack--;
+                    objStack--;
+                    // @TODO CHeck ARRAY END OF LEVEL 2
+                    if(objStack == 2){ // [ { values:[[21,{}  --> ]
+                        // End of value, need to set the object with travel in time
+                        if (parents.peek().getType() == Type.NODE) {
+                            Node n = (Node) parents.peek().getObject();
+                            n.travelInTime(timeList.get(currentTime), new Callback<Node>() {
+                                @Override
+                                public void on(Node result) {
+                                    // Create child and set value
+                                }
+                            });
+                        }
+                    }
                     break;
 
                 case JsonType.JSON_ARRAY_END:
-                    stack--;
+                    arrStack--;
                     if (state == TIMELIST_BUILD){
-                        state = NODE_BUILD;
-                        System.out.println("----------- Creation -------------");
+                        state = RECORD_BUILD;
                         // We have enough information to build the node, so we build it and put it in the stack
                         _graph.connect(null);
-                        _graph.lookup((long) properties.get("world"), (long) objectList.get(0), (long) properties.get("id"), new Callback<Node>() {
+                        _graph.lookup((long) properties.get("world"), timeList.get(0), (long) properties.get("id"), new Callback<Node>() {
                             @Override
                             public void on(Node result) {
                                 if (result == null){
                                     // @TODO : Use nodetype to create an instance of the good type
-                                    Node newNode = new BaseNode((long) properties.get("world"), (long) objectList.get(0), (long) properties.get("id"), _graph);
+                                    Node newNode = new BaseNode((long) properties.get("world"), (long) timeList.get(0), (long) properties.get("id"), _graph);
                                     _graph.resolver().initNode(newNode, Constants.NULL_LONG);
 
                                     parents.push(new TypedObject(Type.NODE, newNode));
@@ -103,6 +133,103 @@ public class Parser {
                         });
                         _graph.disconnect(null);
                     }
+                    if( arrStack == 2){ // Last level of parents stack
+                        // Build last level
+                        parents.clear();
+                    }
+                    if(state == VALUE_BUILD && arrStack > 2){ // We ended to retrieve properties from an array Object / we now need to set the value to the parent
+                        switch(parents.pop().getType()){ // We already pushed the empty object to the stack, so we pop it
+                            //We then fill it with the values, and set it as value to the parent.
+                            case Type.BOOL:
+                                break;
+
+                            case Type.STRING:
+                                break;
+
+                            case Type.LONG:
+                                break;
+
+                            case Type.INT:
+                                break;
+
+                            case Type.DOUBLE:
+                                break;
+
+                            case Type.DOUBLE_ARRAY:
+                                break;
+
+                            case Type.LONG_ARRAY:
+                                break;
+
+                            case Type.INT_ARRAY:
+                                break;
+
+                            case Type.STRING_ARRAY:
+                                break;
+
+                            case Type.LONG_TO_LONG_MAP:
+                                break;
+
+                            case Type.LONG_TO_LONG_ARRAY_MAP:
+                                break;
+
+                            case Type.STRING_TO_INT_MAP:
+                                break;
+
+                            case Type.RELATION:
+                                break;
+
+                            case Type.DMATRIX:
+                                break;
+
+                            case Type.LMATRIX:
+                                break;
+
+                            case Type.ESTRUCT:
+                                //@TODO
+                                break;
+
+                            case Type.ESTRUCT_ARRAY:
+                                break;
+
+                            case Type.ERELATION:
+                                //@TODO
+                                break;
+
+                            case Type.TASK:
+                                //@TODO
+                                break;
+
+                            case Type.TASK_ARRAY:
+                                break;
+
+                            case Type.NODE:
+                                //@TODO
+                                break;
+
+                            case Type.INT_TO_INT_MAP:
+                                break;
+
+                            case Type.INT_TO_STRING_MAP:
+                                break;
+
+                            case Type.INDEX:
+                                //@TODO
+                                break;
+
+                            case Type.KDTREE:
+                                //@TODO
+                                break;
+
+                            case Type.NDTREE:
+                                //@TODO
+                                break;
+
+                        }
+                    }
+                    if(arrStack == 2){
+                        properties.clear();
+                    }
                     break;
 
                 case JsonType.JSON_PROPERTY_NAME:
@@ -111,34 +238,73 @@ public class Parser {
                     if("times".equals(currentProperty))
                         state = TIMELIST_BUILD;
                     if("values".equals(currentProperty))
-                        state = VALUE_BUILD;
+                        state = NODE_BUILD;
                     break;
 
                 case JsonType.JSON_ARRAY_VALUE_NUMBER:
                     if(state == TIMELIST_BUILD)
-                        objectList.add(Long.parseLong(new String(buffer.slice(start,start+length-1))));
+                        timeList.add(Long.parseLong(new String(buffer.slice(start,start+length-1))));
+
+                    if(state == UNTYPED_BUILD) {
+                        objType = Integer.parseInt(new String(buffer.slice(start, start + length - 1)));
+                        state = VALUE_BUILD;
+
+                        // At this point we should have both the name of the value and it's type, so init the object and set it as parent if needed
+                        Object parent = parents.peek().getObject();
+                        int parentType = parents.peek().getType();
+
+                        switch (parentType){
+                            case Type.NODE:
+                                Node castedNParent = (Node) parent;
+                                Object newValue = castedNParent.getOrCreate(currentProperty, objType);
+                                parents.push(new TypedObject(objType, newValue));
+                                break;
+                            // All other cases to handle
+                        }
+                    }
+                    else{
+                        arrayElements.add(new String(buffer.slice(start, start+ length -1)));
+                    }
+                    // If we are not building a type, we are retrieving the elements from a real array
 
                     break;
                 case JsonType.JSON_ARRAY_VALUE_STRING:
+                    arrayElements.add(new String(buffer.slice(start, start+ length -1)));
                     break;
                 case JsonType.JSON_ARRAY_VALUE_STRING_ENC:
+                    arrayElements.add(new String(buffer.slice(start, start+ length -1)));
                     break;
                 case JsonType.JSON_ARRAY_VALUE_BOOLEAN:
+                    arrayElements.add(new String(buffer.slice(start, start+ length -1)));
                     break;
 
                 case JsonType.JSON_PROPERTY_VALUE_STRING:
-                    properties.put(currentProperty, new String(buffer.slice(start, start+length-1)));
+                    if (state == RECORD_BUILD)
+                        properties.put(currentProperty, new String(buffer.slice(start, start+length-1)));
                     break;
                 case JsonType.JSON_PROPERTY_VALUE_STRING_ENC:
-                    properties.put(currentProperty, new String(buffer.slice(start, start+length-1)));
+                    if(state == RECORD_BUILD)
+                        properties.put(currentProperty, new String(buffer.slice(start, start+length-1)));
                     break;
                 case JsonType.JSON_PROPERTY_VALUE_NUMBER:
-                    properties.put(currentProperty, Long.parseLong(new String(buffer.slice(start, start+length-1))));
+                    if(state == RECORD_BUILD)
+                        properties.put(currentProperty, Long.parseLong(new String(buffer.slice(start, start+length-1))));
                     break;
                 case JsonType.JSON_PROPERTY_VALUE_BOOLEAN:
-                    properties.put(currentProperty, Boolean.valueOf(new String(buffer.slice(start, start+length-1))));
+                    if(state == RECORD_BUILD)
+                        properties.put(currentProperty, Boolean.valueOf(new String(buffer.slice(start, start+length-1))));
                     break;
             }
         }
+    }
+
+    /**
+     * Tells if a parent can still have children or not
+     * @param type The type to check for
+     * @return True if can't have children / False if still can have children
+     */
+    boolean isFinal(int type){
+        return type != Type.ESTRUCT_ARRAY && type != Type.ESTRUCT && type != Type.NODE && type != Type.ERELATION
+                && type != Type.INDEX && type != Type.KDTREE && type != Type.NDTREE && !Type.isCustom(type);
     }
 }
