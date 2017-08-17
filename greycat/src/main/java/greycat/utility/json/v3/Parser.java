@@ -18,12 +18,10 @@ package greycat.utility.json.v3;
 import greycat.*;
 import greycat.base.BaseNode;
 import greycat.struct.Buffer;
+import greycat.struct.EStruct;
 import greycat.utility.json.v2.TypedObject;
 
 import java.util.*;
-
-import static greycat.utility.json.JsonConst.*;
-import static greycat.utility.json.JsonConst.SEP;
 
 public class Parser {
 
@@ -34,6 +32,7 @@ public class Parser {
 
     private final byte TIMELIST_BUILD = 5;
     private final byte UNTYPED_BUILD = 6;
+    private final byte DIRECT_SET = 7;
 
     private Graph _graph;
 
@@ -137,8 +136,9 @@ public class Parser {
                         // Build last level
                         parents.clear();
                     }
-                    if(state == VALUE_BUILD && arrStack > 2){ // We ended to retrieve properties from an array Object / we now need to set the value to the parent
-                        switch(parents.pop().getType()){ // We already pushed the empty object to the stack, so we pop it
+                    if(state == VALUE_BUILD && arrStack > 2){// We ended to retrieve properties from an array Object / we now need to set the value to the parent
+                        TypedObject directParent = parents.pop();
+                        switch(directParent.getType()){ // We already pushed the empty object to the stack, so we pop it
                             //We then fill it with the values, and set it as value to the parent.
                             case Type.BOOL:
                                 break;
@@ -260,6 +260,12 @@ public class Parser {
                                 parents.push(new TypedObject(objType, newValue));
                                 break;
                             // All other cases to handle
+
+                            // if basic type, directly set value
+                        }
+
+                        if (isBasic(parentType)){
+                            state = DIRECT_SET;
                         }
                     }
                     else{
@@ -281,18 +287,63 @@ public class Parser {
                 case JsonType.JSON_PROPERTY_VALUE_STRING:
                     if (state == RECORD_BUILD)
                         properties.put(currentProperty, new String(buffer.slice(start, start+length-1)));
+
+                    if (state == DIRECT_SET){
+                        switch (parents.peek().getType()){
+                            case Type.NODE:
+                                Node parsedNode = (Node) parents.peek().getObject();
+                                parsedNode.set(currentProperty, Type.STRING, new String(buffer.slice(start,start+length-1)));
+                                break;
+                            case Type.ESTRUCT:
+                                EStruct parsedEStruct = (EStruct) parents.peek().getObject();
+                                parsedEStruct.set(currentProperty, Type.STRING, new String(buffer.slice(start, start+length-1)));
+                                break;
+                        }
+                    }
+
                     break;
+
                 case JsonType.JSON_PROPERTY_VALUE_STRING_ENC:
                     if(state == RECORD_BUILD)
                         properties.put(currentProperty, new String(buffer.slice(start, start+length-1)));
+
+                    if (state == DIRECT_SET){
+                        switch (parents.peek().getType()){
+                            case Type.NODE:
+                                Node parsedNode = (Node) parents.peek().getObject();
+                                parsedNode.set(currentProperty, Type.STRING, new String(buffer.slice(start,start+length-1)));
+                                break;
+                            case Type.ESTRUCT:
+                                EStruct parsedEStruct = (EStruct) parents.peek().getObject();
+                                parsedEStruct.set(currentProperty, Type.STRING, new String(buffer.slice(start, start+length-1)));
+                                break;
+                        }
+                    }
+
                     break;
                 case JsonType.JSON_PROPERTY_VALUE_NUMBER:
                     if(state == RECORD_BUILD)
                         properties.put(currentProperty, Long.parseLong(new String(buffer.slice(start, start+length-1))));
+
+                    // Separate INT from Double from LONG
+
                     break;
                 case JsonType.JSON_PROPERTY_VALUE_BOOLEAN:
                     if(state == RECORD_BUILD)
                         properties.put(currentProperty, Boolean.valueOf(new String(buffer.slice(start, start+length-1))));
+
+                    if (state == DIRECT_SET){
+                        switch (parents.peek().getType()){
+                            case Type.NODE:
+                                Node parsedNode = (Node) parents.peek().getObject();
+                                parsedNode.set(currentProperty, Type.BOOL, Boolean.valueOf(new String(buffer.slice(start,start+length-1))));
+                                break;
+                            case Type.ESTRUCT:
+                                EStruct parsedEStruct = (EStruct) parents.peek().getObject();
+                                parsedEStruct.set(currentProperty, Type.BOOL, Boolean.valueOf(new String(buffer.slice(start, start+length-1))));
+                                break;
+                        }
+                    }
                     break;
             }
         }
@@ -306,5 +357,14 @@ public class Parser {
     boolean isFinal(int type){
         return type != Type.ESTRUCT_ARRAY && type != Type.ESTRUCT && type != Type.NODE && type != Type.ERELATION
                 && type != Type.INDEX && type != Type.KDTREE && type != Type.NDTREE && !Type.isCustom(type);
+    }
+
+    /**
+     * Returns if we have a basic type or not
+     * @param type The type to test
+     * @return True if is basic / False if not
+     */
+    boolean isBasic(int type){
+        return type == Type.BOOL || type == Type.INT || type == Type.STRING || type == Type.DOUBLE || type == Type.LONG;
     }
 }
