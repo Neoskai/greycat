@@ -17,11 +17,11 @@ package greycat.utility.json.v3;
 
 import greycat.*;
 import greycat.base.BaseNode;
-import greycat.struct.Buffer;
-import greycat.struct.EStruct;
+import greycat.struct.*;
 import greycat.utility.json.v2.TypedObject;
 
 import java.util.*;
+import java.util.Map;
 
 public class Parser {
 
@@ -33,6 +33,7 @@ public class Parser {
     private final byte TIMELIST_BUILD = 5;
     private final byte UNTYPED_BUILD = 6;
     private final byte DIRECT_SET = 7;
+    private final byte CORENODE_BUILD = 8;
 
     private Graph _graph;
 
@@ -87,7 +88,9 @@ public class Parser {
                     if(arrStack == 3){ // [ { values: [ [ --> 21, {...
                         currentTime++;
                     }
-                    if(arrStack > 2 && !isFinal(parents.peek().getType())){
+                    if(arrStack == 3 ){
+                        state = CORENODE_BUILD;
+                    } else if (arrStack > 2 && !isFinal(parents.peek().getType())){
                         state = UNTYPED_BUILD;
                     }
                     break;
@@ -95,9 +98,45 @@ public class Parser {
                 case JsonType.JSON_OBJECT_END:
                     objStack--;
                     // @TODO CHeck ARRAY END OF LEVEL 2
-                    if(objStack == 2){ // [ { values:[[21,{}  --> ]
+                    if(objStack == 2 && isObjectEnding(parents.peek().getType())){
+                        TypedObject directParent = parents.pop();
+                        System.out.println("----> Poping from stack: " + directParent.getType());
+                        switch(directParent.getType()) { // We already pushed the empty object to the stack, so we pop it
+                            case Type.LONG_TO_LONG_MAP:
+                                LongLongMap castedLLMap = (LongLongMap) directParent.getObject();
+                                for(int z=0; z< (arrayElements.size()-1); z+=2){
+                                    castedLLMap.put(Long.parseLong((String) arrayElements.get(z)), Long.parseLong((String) arrayElements.get(z+1)));
+                                }
+                                break;
+
+                            case Type.LONG_TO_LONG_ARRAY_MAP:
+                                //@TODO Check how to precast in array
+                                break;
+
+                            case Type.STRING_TO_INT_MAP:
+                                StringIntMap castedSIMap = (StringIntMap) directParent.getObject();
+                                for(int z=0; z< (arrayElements.size()-1); z+=2){
+                                    castedSIMap.put((String) arrayElements.get(z),Integer.parseInt((String) arrayElements.get(z+1)));
+                                }
+                                break;
+                            case Type.INT_TO_INT_MAP:
+                                IntIntMap castedIIMap = (IntIntMap) directParent.getObject();
+                                for(int z=0; z< (arrayElements.size()-1); z+=2){
+                                    castedIIMap.put(Integer.parseInt((String) arrayElements.get(z)),Integer.parseInt((String) arrayElements.get(z+1)));
+                                }
+                                break;
+
+                            case Type.INT_TO_STRING_MAP:
+                                IntStringMap castedISMap = (IntStringMap) directParent.getObject();
+                                for(int z=0; z< (arrayElements.size()-1); z+=2){
+                                    castedISMap.put(Integer.parseInt((String) arrayElements.get(z)),(String) arrayElements.get(z+1));
+                                }
+                                break;
+                        }
+
+                        // [ { values:[[21,{}  --> ]
                         // End of value, need to set the object with travel in time
-                        if (parents.peek().getType() == Type.NODE) {
+                        /*if (parents.peek().getType() == Type.NODE) {
                             Node n = (Node) parents.peek().getObject();
                             n.travelInTime(timeList.get(currentTime), new Callback<Node>() {
                                 @Override
@@ -105,7 +144,7 @@ public class Parser {
                                     // Create child and set value
                                 }
                             });
-                        }
+                        }*/
                     }
                     break;
 
@@ -118,6 +157,7 @@ public class Parser {
                         _graph.lookup((long) properties.get("world"), timeList.get(0), (long) properties.get("id"), new Callback<Node>() {
                             @Override
                             public void on(Node result) {
+                                System.out.println("-----> Adding First Node");
                                 if (result == null){
                                     // @TODO : Use nodetype to create an instance of the good type
                                     Node newNode = new BaseNode((long) properties.get("world"), (long) timeList.get(0), (long) properties.get("id"), _graph);
@@ -134,55 +174,81 @@ public class Parser {
                     }
                     if( arrStack == 2){ // Last level of parents stack
                         // Build last level
+                        System.out.println(" ------> Pop Last Node");
+                        parents.pop();
                         parents.clear();
                     }
-                    if(state == VALUE_BUILD && arrStack > 2){// We ended to retrieve properties from an array Object / we now need to set the value to the parent
+                    if(state == VALUE_BUILD && arrStack > 3 && !isBasic(parents.peek().getType())){// We ended to retrieve properties from an array Object / we now need to set the value to the parent
                         TypedObject directParent = parents.pop();
+                        System.out.println("----> Poping from stack: " + directParent.getType());
                         switch(directParent.getType()){ // We already pushed the empty object to the stack, so we pop it
                             //We then fill it with the values, and set it as value to the parent.
-                            case Type.BOOL:
-                                break;
-
-                            case Type.STRING:
-                                break;
-
-                            case Type.LONG:
-                                break;
-
-                            case Type.INT:
-                                break;
-
-                            case Type.DOUBLE:
-                                break;
-
                             case Type.DOUBLE_ARRAY:
+                                DoubleArray castedArray = (DoubleArray) directParent.getObject();
+                                castedArray.init(arrayElements.size());
+                                for(int z = 0; z< arrayElements.size(); z++){
+                                    castedArray.set(z, Double.parseDouble((String) arrayElements.get(z)));
+                                }
                                 break;
 
                             case Type.LONG_ARRAY:
+                                LongArray castedLArray = (LongArray) directParent.getObject();
+                                castedLArray.init(arrayElements.size());
+                                for(int z = 0; z< arrayElements.size(); z++){
+                                    castedLArray.set(z, Long.parseLong( (String) arrayElements.get(z)));
+                                }
                                 break;
 
                             case Type.INT_ARRAY:
+                                IntArray castedIArray = (IntArray) directParent.getObject();
+                                castedIArray.init(arrayElements.size());
+                                for(int z = 0; z< arrayElements.size(); z++){
+                                    castedIArray.set(z, Integer.parseInt( (String) arrayElements.get(z)));
+                                }
+
                                 break;
 
                             case Type.STRING_ARRAY:
-                                break;
+                                StringArray castedSArray = (StringArray) directParent.getObject();
+                                castedSArray.init(arrayElements.size());
+                                for(int z = 0; z< arrayElements.size(); z++){
+                                    castedSArray.set(z, (String) arrayElements.get(z));
+                                }
 
-                            case Type.LONG_TO_LONG_MAP:
-                                break;
-
-                            case Type.LONG_TO_LONG_ARRAY_MAP:
-                                break;
-
-                            case Type.STRING_TO_INT_MAP:
                                 break;
 
                             case Type.RELATION:
+                                // @TODO check how to recreate
                                 break;
 
                             case Type.DMATRIX:
+                                DMatrix castedDMat = (DMatrix) directParent.getObject();
+
+                                int xSize = Integer.parseInt((String) arrayElements.get(0));
+                                int ySize = Integer.parseInt((String) arrayElements.get(1));
+
+                                castedDMat.init(xSize, ySize);
+
+                                for(int y = 0 ; y < xSize; y++) {
+                                    for(int z= 0; z < ySize; z++){
+                                        castedDMat.set(y,z,Double.parseDouble((String) arrayElements.get(y+z+2)));
+                                    }
+                                }
                                 break;
 
                             case Type.LMATRIX:
+                                LMatrix castedLMat = (LMatrix) directParent.getObject();
+
+                                int xLSize = Integer.parseInt((String) arrayElements.get(0));
+                                int yLSize = Integer.parseInt((String) arrayElements.get(1));
+
+                                castedLMat.init(xLSize, yLSize);
+
+                                for(int y = 0 ; y < xLSize; y++) {
+                                    for(int z= 0; z < yLSize; z++){
+                                        castedLMat.set(y,z,Long.parseLong((String) arrayElements.get(y+z+2)));
+                                    }
+                                }
                                 break;
 
                             case Type.ESTRUCT:
@@ -190,6 +256,7 @@ public class Parser {
                                 break;
 
                             case Type.ESTRUCT_ARRAY:
+                                // @TODO
                                 break;
 
                             case Type.ERELATION:
@@ -207,12 +274,6 @@ public class Parser {
                                 //@TODO
                                 break;
 
-                            case Type.INT_TO_INT_MAP:
-                                break;
-
-                            case Type.INT_TO_STRING_MAP:
-                                break;
-
                             case Type.INDEX:
                                 //@TODO
                                 break;
@@ -226,6 +287,7 @@ public class Parser {
                                 break;
 
                         }
+                        arrayElements.clear();
                     }
                     if(arrStack == 2){
                         properties.clear();
@@ -235,15 +297,22 @@ public class Parser {
                 case JsonType.JSON_PROPERTY_NAME:
                     currentProperty = new String(buffer.slice(start,start+length-1));
 
-                    if("times".equals(currentProperty))
+                    if("times".equals(currentProperty) || "time".equals(currentProperty))
                         state = TIMELIST_BUILD;
-                    if("values".equals(currentProperty))
+                    if("values".equals(currentProperty) || "value".equals(currentProperty))
                         state = NODE_BUILD;
                     break;
 
                 case JsonType.JSON_ARRAY_VALUE_NUMBER:
+                    System.out.println("Array number in state: " + state);
                     if(state == TIMELIST_BUILD)
                         timeList.add(Long.parseLong(new String(buffer.slice(start,start+length-1))));
+
+                    if(state == CORENODE_BUILD){
+                        _graph.connect(null);
+                        parents.add(new TypedObject(Type.NODE, _graph.newNode(0,timeList.get(0))));
+                        _graph.disconnect(null);
+                    }
 
                     if(state == UNTYPED_BUILD) {
                         objType = Integer.parseInt(new String(buffer.slice(start, start + length - 1)));
@@ -257,6 +326,13 @@ public class Parser {
                             case Type.NODE:
                                 Node castedNParent = (Node) parent;
                                 Object newValue = castedNParent.getOrCreate(currentProperty, objType);
+                                // Handle types with no getOrCreate
+                                // Meaning : Bool / Int / Double / Long / String / Relation / ERelation / Task / TaskArray / Node / EStruct / KDTREE / NDTREE / Index
+                                // Bool / Int / Double / Long / String are directly assigned when read
+                                if(newValue == null){
+                                    System.out.println("Created null object");
+                                }
+                                System.out.println("----> Adding to Stack: " + objType);
                                 parents.push(new TypedObject(objType, newValue));
                                 break;
                             // All other cases to handle
@@ -366,5 +442,10 @@ public class Parser {
      */
     boolean isBasic(int type){
         return type == Type.BOOL || type == Type.INT || type == Type.STRING || type == Type.DOUBLE || type == Type.LONG;
+    }
+
+    boolean isObjectEnding(int type){
+        return type == Type.STRING_TO_INT_MAP || type == Type.INT_TO_STRING_MAP || type == Type.LONG_TO_LONG_MAP || type == Type.LONG_TO_LONG_ARRAY_MAP
+                || type == Type.INT_TO_INT_MAP;
     }
 }
