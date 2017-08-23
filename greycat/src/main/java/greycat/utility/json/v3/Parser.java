@@ -24,7 +24,6 @@ import java.util.*;
 import java.util.Map;
 
 public class Parser {
-
     private final byte RECORD_BUILD = 1;
     private final byte NODE_BUILD = 2;
     private final byte VALUE_BUILD = 3;
@@ -36,9 +35,11 @@ public class Parser {
     private final byte CORENODE_BUILD = 8;
 
     private Graph _graph;
+    private List<List<Long>> relations;
 
     public Parser(Graph g){
         _graph = g;
+        relations = new ArrayList<>();
     }
 
     public void parse(Buffer buffer){
@@ -97,7 +98,6 @@ public class Parser {
 
                 case JsonType.JSON_OBJECT_END:
                     objStack--;
-                    // @TODO CHeck ARRAY END OF LEVEL 2
                     if(objStack == 2 && isObjectEnding(parents.peek().getType())){
                         TypedObject directParent = parents.pop();
                         System.out.println("----> Poping from stack: " + directParent.getType());
@@ -110,7 +110,7 @@ public class Parser {
                                 break;
 
                             case Type.LONG_TO_LONG_ARRAY_MAP:
-                                //@TODO Check how to precast in array
+                                // Already treated with direct adds.
                                 break;
 
                             case Type.STRING_TO_INT_MAP:
@@ -133,18 +133,6 @@ public class Parser {
                                 }
                                 break;
                         }
-
-                        // [ { values:[[21,{}  --> ]
-                        // End of value, need to set the object with travel in time
-                        /*if (parents.peek().getType() == Type.NODE) {
-                            Node n = (Node) parents.peek().getObject();
-                            n.travelInTime(timeList.get(currentTime), new Callback<Node>() {
-                                @Override
-                                public void on(Node result) {
-                                    // Create child and set value
-                                }
-                            });
-                        }*/
                     }
                     break;
 
@@ -154,13 +142,14 @@ public class Parser {
                         state = RECORD_BUILD;
                         // We have enough information to build the node, so we build it and put it in the stack
                         _graph.connect(null);
-                        _graph.lookup((long) properties.get("world"), timeList.get(0), (long) properties.get("id"), new Callback<Node>() {
+                        int finalCurrentTime = currentTime;
+                        _graph.lookup((long) properties.get("world"), timeList.get(currentTime), (long) properties.get("id"), new Callback<Node>() {
                             @Override
                             public void on(Node result) {
                                 System.out.println("-----> Adding First Node");
                                 if (result == null){
                                     // @TODO : Use nodetype to create an instance of the good type
-                                    Node newNode = new BaseNode((long) properties.get("world"), (long) timeList.get(0), (long) properties.get("id"), _graph);
+                                    Node newNode = new BaseNode((long) properties.get("world"), timeList.get(finalCurrentTime), (long) properties.get("id"), _graph);
                                     _graph.resolver().initNode(newNode, Constants.NULL_LONG);
 
                                     parents.push(new TypedObject(Type.NODE, newNode));
@@ -178,7 +167,8 @@ public class Parser {
                         parents.pop();
                         parents.clear();
                     }
-                    if(state == VALUE_BUILD && arrStack > 3 && !isBasic(parents.peek().getType())){// We ended to retrieve properties from an array Object / we now need to set the value to the parent
+                    if(state == VALUE_BUILD && arrStack > 3 && !isBasic(parents.peek().getType()) && !isObjectEnding(parents.peek().getType())){
+                        // We ended to retrieve properties from an array Object / we now need to set the value to the parent
                         TypedObject directParent = parents.pop();
                         System.out.println("----> Poping from stack: " + directParent.getType());
                         switch(directParent.getType()){ // We already pushed the empty object to the stack, so we pop it
@@ -219,6 +209,13 @@ public class Parser {
 
                             case Type.RELATION:
                                 // @TODO check how to recreate
+                                // To add to a stack and recreate at the end
+                                List<Long> partialList = new ArrayList<>();
+                                for(int a = 0; a < arrayElements.size(); a++){
+                                    partialList.add(Long.parseLong((String) arrayElements.get(a)));
+                                }
+                                relations.add(partialList);
+                                partialList.clear();
                                 break;
 
                             case Type.DMATRIX:
@@ -256,7 +253,7 @@ public class Parser {
                                 break;
 
                             case Type.ESTRUCT_ARRAY:
-                                // @TODO
+                                // Only contains elements so should be treated by setter of elements below
                                 break;
 
                             case Type.ERELATION:
@@ -268,10 +265,11 @@ public class Parser {
                                 break;
 
                             case Type.TASK_ARRAY:
+                                //@TODO
                                 break;
 
                             case Type.NODE:
-                                //@TODO
+                                // Needs to set world time and elements, and elements under a treated directly
                                 break;
 
                             case Type.INDEX:
@@ -295,12 +293,19 @@ public class Parser {
                     break;
 
                 case JsonType.JSON_PROPERTY_NAME:
+                    // Also handles keys of LLARRAY MAP
                     currentProperty = new String(buffer.slice(start,start+length-1));
 
                     if("times".equals(currentProperty) || "time".equals(currentProperty))
                         state = TIMELIST_BUILD;
-                    if("values".equals(currentProperty) || "value".equals(currentProperty))
+                    if("values".equals(currentProperty) || "value".equals(currentProperty)) {
                         state = NODE_BUILD;
+
+                        if(properties.get("times") == null){
+                            state = INDEX_BUILD;
+                        }
+                    }
+
                     break;
 
                 case JsonType.JSON_ARRAY_VALUE_NUMBER:
@@ -310,7 +315,7 @@ public class Parser {
 
                     if(state == CORENODE_BUILD){
                         _graph.connect(null);
-                        parents.add(new TypedObject(Type.NODE, _graph.newNode(0,timeList.get(0))));
+                        parents.add(new TypedObject(Type.NODE, _graph.newNode(0,timeList.get(currentTime))));
                         _graph.disconnect(null);
                     }
 
@@ -322,32 +327,86 @@ public class Parser {
                         Object parent = parents.peek().getObject();
                         int parentType = parents.peek().getType();
 
-                        switch (parentType){
-                            case Type.NODE:
-                                Node castedNParent = (Node) parent;
-                                Object newValue = castedNParent.getOrCreate(currentProperty, objType);
-                                // Handle types with no getOrCreate
-                                // Meaning : Bool / Int / Double / Long / String / Relation / ERelation / Task / TaskArray / Node / EStruct / KDTREE / NDTREE / Index
-                                // Bool / Int / Double / Long / String are directly assigned when read
-                                if(newValue == null){
-                                    System.out.println("Created null object");
-                                }
-                                System.out.println("----> Adding to Stack: " + objType);
-                                parents.push(new TypedObject(objType, newValue));
-                                break;
-                            // All other cases to handle
+                        if(!isBasic(parentType)) {
+                            Container castedNParent = null;
+                            Object newValue = null;
 
-                            // if basic type, directly set value
+                            switch (parentType) {
+                                case Type.NODE:
+                                    castedNParent = (Node) parent;
+                                    break;
+                                case Type.ESTRUCT:
+                                    castedNParent = (EStruct) parent;
+                                    break;
+                            }
+                            switch (objType) {
+                                case Type.ESTRUCT:
+                                    // Should be able to recreate them directly in next version
+                                    EStructArray pEArray = (EStructArray) castedNParent.getOrCreate("", Type.ESTRUCT_ARRAY);
+                                    newValue = pEArray.newEStruct();
+                                    break;
+
+                                case Type.RELATION:
+                                    // Need name of the relation and direct create
+                                    break;
+
+                                case Type.ERELATION:
+                                    // Same as relation
+                                    break;
+
+                                case Type.TASK:
+                                    // Direct create noneed for parent
+                                    Task task = Tasks.newTask().parse("", _graph);
+                                    break;
+
+                                case Type.TASK_ARRAY:
+                                    // Direct Create through Array of String
+                                    break;
+
+                                case Type.NODE:
+                                    // Need all information about node
+                                    state = NODE_BUILD;
+                                    break;
+
+                                case Type.KDTREE:
+                                case Type.NDTREE:
+                                    // Treated like EARRAYS, so should be ok, just need to initiate them as objects
+                                    break;
+
+                                case Type.INDEX:
+                                    break;
+
+                                default:
+                                    newValue = castedNParent.getOrCreate(currentProperty, objType);
+                                    break;
+                            }
+                            // Handle types with no getOrCreate
+                            // Meaning : Bool / Int / Double / Long / String / Relation / ERelation / Task / TaskArray / Node / EStruct / KDTREE / NDTREE / Index
+                            // Bool / Int / Double / Long / String are directly assigned when read
+
+
+                            System.out.println("----> Adding to Stack: " + objType);
+                            parents.push(new TypedObject(objType, newValue));
                         }
+
+                        // All other cases to handle
+                        // if basic type, directly set value
 
                         if (isBasic(parentType)){
                             state = DIRECT_SET;
                         }
                     }
+                    // If we are not building a type, we are retrieving the elements from a real array
+
                     else{
                         arrayElements.add(new String(buffer.slice(start, start+ length -1)));
+
+                        // If we are reading an LLAMAP Element, we directly add it to the parent.
+                        if(parents.peek().getType() == Type.LONG_TO_LONG_ARRAY_MAP){
+                            LongLongArrayMap castedLLAMAP = (LongLongArrayMap) parents.peek().getObject();
+                            castedLLAMAP.put(Long.parseLong(currentProperty), Long.parseLong(new String(buffer.slice(start, start+length-1))));
+                        }
                     }
-                    // If we are not building a type, we are retrieving the elements from a real array
 
                     break;
                 case JsonType.JSON_ARRAY_VALUE_STRING:
