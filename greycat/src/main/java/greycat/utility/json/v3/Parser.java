@@ -356,7 +356,6 @@ public class Parser {
 
                                 case Type.TASK:
                                     // Direct create noneed for parent
-                                    Task task = Tasks.newTask().parse("", _graph);
                                     break;
 
                                 case Type.TASK_ARRAY:
@@ -384,7 +383,6 @@ public class Parser {
                             // Meaning : Bool / Int / Double / Long / String / Relation / ERelation / Task / TaskArray / Node / EStruct / KDTREE / NDTREE / Index
                             // Bool / Int / Double / Long / String are directly assigned when read
 
-
                             System.out.println("----> Adding to Stack: " + objType);
                             parents.push(new TypedObject(objType, newValue));
                         }
@@ -410,7 +408,10 @@ public class Parser {
 
                     break;
                 case JsonType.JSON_ARRAY_VALUE_STRING:
-                    arrayElements.add(new String(buffer.slice(start, start+ length -1)));
+                    if(objType == Type.TASK_ARRAY){
+                        // Treat task array cases
+                    } else
+                        arrayElements.add(new String(buffer.slice(start, start+ length -1)));
                     break;
                 case JsonType.JSON_ARRAY_VALUE_STRING_ENC:
                     arrayElements.add(new String(buffer.slice(start, start+ length -1)));

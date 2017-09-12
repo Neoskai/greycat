@@ -29,6 +29,7 @@ import static greycat.Constants.CHUNK_ESEP;
 
 /**
  * @ignore ts
+ * Sender that sends all the messages contained in a File for Non Intrusive backups
  */
 public class LogSender implements Runnable {
     private AbstractSender _sender;

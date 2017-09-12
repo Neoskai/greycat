@@ -18,6 +18,7 @@ package greycat.backup.sample;
 import greycat.Callback;
 import greycat.Graph;
 import greycat.GraphBuilder;
+import greycat.Node;
 import greycat.backup.loader.BackupLoader;
 
 import java.io.File;
@@ -44,12 +45,12 @@ public class BackupSample {
                     System.out.println("Connecting to backup graph");
                 }
             });
-            /*g.lookup(0, 1001, 1, new Callback<Node>() {
+            g.lookup(0, 1001, 1, new Callback<Node>() {
                 @Override
                 public void on(Node result) {
-                    assertTrue(result != null);
+                    System.out.println(result);
                 }
-            });*/
+            });
             g.disconnect(new Callback<Boolean>() {
                 @Override
                 public void on(Boolean result) {

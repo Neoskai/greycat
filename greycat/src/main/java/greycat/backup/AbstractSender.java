@@ -156,6 +156,9 @@ public abstract class AbstractSender {
 
     }
 
+    /**
+     * Connection process for non intrusive mode
+     */
     public void connect(){
         try {
             File newFile = new File(logsFile());
@@ -169,6 +172,9 @@ public abstract class AbstractSender {
         }
     }
 
+    /**
+     * Closes the stream for non intrusive mode
+     */
     public void disconnect(){
         try {
             stream.close();
@@ -217,6 +223,7 @@ public abstract class AbstractSender {
                 Base64.encodeDoubleToBuffer((double) obj, buffer);
                 break;
             default:
+                //@TODO COMPLETE / REPLACE BY JSON REPRESENTATION FOR COMPLEX TYPES
                 buffer.writeAll(serialize(obj));
         }
         return buffer;

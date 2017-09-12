@@ -7,9 +7,7 @@ import greycat.struct.EStruct;
 import greycat.struct.EStructArray;
 import greycat.utility.json.v1.JsonParser;
 import greycat.utility.json.v2.JsonParserV2;
-import greycat.utility.json.v3.BufferIndex;
 import greycat.utility.json.v3.Parser;
-import greycat.utility.json.v3.Tokenizer;
 
 public class test {
 

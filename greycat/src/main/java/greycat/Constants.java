@@ -26,7 +26,6 @@ public class Constants {
     public static final int MAXENTRY = 10000; // Number of maximum entries before flushing file
     public static final int TIMELAPSEDURATION = 60000; // Timelapse we should swap folder after (We should build a snapshot after each timelapse)
 
-
     public static final int KEY_SIZE = 4;
 
     // Limit long lengths to 53 bits because of JS limitation
